@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
+import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -64,6 +65,16 @@ export async function POST(req) {
   if (customer?.email && process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
+      const settings = await getBusinessSettings();
+      const business = {
+        businessName: settings.business_name,
+        accentColor: settings.accent_color,
+        logoUrl: settings.logo_url,
+        contactEmail: settings.contact_email,
+        contactPhone: settings.contact_phone,
+        invoiceNote: settings.invoice_note,
+      };
+
       const pdfBytes = await generateInvoicePdfBytes({
         invoiceIdShort: invoice.id.slice(0, 8).toUpperCase(),
         customerName: customer.name,
@@ -74,12 +85,13 @@ export async function POST(req) {
         dueDate: invoice.due_date,
         status: invoice.status,
         createdAt: invoice.created_at,
+        business,
       });
 
       const result = await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
-        from: "Get Paid <onboarding@resend.dev>",
+        from: `${settings.business_name} <onboarding@resend.dev>`,
         to: customer.email,
         subject: `Invoice for ${job.job_type || "your recent job"}`,
         html: `
@@ -89,7 +101,7 @@ export async function POST(req) {
           <strong>Amount due:</strong> £${job.amount}<br/>
           <strong>Due date:</strong> ${dueDate.toDateString()}</p>
           <p>A PDF copy of this invoice is attached.</p>
-          <p>Thanks,<br/>Your Plumber</p>
+          <p>Thanks,<br/>${settings.business_name}</p>
         `,
         attachments: [
           {
