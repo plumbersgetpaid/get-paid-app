@@ -1,139 +1,171 @@
-import { supabaseAdmin } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../../lib/supabaseClient";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = 0;
 
-export default async function AllInvoices() {
+export default async function InvoiceDetail({ params }) {
+  const { invoiceId } = params;
   const db = supabaseAdmin();
 
-  const { data: rawInvoices, error } = await db
+  const { data: invoice, error } = await db
     .from("invoices")
     .select("*")
-    .order("created_at", { ascending: false });
+    .eq("id", invoiceId)
+    .single();
 
-  let invoices = rawInvoices || [];
-
-  if (invoices.length > 0) {
-    const jobIds = [...new Set(invoices.map((i) => i.job_id))];
-    const { data: jobs } = await db
-      .from("jobs")
-      .select("id, job_type, customer_id")
-      .in("id", jobIds);
-
-    const jobById = Object.fromEntries((jobs || []).map((j) => [j.id, j]));
-
-    const customerIds = [...new Set((jobs || []).map((j) => j.customer_id))];
-    const { data: customers } = await db
-      .from("customers")
-      .select("id, name")
-      .in("id", customerIds);
-
-    const nameById = Object.fromEntries(
-      (customers || []).map((c) => [c.id, c.name])
-    );
-
-    invoices = invoices.map((inv) => {
-      const job = jobById[inv.job_id];
-      return {
-        ...inv,
-        job_type: job?.job_type,
-        customer_name: job ? nameById[job.customer_id] : "Unknown customer",
-      };
-    });
+  if (error || !invoice) {
+    notFound();
   }
 
-  const totalInvoiced = invoices.reduce((sum, i) => sum + Number(i.amount), 0);
-  const totalPaid = invoices
-    .filter((i) => i.status === "paid")
-    .reduce((sum, i) => sum + Number(i.amount), 0);
-  const totalOutstanding = totalInvoiced - totalPaid;
+  const { data: job } = await db
+    .from("jobs")
+    .select("*")
+    .eq("id", invoice.job_id)
+    .single();
+
+  const { data: customer } = job?.customer_id
+    ? await db.from("customers").select("*").eq("id", job.customer_id).single()
+    : { data: null };
 
   return (
     <main>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/" aria-label="Back" style={backButtonStyle}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 16,
+        }}
+      >
+        <Link href="/invoices" aria-label="Back" style={backButtonStyle}>
           ←
         </Link>
-        <h1 style={{ fontSize: 20, margin: 0 }}>All invoices</h1>
+        <h1 style={{ fontSize: 20, margin: 0 }}>Invoice</h1>
       </div>
-
-      <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
-        A full record of every invoice you've raised - handy to send your
-        accountant, or tap any invoice to download it as a PDF.
-      </p>
 
       <section
         style={{
           background: "white",
           borderRadius: 12,
-          padding: 16,
-          margin: "16px 0",
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 12,
-          textAlign: "center",
+          padding: 24,
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
         }}
       >
-        <div>
-          <div style={{ fontSize: 12, color: "#888" }}>Total invoiced</div>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>
-            £{totalInvoiced.toFixed(2)}
-          </div>
+        <h2 style={{ fontSize: 22, marginBottom: 4 }}>Invoice</h2>
+        <div style={{ color: "#888", marginBottom: 20, fontSize: 13 }}>
+          Invoice #{invoice.id.slice(0, 8).toUpperCase()} ·{" "}
+          {new Date(invoice.created_at).toLocaleDateString("en-GB")}
         </div>
-        <div>
-          <div style={{ fontSize: 12, color: "#888" }}>Total paid</div>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>
-            £{totalPaid.toFixed(2)}
-          </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
+          {customer?.email && (
+            <div style={{ color: "#888", fontSize: 14 }}>{customer.email}</div>
+          )}
+          {customer?.phone && (
+            <div style={{ color: "#888", fontSize: 14 }}>{customer.phone}</div>
+          )}
         </div>
-        <div>
-          <div style={{ fontSize: 12, color: "#888" }}>Outstanding</div>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>
-            £{totalOutstanding.toFixed(2)}
+
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 20 }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid #eee", textAlign: "left" }}>
+              <th style={{ padding: "8px 0", fontSize: 13, color: "#888" }}>
+                Description
+              </th>
+              <th
+                style={{
+                  padding: "8px 0",
+                  textAlign: "right",
+                  fontSize: 13,
+                  color: "#888",
+                }}
+              >
+                Amount
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ padding: "10px 0" }}>
+                {job?.job_type || "Plumbing work"}
+              </td>
+              <td style={{ padding: "10px 0", textAlign: "right" }}>
+                £{invoice.amount}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style={{ borderTop: "1px solid #eee", paddingTop: 12 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 14,
+              color: "#666",
+              marginBottom: 6,
+            }}
+          >
+            <span>Due date</span>
+            <span>{invoice.due_date}</span>
           </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 14,
+              color: "#666",
+              marginBottom: 6,
+            }}
+          >
+            <span>Status</span>
+            <span style={{ textTransform: "capitalize" }}>{invoice.status}</span>
+          </div>
+          {invoice.paid_at && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 14,
+                color: "#666",
+              }}
+            >
+              <span>Paid on</span>
+              <span>{new Date(invoice.paid_at).toLocaleDateString("en-GB")}</span>
+            </div>
+          )}
         </div>
       </section>
 
-      {error && (
-        <div style={{ color: "#991b1b", fontSize: 13, marginBottom: 12 }}>
-          Something went wrong loading invoices: {error.message}
-        </div>
-      )}
-
-      {invoices.length === 0 && (
-        <p style={{ color: "#888" }}>No invoices yet.</p>
-      )}
-
-      {invoices.map((inv) => (
-        <Link
-          key={inv.id}
-          href={`/invoices/${inv.id}`}
-          style={{
-            display: "block",
-            background: "white",
-            borderRadius: 10,
-            padding: 14,
-            marginBottom: 8,
-            textDecoration: "none",
-            color: "inherit",
-          }}
+      <div style={{ marginTop: 20 }}>
+        <a
+          href={`/api/invoices/${invoice.id}/pdf`}
+          download
+          style={downloadButtonStyle}
         >
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
-            <div style={{ fontWeight: 600 }}>£{inv.amount}</div>
-          </div>
-          <div style={{ fontSize: 13, color: "#888" }}>
-            {inv.job_type || "Job"} · due {inv.due_date} ·{" "}
-            <span style={{ textTransform: "capitalize" }}>{inv.status}</span>
-          </div>
-        </Link>
-      ))}
+          Download as PDF
+        </a>
+      </div>
     </main>
   );
 }
+
+const downloadButtonStyle = {
+  display: "block",
+  width: "100%",
+  boxSizing: "border-box",
+  textAlign: "center",
+  background: "#111",
+  color: "white",
+  border: "none",
+  padding: "14px",
+  borderRadius: 10,
+  fontWeight: 600,
+  fontSize: 15,
+  textDecoration: "none",
+};
 
 const backButtonStyle = {
   background: "white",
