@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../../lib/generateInvoicePdf";
+import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
 
 export async function GET(req, { params }) {
   const { invoiceId } = params;
@@ -28,6 +29,16 @@ export async function GET(req, { params }) {
     ? await db.from("customers").select("*").eq("id", job.customer_id).single()
     : { data: null };
 
+  const settings = await getBusinessSettings();
+  const business = {
+    businessName: settings.business_name,
+    accentColor: settings.accent_color,
+    logoUrl: settings.logo_url,
+    contactEmail: settings.contact_email,
+    contactPhone: settings.contact_phone,
+    invoiceNote: settings.invoice_note,
+  };
+
   const pdfBytes = await generateInvoicePdfBytes({
     invoiceIdShort: invoice.id.slice(0, 8).toUpperCase(),
     customerName: customer?.name,
@@ -39,6 +50,7 @@ export async function GET(req, { params }) {
     status: invoice.status,
     paidAt: invoice.paid_at,
     createdAt: invoice.created_at,
+    business,
   });
 
   return new Response(Buffer.from(pdfBytes), {
