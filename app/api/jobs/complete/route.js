@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
+import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -59,10 +60,22 @@ export async function POST(req) {
 
   await db.from("jobs").update({ status: "invoiced" }).eq("id", job.id);
 
-  // 3. Send the invoice email
+  // 3. Send the invoice email, with the invoice attached as a PDF
   if (customer?.email && process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
+      const pdfBytes = await generateInvoicePdfBytes({
+        invoiceIdShort: invoice.id.slice(0, 8).toUpperCase(),
+        customerName: customer.name,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+        jobType: job.job_type,
+        amount: invoice.amount,
+        dueDate: invoice.due_date,
+        status: invoice.status,
+        createdAt: invoice.created_at,
+      });
+
       const result = await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
@@ -75,8 +88,15 @@ export async function POST(req) {
           <p><strong>Job:</strong> ${job.job_type || "Plumbing work"}<br/>
           <strong>Amount due:</strong> £${job.amount}<br/>
           <strong>Due date:</strong> ${dueDate.toDateString()}</p>
+          <p>A PDF copy of this invoice is attached.</p>
           <p>Thanks,<br/>Your Plumber</p>
         `,
+        attachments: [
+          {
+            filename: `invoice-${invoice.id.slice(0, 8)}.pdf`,
+            content: Buffer.from(pdfBytes),
+          },
+        ],
       });
       console.log("Resend result:", result);
 
