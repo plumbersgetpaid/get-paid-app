@@ -1,68 +1,167 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
-import { Resend } from "resend";
-import { NextResponse } from "next/server";
+import { supabaseAdmin } from "./lib/supabaseClient";
+import Link from "next/link";
 
-export async function POST(req) {
-  const form = await req.formData();
-  const jobId = form.get("jobId");
+export const dynamic = "force-dynamic";
 
+export default async function Dashboard() {
   const db = supabaseAdmin();
 
-  // 1. Mark the job complete
-  const { data: job, error: jobErr } = await db
+  const { data: outstanding, error: outstandingError } = await db
+    .from("outstanding_invoices")
+    .select("*")
+    .order("due_date", { ascending: true });
+
+  const { data: rawJobs, error: jobsError } = await db
     .from("jobs")
-    .update({ status: "complete", completed_at: new Date().toISOString() })
-    .eq("id", jobId)
-    .select("*, customers(*)")
-    .single();
+    .select("*")
+    .eq("status", "in_progress")
+    .order("created_at", { ascending: false });
 
-  if (jobErr || !job) {
-    return NextResponse.json({ error: "Job not found" }, { status: 400 });
+  let jobs = rawJobs || [];
+
+  if (jobs.length > 0) {
+    const customerIds = [...new Set(jobs.map((j) => j.customer_id))];
+    const { data: customers } = await db
+      .from("customers")
+      .select("id, name")
+      .in("id", customerIds);
+
+    const nameById = Object.fromEntries(
+      (customers || []).map((c) => [c.id, c.name])
+    );
+
+    jobs = jobs.map((j) => ({
+      ...j,
+      customers: { name: nameById[j.customer_id] || "Unknown customer" },
+    }));
   }
 
-  // 2. Create the invoice, due in 14 days
-  const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + 14);
-
-  const { data: invoice, error: invErr } = await db
-    .from("invoices")
-    .insert({
-      job_id: job.id,
-      amount: job.amount,
-      due_date: dueDate.toISOString().slice(0, 10),
-      status: "unpaid",
-    })
-    .select()
-    .single();
-
-  if (invErr) {
-    return NextResponse.json({ error: invErr.message }, { status: 400 });
+  if (jobsError || outstandingError) {
+    console.error("Dashboard query error:", jobsError || outstandingError);
   }
 
-  await db.from("jobs").update({ status: "invoiced" }).eq("id", job.id);
+  const totalOwed = (outstanding || []).reduce(
+    (sum, i) => sum + Number(i.amount),
+    0
+  );
 
-  // 3. Send the invoice email
-  if (job.customers?.email && process.env.RESEND_API_KEY) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: "invoices@yourbusiness.com", // replace with your verified sending domain
-      to: job.customers.email,
-      subject: `Invoice for ${job.job_type || "your recent job"}`,
-      html: `
-        <p>Hi ${job.customers.name},</p>
-        <p>Thanks for your business. Here's your invoice:</p>
-        <p><strong>Job:</strong> ${job.job_type || "Plumbing work"}<br/>
-        <strong>Amount due:</strong> £${job.amount}<br/>
-        <strong>Due date:</strong> ${dueDate.toDateString()}</p>
-        <p>Thanks,<br/>Your Plumber</p>
-      `,
-    });
+  return (
+    <main>
+      <h1 style={{ fontSize: 22 }}>Get Paid</h1>
 
-    await db.from("invoices").update({ sent_at: new Date().toISOString() }).eq("id", invoice.id);
-  }
+      {(jobsError || outstandingError) && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 12,
+            fontSize: 13,
+          }}
+        >
+          Something went wrong loading your data:{" "}
+          {(jobsError || outstandingError)?.message}
+        </div>
+      )}
 
-  // 4. Also send an SMS confirmation (optional - requires Twilio setup)
-  // See README for enabling this.
+      <section
+        style={{
+          background: "white",
+          borderRadius: 12,
+          padding: 16,
+          margin: "16px 0",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        }}
+      >
+        <div style={{ fontSize: 14, color: "#666" }}>Total outstanding</div>
+        <div style={{ fontSize: 32, fontWeight: 700 }}>
+          £{totalOwed.toFixed(2)}
+        </div>
+      </section>
 
-  return NextResponse.redirect(new URL("/", req.url));
+      <Link
+        href="/jobs/new"
+        style={{
+          display: "block",
+          textAlign: "center",
+          background: "#111",
+          color: "white",
+          padding: "14px",
+          borderRadius: 10,
+          textDecoration: "none",
+          fontWeight: 600,
+          marginBottom: 20,
+        }}
+      >
+        + Add a job
+      </Link>
+
+      <h2 style={{ fontSize: 16 }}>Jobs in progress</h2>
+      {(jobs || []).length === 0 && (
+        <p style={{ color: "#888" }}>No jobs in progress.</p>
+      )}
+      {(jobs || []).map((job) => (
+        <div
+          key={job.id}
+          style={{
+            background: "white",
+            borderRadius: 10,
+            padding: 14,
+            marginBottom: 8,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600 }}>{job.customers?.name}</div>
+            <div style={{ fontSize: 13, color: "#888" }}>
+              {job.job_type} · £{job.amount}
+            </div>
+          </div>
+          <form action={`/api/jobs/complete`} method="POST">
+            <input type="hidden" name="jobId" value={job.id} />
+            <button
+              type="submit"
+              style={{
+                background: "#16a34a",
+                color: "white",
+                border: "none",
+                padding: "8px 12px",
+                borderRadius: 8,
+                fontWeight: 600,
+              }}
+            >
+              Mark done
+            </button>
+          </form>
+        </div>
+      ))}
+
+      <h2 style={{ fontSize: 16, marginTop: 24 }}>Outstanding invoices</h2>
+      {(outstanding || []).length === 0 && (
+        <p style={{ color: "#888" }}>Nothing owed right now 🎉</p>
+      )}
+      {(outstanding || []).map((inv) => (
+        <div
+          key={inv.invoice_id}
+          style={{
+            background: "white",
+            borderRadius: 10,
+            padding: 14,
+            marginBottom: 8,
+          }}
+        >
+          <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
+          <div style={{ fontSize: 13, color: "#888" }}>
+            £{inv.amount} · due {inv.due_date} ·{" "}
+            {inv.days_overdue > 0
+              ? `${inv.days_overdue} days overdue`
+              : "not yet due"}
+          </div>
+        </div>
+      ))}
+    </main>
+  );
 }
