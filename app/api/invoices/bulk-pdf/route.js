@@ -1,6 +1,7 @@
 import { PDFDocument } from "pdf-lib";
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
+import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -50,6 +51,16 @@ export async function GET(req) {
 
   const mergedPdf = await PDFDocument.create();
 
+  const settings = await getBusinessSettings();
+  const business = {
+    businessName: settings.business_name,
+    accentColor: settings.accent_color,
+    logoUrl: settings.logo_url,
+    contactEmail: settings.contact_email,
+    contactPhone: settings.contact_phone,
+    invoiceNote: settings.invoice_note,
+  };
+
   for (const inv of invoices) {
     const job = jobById[inv.job_id];
     const customer = job ? customerById[job.customer_id] : null;
@@ -65,6 +76,7 @@ export async function GET(req) {
       status: inv.status,
       paidAt: inv.paid_at,
       createdAt: inv.created_at,
+      business,
     });
 
     const singlePdf = await PDFDocument.load(singleBytes);
