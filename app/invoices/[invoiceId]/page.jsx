@@ -1,7 +1,6 @@
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import PrintButton from "./PrintButton";
 
 export const dynamic = "force-dynamic";
 
@@ -31,15 +30,7 @@ export default async function InvoiceDetail({ params }) {
 
   return (
     <main>
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          main { padding: 0 !important; }
-        }
-      `}</style>
-
       <div
-        className="no-print"
         style={{
           display: "flex",
           alignItems: "center",
@@ -148,12 +139,33 @@ export default async function InvoiceDetail({ params }) {
         </div>
       </section>
 
-      <div className="no-print" style={{ marginTop: 20 }}>
-        <PrintButton />
+      <div style={{ marginTop: 20 }}>
+        <a
+          href={`/api/invoices/${invoice.id}/pdf`}
+          download
+          style={downloadButtonStyle}
+        >
+          Download as PDF
+        </a>
       </div>
     </main>
   );
 }
+
+const downloadButtonStyle = {
+  display: "block",
+  width: "100%",
+  boxSizing: "border-box",
+  textAlign: "center",
+  background: "#111",
+  color: "white",
+  border: "none",
+  padding: "14px",
+  borderRadius: 10,
+  fontWeight: 600,
+  fontSize: 15,
+  textDecoration: "none",
+};
 
 const backButtonStyle = {
   background: "white",
