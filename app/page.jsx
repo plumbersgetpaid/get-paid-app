@@ -21,6 +21,8 @@ export default async function Dashboard() {
 
   let jobs = rawJobs || [];
 
+  // Fetch customer names separately (avoids relying on Supabase auto-detecting
+  // the foreign key relationship, which can silently fail on new projects)
   if (jobs.length > 0) {
     const customerIds = [...new Set(jobs.map((j) => j.customer_id))];
     const { data: customers } = await db
@@ -122,22 +124,21 @@ export default async function Dashboard() {
               {job.job_type} · £{job.amount}
             </div>
           </div>
-          <form action={`/api/jobs/complete`} method="POST">
-            <input type="hidden" name="jobId" value={job.id} />
-            <button
-              type="submit"
-              style={{
-                background: "#16a34a",
-                color: "white",
-                border: "none",
-                padding: "8px 12px",
-                borderRadius: 8,
-                fontWeight: 600,
-              }}
-            >
-              Mark done
-            </button>
-          </form>
+          <Link
+            href={`/jobs/complete/${job.id}`}
+            style={{
+              background: "#16a34a",
+              color: "white",
+              border: "none",
+              padding: "8px 12px",
+              borderRadius: 8,
+              fontWeight: 600,
+              textDecoration: "none",
+              fontSize: 14,
+            }}
+          >
+            Mark done
+          </Link>
         </div>
       ))}
 
@@ -156,14 +157,54 @@ export default async function Dashboard() {
           }}
         >
           <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
-          <div style={{ fontSize: 13, color: "#888" }}>
+          <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
             £{inv.amount} · due {inv.due_date} ·{" "}
             {inv.days_overdue > 0
               ? `${inv.days_overdue} days overdue`
               : "not yet due"}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <form action="/api/invoices/chase" method="POST" style={{ flex: 1 }}>
+              <input type="hidden" name="invoiceId" value={inv.invoice_id} />
+              <button type="submit" style={chaseButtonStyle}>
+                Chase now
+              </button>
+            </form>
+            <form
+              action="/api/invoices/mark-paid"
+              method="POST"
+              style={{ flex: 1 }}
+            >
+              <input type="hidden" name="invoiceId" value={inv.invoice_id} />
+              <button type="submit" style={markPaidButtonStyle}>
+                Mark as paid
+              </button>
+            </form>
           </div>
         </div>
       ))}
     </main>
   );
 }
+
+const chaseButtonStyle = {
+  width: "100%",
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "8px 10px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 13,
+};
+
+const markPaidButtonStyle = {
+  width: "100%",
+  background: "#111",
+  color: "white",
+  border: "none",
+  padding: "8px 10px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 13,
+};

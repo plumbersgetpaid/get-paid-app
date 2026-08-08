@@ -5,9 +5,11 @@ import { NextResponse } from "next/server";
 export async function POST(req) {
   const form = await req.formData();
   const jobId = form.get("jobId");
+  const dueDateInput = form.get("dueDate"); // yyyy-mm-dd from the form, optional
 
   const db = supabaseAdmin();
 
+  // 1. Mark the job complete
   const { data: job, error: jobErr } = await db
     .from("jobs")
     .update({ status: "complete", completed_at: new Date().toISOString() })
@@ -20,6 +22,8 @@ export async function POST(req) {
     return NextResponse.json({ error: "Job not found" }, { status: 400 });
   }
 
+  // Fetch the customer separately (avoids relying on Supabase auto-detecting
+  // the foreign key relationship, which can silently fail on new projects)
   const { data: customer, error: custErr } = await db
     .from("customers")
     .select("*")
@@ -30,8 +34,12 @@ export async function POST(req) {
     console.error("Customer lookup error:", custErr);
   }
 
-  const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + 14);
+  // 2. Create the invoice - use the due date chosen on the complete-job
+  // screen if one was provided, otherwise default to 14 days from now
+  const dueDate = dueDateInput ? new Date(dueDateInput) : new Date();
+  if (!dueDateInput) {
+    dueDate.setDate(dueDate.getDate() + 14);
+  }
 
   const { data: invoice, error: invErr } = await db
     .from("invoices")
@@ -51,10 +59,13 @@ export async function POST(req) {
 
   await db.from("jobs").update({ status: "invoiced" }).eq("id", job.id);
 
+  // 3. Send the invoice email
   if (customer?.email && process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       const result = await resend.emails.send({
+        // Using Resend's test sending address for now - swap this for your
+        // own verified domain once you're ready to send to real customers.
         from: "Get Paid <onboarding@resend.dev>",
         to: customer.email,
         subject: `Invoice for ${job.job_type || "your recent job"}`,
@@ -80,5 +91,9 @@ export async function POST(req) {
     });
   }
 
+  // 4. Also send an SMS confirmation (optional - requires Twilio setup)
+  // See README for enabling this.
+
   return NextResponse.redirect(new URL("/", req.url));
 }
+

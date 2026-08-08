@@ -36,7 +36,9 @@ export async function GET(req) {
 
     if (message && inv.email && resend) {
       await resend.emails.send({
-        from: "invoices@yourbusiness.com",
+        // Using Resend's test sending address for now - swap this for your
+        // own verified domain once you're ready to send to real customers.
+        from: "Get Paid <onboarding@resend.dev>",
         to: inv.email,
         subject: "Payment reminder",
         html: `<p>${message}</p>`,

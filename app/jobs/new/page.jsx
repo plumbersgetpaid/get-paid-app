@@ -48,7 +48,17 @@ export default function NewJob() {
 
   return (
     <main>
-      <h1 style={{ fontSize: 20 }}>Add a job</h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          aria-label="Back"
+          style={backButtonStyle}
+        >
+          ←
+        </button>
+        <h1 style={{ fontSize: 20, margin: 0 }}>Add a job</h1>
+      </div>
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, marginTop: 16 }}>
         <input
           placeholder="Customer name"
@@ -85,20 +95,31 @@ export default function NewJob() {
           onChange={(e) => setForm({ ...form, amount: e.target.value })}
           style={inputStyle}
         />
-        <button
-          type="submit"
-          disabled={saving}
-          style={{
-            background: "#111",
-            color: "white",
-            padding: "14px",
-            borderRadius: 10,
-            border: "none",
-            fontWeight: 600,
-          }}
-        >
-          {saving ? "Saving..." : "Save job"}
-        </button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            disabled={saving}
+            style={cancelButtonStyle}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            style={{
+              background: "#111",
+              color: "white",
+              padding: "14px",
+              borderRadius: 10,
+              border: "none",
+              fontWeight: 600,
+              flex: 1,
+            }}
+          >
+            {saving ? "Saving..." : "Save job"}
+          </button>
+        </div>
       </form>
     </main>
   );
@@ -109,4 +130,27 @@ const inputStyle = {
   borderRadius: 8,
   border: "1px solid #ddd",
   fontSize: 15,
+};
+
+const backButtonStyle = {
+  background: "white",
+  border: "1px solid #ddd",
+  borderRadius: 8,
+  width: 36,
+  height: 36,
+  fontSize: 18,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const cancelButtonStyle = {
+  background: "white",
+  color: "#111",
+  padding: "14px",
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  fontWeight: 600,
+  flex: 1,
 };
