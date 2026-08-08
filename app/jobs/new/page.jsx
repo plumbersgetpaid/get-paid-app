@@ -1,123 +1,51 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "../../lib/supabaseClient";
+import Link from "next/link";
 
-export default function NewJob() {
-  const router = useRouter();
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    jobType: "",
-    amount: "",
-  });
-  const [saving, setSaving] = useState(false);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setSaving(true);
-
-    const { data: customer, error: custErr } = await supabase
-      .from("customers")
-      .insert({ name: form.name, phone: form.phone, email: form.email })
-      .select()
-      .single();
-
-    if (custErr) {
-      alert("Error saving customer: " + custErr.message);
-      setSaving(false);
-      return;
-    }
-
-    const { error: jobErr } = await supabase.from("jobs").insert({
-      customer_id: customer.id,
-      job_type: form.jobType,
-      amount: parseFloat(form.amount),
-      status: "in_progress",
-    });
-
-    if (jobErr) {
-      alert("Error saving job: " + jobErr.message);
-      setSaving(false);
-      return;
-    }
-
-    router.push("/");
-  }
-
+export default function NewQuote() {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          aria-label="Back"
-          style={backButtonStyle}
-        >
+        <Link href="/" aria-label="Back" style={backButtonStyle}>
           ←
-        </button>
-        <h1 style={{ fontSize: 20, margin: 0 }}>Add a job</h1>
+        </Link>
+        <h1 style={{ fontSize: 20, margin: 0 }}>New quote</h1>
       </div>
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, marginTop: 16 }}>
+
+      <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
+        This sends the customer a quote. Once they accept, it'll move into
+        "Jobs in progress" and you can invoice them when the work's done.
+      </p>
+
+      <form
+        action="/api/jobs/create"
+        method="POST"
+        style={{ display: "grid", gap: 12, marginTop: 16 }}
+      >
+        <input name="name" placeholder="Customer name" required style={inputStyle} />
         <input
-          placeholder="Customer name"
-          required
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          style={inputStyle}
-        />
-        <input
+          name="phone"
           placeholder="Phone (for SMS/WhatsApp chase)"
-          value={form.phone}
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
           style={inputStyle}
         />
+        <input name="email" type="email" placeholder="Email" style={inputStyle} />
         <input
-          placeholder="Email"
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          style={inputStyle}
-        />
-        <input
+          name="jobType"
           placeholder="Job type (e.g. Boiler service)"
-          value={form.jobType}
-          onChange={(e) => setForm({ ...form, jobType: e.target.value })}
           style={inputStyle}
         />
         <input
-          placeholder="Amount (£)"
+          name="amount"
           type="number"
           step="0.01"
+          placeholder="Quoted amount (£)"
           required
-          value={form.amount}
-          onChange={(e) => setForm({ ...form, amount: e.target.value })}
           style={inputStyle}
         />
         <div style={{ display: "flex", gap: 10 }}>
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            disabled={saving}
-            style={cancelButtonStyle}
-          >
+          <Link href="/" style={cancelButtonStyle}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              background: "#111",
-              color: "white",
-              padding: "14px",
-              borderRadius: 10,
-              border: "none",
-              fontWeight: 600,
-              flex: 1,
-            }}
-          >
-            {saving ? "Saving..." : "Save job"}
+          </Link>
+          <button type="submit" style={submitButtonStyle}>
+            Send quote
           </button>
         </div>
       </form>
@@ -139,10 +67,11 @@ const backButtonStyle = {
   width: 36,
   height: 36,
   fontSize: 18,
-  cursor: "pointer",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+  textDecoration: "none",
+  color: "#111",
 };
 
 const cancelButtonStyle = {
@@ -151,6 +80,18 @@ const cancelButtonStyle = {
   padding: "14px",
   borderRadius: 10,
   border: "1px solid #ddd",
+  fontWeight: 600,
+  flex: 1,
+  textAlign: "center",
+  textDecoration: "none",
+};
+
+const submitButtonStyle = {
+  background: "#111",
+  color: "white",
+  padding: "14px",
+  borderRadius: 10,
+  border: "none",
   fontWeight: 600,
   flex: 1,
 };
