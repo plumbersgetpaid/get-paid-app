@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
+import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -44,10 +45,11 @@ export async function POST(req) {
   if (email && process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
+      const settings = await getBusinessSettings();
       await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
-        from: "Get Paid <onboarding@resend.dev>",
+        from: `${settings.business_name} <onboarding@resend.dev>`,
         to: email,
         subject: `Quote for ${jobType || "your job"}`,
         html: `
@@ -56,7 +58,9 @@ export async function POST(req) {
           <p><strong>Job:</strong> ${jobType || "Plumbing work"}<br/>
           <strong>Quoted price:</strong> £${amount}</p>
           <p>Let us know if you'd like to go ahead and we'll get it booked in.</p>
-          <p>Thanks,<br/>Your Plumber</p>
+          <p>Thanks,<br/>${settings.business_name}${
+          settings.contact_phone ? `<br/>${settings.contact_phone}` : ""
+        }</p>
         `,
       });
     } catch (e) {
