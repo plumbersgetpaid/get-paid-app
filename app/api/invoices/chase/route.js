@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
+import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -34,6 +35,16 @@ export async function POST(req) {
   if (inv.email && process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
+      const settings = await getBusinessSettings();
+      const business = {
+        businessName: settings.business_name,
+        accentColor: settings.accent_color,
+        logoUrl: settings.logo_url,
+        contactEmail: settings.contact_email,
+        contactPhone: settings.contact_phone,
+        invoiceNote: settings.invoice_note,
+      };
+
       const pdfBytes = await generateInvoicePdfBytes({
         invoiceIdShort: inv.invoice_id.slice(0, 8).toUpperCase(),
         customerName: inv.customer_name,
@@ -43,15 +54,16 @@ export async function POST(req) {
         amount: inv.amount,
         dueDate: inv.due_date,
         status: "unpaid",
+        business,
       });
 
       await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
-        from: "Get Paid <onboarding@resend.dev>",
+        from: `${settings.business_name} <onboarding@resend.dev>`,
         to: inv.email,
         subject: "Payment reminder",
-        html: `<p>${message}</p><p>A copy of the invoice is attached.</p>`,
+        html: `<p>${message}</p><p>A copy of the invoice is attached.</p><p>Thanks,<br/>${settings.business_name}</p>`,
         attachments: [
           {
             filename: `invoice-${inv.invoice_id.slice(0, 8)}.pdf`,
