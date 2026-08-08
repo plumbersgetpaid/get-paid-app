@@ -6,16 +6,39 @@ export const dynamic = "force-dynamic";
 export default async function Dashboard() {
   const db = supabaseAdmin();
 
-  const { data: outstanding } = await db
+  const { data: outstanding, error: outstandingError } = await db
     .from("outstanding_invoices")
     .select("*")
     .order("due_date", { ascending: true });
 
-  const { data: jobs } = await db
+  const { data: rawJobs, error: jobsError } = await db
     .from("jobs")
-    .select("*, customers(name)")
+    .select("*")
     .eq("status", "in_progress")
     .order("created_at", { ascending: false });
+
+  let jobs = rawJobs || [];
+
+  if (jobs.length > 0) {
+    const customerIds = [...new Set(jobs.map((j) => j.customer_id))];
+    const { data: customers } = await db
+      .from("customers")
+      .select("id, name")
+      .in("id", customerIds);
+
+    const nameById = Object.fromEntries(
+      (customers || []).map((c) => [c.id, c.name])
+    );
+
+    jobs = jobs.map((j) => ({
+      ...j,
+      customers: { name: nameById[j.customer_id] || "Unknown customer" },
+    }));
+  }
+
+  if (jobsError || outstandingError) {
+    console.error("Dashboard query error:", jobsError || outstandingError);
+  }
 
   const totalOwed = (outstanding || []).reduce(
     (sum, i) => sum + Number(i.amount),
@@ -25,6 +48,22 @@ export default async function Dashboard() {
   return (
     <main>
       <h1 style={{ fontSize: 22 }}>Get Paid</h1>
+
+      {(jobsError || outstandingError) && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 12,
+            fontSize: 13,
+          }}
+        >
+          Something went wrong loading your data:{" "}
+          {(jobsError || outstandingError)?.message}
+        </div>
+      )}
 
       <section
         style={{
