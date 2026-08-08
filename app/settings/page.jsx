@@ -8,6 +8,7 @@ export const revalidate = 0;
 export default async function Settings({ searchParams }) {
   const settings = await getBusinessSettings();
   const saved = searchParams?.saved === "1";
+  const uploadError = searchParams?.error;
 
   return (
     <main>
@@ -35,6 +36,21 @@ export default async function Settings({ searchParams }) {
           }}
         >
           Settings saved.
+        </div>
+      )}
+
+      {uploadError && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 12,
+            borderRadius: 8,
+            margin: "16px 0",
+            fontSize: 13,
+          }}
+        >
+          Something went wrong uploading the logo. Try a smaller PNG or JPG file.
         </div>
       )}
 
@@ -86,19 +102,6 @@ export default async function Settings({ searchParams }) {
         </label>
 
         <label style={labelStyle}>
-          Logo URL (optional)
-          <input
-            name="logo_url"
-            placeholder="https://..."
-            defaultValue={settings.logo_url || ""}
-            style={inputStyle}
-          />
-          <span style={{ fontSize: 12, color: "#888" }}>
-            A direct link to a PNG or JPG image. Leave blank to skip.
-          </span>
-        </label>
-
-        <label style={labelStyle}>
           Invoice footer note (optional)
           <textarea
             name="invoice_note"
@@ -113,6 +116,48 @@ export default async function Settings({ searchParams }) {
           Save settings
         </button>
       </form>
+
+      <section
+        style={{
+          background: "white",
+          borderRadius: 12,
+          padding: 16,
+          marginTop: 20,
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>Logo</div>
+        <p style={{ fontSize: 12, color: "#888", marginTop: 0, marginBottom: 12 }}>
+          Shown on your PDF invoices. Best as a PNG with a transparent or white
+          background.
+        </p>
+
+        {settings.logo_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={settings.logo_url}
+            alt="Current logo"
+            style={{ maxWidth: 160, maxHeight: 80, display: "block", marginBottom: 12 }}
+          />
+        )}
+
+        <form
+          action="/api/settings/upload-logo"
+          method="POST"
+          encType="multipart/form-data"
+          style={{ display: "flex", gap: 10 }}
+        >
+          <input
+            type="file"
+            name="logo"
+            accept="image/png,image/jpeg"
+            required
+            style={{ flex: 1, fontSize: 13 }}
+          />
+          <button type="submit" style={uploadButtonStyle}>
+            Upload
+          </button>
+        </form>
+      </section>
     </main>
   );
 }
@@ -156,4 +201,15 @@ const submitButtonStyle = {
   border: "none",
   fontWeight: 600,
   fontSize: 15,
+};
+
+const uploadButtonStyle = {
+  background: "#111",
+  color: "white",
+  padding: "10px 16px",
+  borderRadius: 8,
+  border: "none",
+  fontWeight: 600,
+  fontSize: 13,
+  whiteSpace: "nowrap",
 };
