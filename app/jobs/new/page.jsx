@@ -1,4 +1,5 @@
 import Link from "next/link";
+import VoiceQuoteAssist from "./VoiceQuoteAssist";
 
 export default function NewQuote() {
   return (
@@ -27,19 +28,13 @@ export default function NewQuote() {
           style={inputStyle}
         />
         <input name="email" type="email" placeholder="Email" style={inputStyle} />
-        <input
-          name="jobType"
-          placeholder="Job type (e.g. Boiler service)"
-          style={inputStyle}
-        />
-        <input
-          name="amount"
-          type="number"
-          step="0.01"
-          placeholder="Quoted amount (£)"
-          required
-          style={inputStyle}
-        />
+
+        <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
+          Speak the job details instead of typing - AI will fill these in for
+          you, and you can edit before sending.
+        </div>
+        <VoiceQuoteAssist />
+
         <div style={{ display: "flex", gap: 10 }}>
           <Link href="/" style={cancelButtonStyle}>
             Cancel
