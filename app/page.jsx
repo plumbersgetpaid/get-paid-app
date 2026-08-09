@@ -132,6 +132,9 @@ export default async function Dashboard() {
           <Link href="/calendar" style={settingsLinkStyle}>
             Calendar
           </Link>
+          <Link href="/clients" style={settingsLinkStyle}>
+            Clients
+          </Link>
           <Link href="/settings" style={settingsLinkStyle}>
             Settings
           </Link>
