@@ -31,6 +31,8 @@ export async function generateInvoicePdfBytes({
   status,
   paidAt,
   createdAt,
+  quotedAmount,
+  priceChangeNote,
   business = {},
 }) {
   const {
@@ -118,6 +120,46 @@ export async function generateInvoicePdfBytes({
   page.drawText(jobType || "Plumbing work", { x: left, y, size: 12, font });
   page.drawText(`£${Number(amount).toFixed(2)}`, { x: right - 90, y, size: 12, font });
   y -= 20;
+
+  // If the final price differs from the original quote, make that clear on
+  // the invoice itself, along with any explanation the tradie gave
+  const priceChanged =
+    quotedAmount !== undefined &&
+    quotedAmount !== null &&
+    Math.abs(Number(quotedAmount) - Number(amount)) > 0.001;
+
+  if (priceChanged) {
+    page.drawText(
+      `Originally quoted £${Number(quotedAmount).toFixed(2)} - adjusted to reflect the work carried out`,
+      { x: left, y, size: 9, font, color: grey }
+    );
+    y -= 14;
+
+    if (priceChangeNote) {
+      // Simple manual word-wrap since pdf-lib doesn't wrap text for us
+      const maxCharsPerLine = 95;
+      const words = priceChangeNote.split(" ");
+      let line = "";
+      const lines = [];
+      for (const word of words) {
+        const candidate = line ? `${line} ${word}` : word;
+        if (candidate.length > maxCharsPerLine) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = candidate;
+        }
+      }
+      if (line) lines.push(line);
+
+      for (const l of lines.slice(0, 3)) {
+        page.drawText(l, { x: left, y, size: 9, font, color: grey });
+        y -= 13;
+      }
+    }
+  }
+
+  y -= 8;
   page.drawLine({
     start: { x: left, y },
     end: { x: right, y },
