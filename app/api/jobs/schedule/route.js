@@ -14,6 +14,7 @@ export async function POST(req) {
   const durationValue = parseFloat(form.get("durationValue") || "2");
   const durationUnit = form.get("durationUnit") || "hours";
   const location = (form.get("location") || "").toString().trim();
+  const includeWeekends = form.get("includeWeekends") === "1";
   const force = form.get("force") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
   const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
@@ -24,7 +25,7 @@ export async function POST(req) {
 
   const settings = await getBusinessSettings();
   const start = new Date(`${startDate}T${startTime}:00`);
-  const end = computeScheduleEnd(start, durationValue, durationUnit, settings.include_weekends);
+  const end = computeScheduleEnd(start, durationValue, durationUnit, includeWeekends);
 
   const db = supabaseAdmin();
 
@@ -56,6 +57,7 @@ export async function POST(req) {
       redirectUrl.searchParams.set("durationValue", String(durationValue));
       redirectUrl.searchParams.set("durationUnit", durationUnit);
       redirectUrl.searchParams.set("location", location);
+      redirectUrl.searchParams.set("includeWeekends", includeWeekends ? "1" : "0");
       redirectUrl.searchParams.set(
         "conflict",
         `This overlaps with ${conflictCustomer?.name || "another job"} (${
