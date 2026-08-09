@@ -2,6 +2,7 @@ import { PDFDocument } from "pdf-lib";
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -54,7 +55,7 @@ export async function GET(req) {
   const jobIds = [...new Set(invoices.map((i) => i.job_id))];
   const { data: jobs } = await db
     .from("jobs")
-    .select("id, job_type, customer_id")
+    .select("id, job_type, location, customer_id")
     .in("id", jobIds);
   const jobById = Object.fromEntries((jobs || []).map((j) => [j.id, j]));
 
@@ -78,6 +79,7 @@ export async function GET(req) {
     headerTagline: settings.header_tagline,
     paymentTerms: settings.payment_terms,
     bankDetails: settings.bank_details,
+    currency: settings.currency,
   };
 
   for (const inv of invoices) {
@@ -85,11 +87,12 @@ export async function GET(req) {
     const customer = job ? customerById[job.customer_id] : null;
 
     const singleBytes = await generateInvoicePdfBytes({
-      invoiceIdShort: inv.id.slice(0, 8).toUpperCase(),
+      invoiceNumber: formatInvoiceNumber(inv.invoice_number),
       customerName: customer?.name,
       customerEmail: customer?.email,
       customerPhone: customer?.phone,
       jobType: job?.job_type,
+      location: job?.location,
       amount: inv.amount,
       dueDate: inv.due_date,
       status: inv.status,
