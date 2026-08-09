@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import VoiceQuickBookAssist from "./VoiceQuickBookAssist";
 
 export const dynamic = "force-dynamic";
 
-export default function QuickBook({ searchParams }) {
+export default async function QuickBook({ searchParams }) {
+  const settings = await getBusinessSettings();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const defaultDate = tomorrow.toISOString().slice(0, 10);
@@ -18,6 +20,10 @@ export default function QuickBook({ searchParams }) {
   const initialDuration = searchParams?.durationValue || "2";
   const initialDurationUnit = searchParams?.durationUnit || "hours";
   const initialLocation = searchParams?.location || "";
+  const initialIncludeWeekends =
+    searchParams?.includeWeekends !== undefined
+      ? searchParams.includeWeekends === "1"
+      : settings.include_weekends;
   const conflictMessage = searchParams?.conflict;
 
   return (
@@ -65,6 +71,29 @@ export default function QuickBook({ searchParams }) {
           defaultValue={initialLocation}
           style={inputStyle}
         />
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 14,
+            background: "white",
+            padding: 12,
+            borderRadius: 8,
+          }}
+        >
+          <input
+            type="checkbox"
+            name="includeWeekends"
+            value="1"
+            defaultChecked={initialIncludeWeekends}
+          />
+          Include weekends for this booking
+          <span style={{ color: "#888", fontSize: 12 }}>
+            (off = working days only)
+          </span>
+        </label>
 
         <div style={{ display: "grid", gap: 8 }}>
           <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
