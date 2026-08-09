@@ -6,7 +6,9 @@ export async function POST(req) {
   const jobId = form.get("jobId");
   const startDate = form.get("startDate");
   const startTime = form.get("startTime");
-  const durationHours = parseFloat(form.get("durationHours") || "2");
+  const durationValue = parseFloat(form.get("durationValue") || "2");
+  const durationUnit = form.get("durationUnit") || "hours";
+  const durationHours = durationUnit === "days" ? durationValue * 24 : durationValue;
   const force = form.get("force") === "1";
 
   if (!jobId || !startDate || !startTime) {
@@ -43,7 +45,8 @@ export async function POST(req) {
       const redirectUrl = new URL(`/jobs/schedule/${jobId}`, req.url);
       redirectUrl.searchParams.set("startDate", startDate);
       redirectUrl.searchParams.set("startTime", startTime);
-      redirectUrl.searchParams.set("durationHours", String(durationHours));
+      redirectUrl.searchParams.set("durationValue", String(durationValue));
+      redirectUrl.searchParams.set("durationUnit", durationUnit);
       redirectUrl.searchParams.set(
         "conflict",
         `This overlaps with ${conflictCustomer?.name || "another job"} (${
