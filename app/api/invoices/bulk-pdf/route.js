@@ -6,17 +6,33 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month"); // format YYYY-MM, optional
+  const start = searchParams.get("start"); // format YYYY-MM-DD, optional
+  const end = searchParams.get("end"); // format YYYY-MM-DD, optional
 
   const db = supabaseAdmin();
 
   let query = db.from("invoices").select("*").order("created_at", { ascending: true });
+  let filenameSuffix = "all";
 
-  if (month) {
+  if (start || end) {
+    // Custom date range takes priority over the month picker
+    if (start) {
+      query = query.gte("created_at", start);
+    }
+    if (end) {
+      // Include the whole end day by using the next day as an exclusive upper bound
+      const endDate = new Date(end);
+      endDate.setDate(endDate.getDate() + 1);
+      query = query.lt("created_at", endDate.toISOString().slice(0, 10));
+    }
+    filenameSuffix = `${start || "start"}_to_${end || "now"}`;
+  } else if (month) {
     const [y, m] = month.split("-").map(Number);
-    const start = `${month}-01`;
+    const monthStart = `${month}-01`;
     const nextMonth = new Date(y, m, 1); // first day of the following month
-    const end = nextMonth.toISOString().slice(0, 10);
-    query = query.gte("created_at", start).lt("created_at", end);
+    const monthEnd = nextMonth.toISOString().slice(0, 10);
+    query = query.gte("created_at", monthStart).lt("created_at", monthEnd);
+    filenameSuffix = month;
   }
 
   const { data: invoices, error } = await query;
@@ -90,7 +106,7 @@ export async function GET(req) {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="invoices-${month || "all"}.pdf"`,
+      "Content-Disposition": `attachment; filename="invoices-${filenameSuffix}.pdf"`,
     },
   });
 }
