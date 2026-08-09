@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
+import { computeScheduleEnd } from "../../../lib/duration";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -11,8 +12,14 @@ export async function POST(req) {
   const email = form.get("email");
   const jobType = form.get("jobType");
   const amount = form.get("amount");
+  const location = (form.get("location") || "").toString().trim();
+  const proposedDate = form.get("proposedDate");
+  const proposedTime = form.get("proposedTime") || "09:00";
+  const durationValue = form.get("durationValue");
+  const durationUnit = form.get("durationUnit") || "hours";
 
   const db = supabaseAdmin();
+  const settings = await getBusinessSettings();
 
   const { data: customer, error: custErr } = await db
     .from("customers")
@@ -25,14 +32,32 @@ export async function POST(req) {
     return NextResponse.json({ error: custErr.message }, { status: 400 });
   }
 
+  // If a proposed date was given, pre-fill the scheduled time now - if the
+  // quote is accepted, the job's already booked in (still adjustable later)
+  let scheduledStart = null;
+  let scheduledEnd = null;
+  if (proposedDate && durationValue) {
+    const start = new Date(`${proposedDate}T${proposedTime}:00`);
+    scheduledStart = start.toISOString();
+    scheduledEnd = computeScheduleEnd(
+      start,
+      parseFloat(durationValue),
+      durationUnit,
+      settings.include_weekends
+    ).toISOString();
+  }
+
   const { data: job, error: jobErr } = await db
     .from("jobs")
     .insert({
       customer_id: customer.id,
       job_type: jobType,
+      location: location || null,
       amount: amount ? parseFloat(amount) : 0,
       status: "quote_sent",
       quote_sent_at: new Date().toISOString(),
+      scheduled_start: scheduledStart,
+      scheduled_end: scheduledEnd,
     })
     .select()
     .single();
@@ -46,7 +71,6 @@ export async function POST(req) {
   if (email && process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
-      const settings = await getBusinessSettings();
       const template = await getTemplate("quote");
       const vars = {
         customer_name: name,
@@ -56,7 +80,10 @@ export async function POST(req) {
       };
       const subject =
         renderTemplate(template.subject, vars) || `Quote for ${jobType || "your job"}`;
-      const bodyText = renderTemplate(template.body, vars);
+      let bodyText = renderTemplate(template.body, vars);
+      if (location) {
+        bodyText += `\n\nJob location: ${location}`;
+      }
       const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
         /\n/g,
         "<br/>"
