@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "./lib/supabaseClient";
+import { getBusinessSettings } from "./lib/getBusinessSettings";
+import { formatCurrency } from "./lib/formatCurrency";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +9,7 @@ export const revalidate = 0;
 
 export default async function Dashboard() {
   const db = supabaseAdmin();
+  const settings = await getBusinessSettings();
 
   const { data: outstanding, error: outstandingError } = await db
     .from("outstanding_invoices")
@@ -168,7 +171,7 @@ export default async function Dashboard() {
       >
         <div style={{ fontSize: 14, color: "#666" }}>Total outstanding</div>
         <div style={{ fontSize: 32, fontWeight: 700 }}>
-          £{totalOwed.toFixed(2)}
+          {formatCurrency(totalOwed, settings.currency)}
         </div>
       </section>
 
@@ -205,7 +208,7 @@ export default async function Dashboard() {
         >
           <div style={{ fontWeight: 600 }}>{q.customer_name}</div>
           <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
-            {q.job_type || "Job"} · £{q.amount}
+            {q.job_type || "Job"} · {formatCurrency(q.amount, settings.currency)}
             {q.quote_chased_at ? " · already chased" : ""}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -257,8 +260,11 @@ export default async function Dashboard() {
             <div>
               <div style={{ fontWeight: 600 }}>{job.customers?.name}</div>
               <div style={{ fontSize: 13, color: "#888" }}>
-                {job.job_type} · £{job.amount}
+                {job.job_type} · {formatCurrency(job.amount, settings.currency)}
               </div>
+              {job.location && (
+                <div style={{ fontSize: 12, color: "#666" }}>📍 {job.location}</div>
+              )}
               {job.scheduled_start && (
                 <div style={{ fontSize: 12, color: "#16a34a", marginTop: 2 }}>
                   📅{" "}
@@ -328,7 +334,7 @@ export default async function Dashboard() {
         >
           <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
           <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
-            £{inv.amount} · due {inv.due_date} ·{" "}
+            {formatCurrency(inv.amount, settings.currency)} · due {inv.due_date} ·{" "}
             {inv.days_overdue > 0
               ? `${inv.days_overdue} days overdue`
               : "not yet due"}
@@ -371,7 +377,7 @@ export default async function Dashboard() {
         >
           <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
           <div style={{ fontSize: 13, color: "#888" }}>
-            £{inv.amount} · {inv.job_type || "Job"} · paid{" "}
+            {formatCurrency(inv.amount, settings.currency)} · {inv.job_type || "Job"} · paid{" "}
             {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("en-GB") : ""}
           </div>
         </div>
