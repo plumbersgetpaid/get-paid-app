@@ -75,6 +75,9 @@ export async function GET(req) {
     contactEmail: settings.contact_email,
     contactPhone: settings.contact_phone,
     invoiceNote: settings.invoice_note,
+    headerTagline: settings.header_tagline,
+    paymentTerms: settings.payment_terms,
+    bankDetails: settings.bank_details,
   };
 
   for (const inv of invoices) {
