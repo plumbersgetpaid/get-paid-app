@@ -1,17 +1,30 @@
 import Link from "next/link";
 import { supabaseAdmin } from "../lib/supabaseClient";
+import { getBusinessSettings } from "../lib/getBusinessSettings";
+import { formatCurrency } from "../lib/formatCurrency";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function Clients() {
+export default async function Clients({ searchParams }) {
   const db = supabaseAdmin();
+  const settings = await getBusinessSettings();
+  const q = (searchParams?.q || "").trim().toLowerCase();
 
-  const { data: customers } = await db
+  const { data: rawCustomers } = await db
     .from("customers")
     .select("*")
     .order("name", { ascending: true });
+
+  let customers = rawCustomers || [];
+  if (q) {
+    customers = customers.filter((c) =>
+      [c.name, c.phone, c.email].some((field) =>
+        (field || "").toLowerCase().includes(q)
+      )
+    );
+  }
 
   // Work out how much each customer currently owes, without relying on the
   // outstanding_invoices view (it doesn't expose customer_id)
@@ -62,6 +75,19 @@ export default async function Clients() {
         + Add client
       </Link>
 
+      <form action="/clients" method="GET" style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <input
+          type="search"
+          name="q"
+          placeholder="Search by name, phone, or email"
+          defaultValue={searchParams?.q || ""}
+          style={searchInputStyle}
+        />
+        <button type="submit" style={searchButtonStyle}>
+          Search
+        </button>
+      </form>
+
       {(!customers || customers.length === 0) && (
         <p style={{ color: "#888" }}>
           No clients yet - they'll appear here automatically as you send
@@ -89,7 +115,7 @@ export default async function Clients() {
           </div>
           {owedByCustomer[c.id] > 0 && (
             <div style={{ fontSize: 12, color: "#b45309", marginTop: 4 }}>
-              £{owedByCustomer[c.id].toFixed(2)} outstanding
+              {formatCurrency(owedByCustomer[c.id], settings.currency)} outstanding
             </div>
           )}
         </Link>
@@ -110,4 +136,22 @@ const backButtonStyle = {
   justifyContent: "center",
   textDecoration: "none",
   color: "#111",
+};
+
+const searchInputStyle = {
+  flex: 1,
+  padding: "12px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  fontSize: 15,
+};
+
+const searchButtonStyle = {
+  background: "#111",
+  color: "white",
+  border: "none",
+  padding: "12px 16px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 14,
 };
