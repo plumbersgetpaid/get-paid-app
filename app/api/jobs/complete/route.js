@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -99,31 +100,43 @@ export async function POST(req) {
         business,
       });
 
+      const invoiceTemplate = await getTemplate("invoice");
+      const invoiceVars = {
+        customer_name: customer.name,
+        job_type: job.job_type || "Plumbing work",
+        amount: finalAmount.toFixed(2),
+        due_date: dueDate.toDateString(),
+        business_name: settings.business_name,
+      };
+      const subject =
+        renderTemplate(invoiceTemplate.subject, invoiceVars) ||
+        `Invoice for ${job.job_type || "your recent job"}`;
+
+      let bodyText = renderTemplate(invoiceTemplate.body, invoiceVars);
+
+      // Price-change context is dynamic, so it's appended after the
+      // template rather than being part of the editable text itself
+      if (priceChanged) {
+        bodyText += `\n\nOriginally quoted £${quotedAmount.toFixed(
+          2
+        )} - adjusted to reflect the work carried out.`;
+        if (noteInput) {
+          bodyText += `\n${noteInput}`;
+        }
+      }
+
+      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
+        /\n/g,
+        "<br/>"
+      )}</div>`;
+
       const result = await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
         from: `${settings.business_name} <onboarding@resend.dev>`,
         to: customer.email,
-        subject: `Invoice for ${job.job_type || "your recent job"}`,
-        html: `
-          <p>Hi ${customer.name},</p>
-          <p>Thanks for your business. Here's your invoice:</p>
-          <p><strong>Job:</strong> ${job.job_type || "Plumbing work"}<br/>
-          ${
-            priceChanged
-              ? `<strong>Originally quoted:</strong> £${quotedAmount.toFixed(2)}<br/>
-          <strong>Final amount due:</strong> £${finalAmount.toFixed(2)} (adjusted to reflect the work carried out)<br/>`
-              : `<strong>Amount due:</strong> £${finalAmount.toFixed(2)}<br/>`
-          }
-          <strong>Due date:</strong> ${dueDate.toDateString()}</p>
-          ${
-            priceChanged && noteInput
-              ? `<p style="color:#555;">${noteInput}</p>`
-              : ""
-          }
-          <p>A PDF copy of this invoice is attached.</p>
-          <p>Thanks,<br/>${settings.business_name}</p>
-        `,
+        subject,
+        html,
         attachments: [
           {
             filename: `invoice-${invoice.id.slice(0, 8)}.pdf`,
