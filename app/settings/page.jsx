@@ -89,6 +89,16 @@ export default async function Settings({ searchParams }) {
         </label>
 
         <label style={labelStyle}>
+          Header tagline (optional, shown under your business name on PDFs)
+          <input
+            name="header_tagline"
+            placeholder="e.g. Professional Plumbing & Heating Services"
+            defaultValue={settings.header_tagline || ""}
+            style={inputStyle}
+          />
+        </label>
+
+        <label style={labelStyle}>
           Contact email (shown to customers)
           <input
             name="contact_email"
@@ -121,10 +131,32 @@ export default async function Settings({ searchParams }) {
         </label>
 
         <label style={labelStyle}>
+          Payment terms (optional, shown on every invoice)
+          <textarea
+            name="payment_terms"
+            placeholder="e.g. Payment due within 14 days of invoice date"
+            defaultValue={settings.payment_terms || ""}
+            rows={2}
+            style={{ ...inputStyle, resize: "vertical" }}
+          />
+        </label>
+
+        <label style={labelStyle}>
+          Bank details (optional, shown on every invoice)
+          <textarea
+            name="bank_details"
+            placeholder={"e.g. Sort code: 00-00-00\nAccount number: 12345678"}
+            defaultValue={settings.bank_details || ""}
+            rows={2}
+            style={{ ...inputStyle, resize: "vertical" }}
+          />
+        </label>
+
+        <label style={labelStyle}>
           Invoice footer note (optional)
           <textarea
             name="invoice_note"
-            placeholder="e.g. Payment terms, bank details, thank-you message"
+            placeholder="e.g. thank-you message, extra notes"
             defaultValue={settings.invoice_note || ""}
             rows={3}
             style={{ ...inputStyle, resize: "vertical" }}
