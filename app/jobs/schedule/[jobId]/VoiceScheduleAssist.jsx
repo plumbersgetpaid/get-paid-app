@@ -155,8 +155,11 @@ export default function VoiceScheduleAssist({
             onChange={(e) => setDurationUnit(e.target.value)}
             style={{ ...inputStyle, flex: 1 }}
           >
+            <option value="minutes">Minutes</option>
             <option value="hours">Hours</option>
             <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
           </select>
         </div>
       </label>
