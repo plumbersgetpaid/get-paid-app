@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "../../lib/supabaseClient";
+import { getBusinessSettings } from "../../lib/getBusinessSettings";
+import { formatCurrency } from "../../lib/formatCurrency";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClientDetail({ params }) {
   const { customerId } = params;
   const db = supabaseAdmin();
+  const settings = await getBusinessSettings();
 
   const { data: customer, error } = await db
     .from("customers")
@@ -71,7 +74,7 @@ export default async function ClientDetail({ params }) {
           <div key={job.id} style={jobCardStyle}>
             <div style={{ fontWeight: 600 }}>{job.job_type || "Job"}</div>
             <div style={{ fontSize: 13, color: "#888" }}>
-              £{job.amount} ·{" "}
+              {formatCurrency(job.amount, settings.currency)} ·{" "}
               <span style={{ textTransform: "capitalize" }}>
                 {job.status.replace("_", " ")}
               </span>
@@ -82,6 +85,9 @@ export default async function ClientDetail({ params }) {
                 </>
               )}
             </div>
+            {job.location && (
+              <div style={{ fontSize: 12, color: "#888" }}>📍 {job.location}</div>
+            )}
             {invoice && (
               <Link
                 href={`/invoices/${invoice.id}`}
