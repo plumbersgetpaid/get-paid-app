@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { formatCurrency } from "./formatCurrency";
 
 // Converts a hex colour like "#111111" into pdf-lib's 0-1 rgb() format.
 // Falls back to near-black if the value is missing or malformed.
@@ -20,13 +21,14 @@ function hexToRgb(hex) {
 //
 // `business` carries the branding: { businessName, accentColor, logoUrl,
 // contactEmail, contactPhone, invoiceNote, headerTagline, paymentTerms,
-// bankDetails } - all optional.
+// bankDetails, currency } - all optional.
 export async function generateInvoicePdfBytes({
-  invoiceIdShort,
+  invoiceNumber,
   customerName,
   customerEmail,
   customerPhone,
   jobType,
+  location,
   amount,
   dueDate,
   status,
@@ -46,6 +48,7 @@ export async function generateInvoicePdfBytes({
     headerTagline,
     paymentTerms,
     bankDetails,
+    currency,
   } = business;
 
   const pdfDoc = await PDFDocument.create();
@@ -85,14 +88,15 @@ export async function generateInvoicePdfBytes({
   }
   if (headerTagline) {
     page.drawText(headerTagline, { x: left, y, size: 10, font, color: grey });
-    y -= 18;
+    y -= 16;
   }
+  y -= 8;
 
-  page.drawText("Invoice", { x: left, y, size: 22, font: bold });
-  y -= 20;
+  page.drawText("Invoice", { x: left, y, size: 24, font: bold });
+  y -= 24;
 
   const meta = [
-    invoiceIdShort ? `Invoice #${invoiceIdShort}` : null,
+    invoiceNumber ? `Invoice #${invoiceNumber}` : null,
     createdAt ? new Date(createdAt).toLocaleDateString("en-GB") : null,
   ]
     .filter(Boolean)
@@ -100,7 +104,17 @@ export async function generateInvoicePdfBytes({
   if (meta) {
     page.drawText(meta, { x: left, y, size: 10, font, color: grey });
   }
-  y -= 36;
+  y -= 14;
+
+  // A clean divider under the header, so the letterhead doesn't run
+  // straight into the customer details
+  page.drawLine({
+    start: { x: left, y },
+    end: { x: right, y },
+    thickness: 1,
+    color: rgb(0.9, 0.9, 0.9),
+  });
+  y -= 30;
 
   page.drawText(customerName || "Customer", { x: left, y, size: 13, font: bold });
   y -= 16;
@@ -112,7 +126,11 @@ export async function generateInvoicePdfBytes({
     page.drawText(customerPhone, { x: left, y, size: 10, font, color: grey });
     y -= 14;
   }
-  y -= 20;
+  if (location) {
+    page.drawText(location, { x: left, y, size: 10, font, color: grey });
+    y -= 14;
+  }
+  y -= 16;
 
   page.drawText("Description", { x: left, y, size: 10, font: bold, color: grey });
   page.drawText("Amount", { x: right - 60, y, size: 10, font: bold, color: grey });
@@ -126,7 +144,7 @@ export async function generateInvoicePdfBytes({
   y -= 22;
 
   page.drawText(jobType || "Plumbing work", { x: left, y, size: 12, font });
-  page.drawText(`£${Number(amount).toFixed(2)}`, { x: right - 90, y, size: 12, font });
+  page.drawText(formatCurrency(amount, currency), { x: right - 90, y, size: 12, font });
   y -= 20;
 
   // If the final price differs from the original quote, make that clear on
@@ -138,7 +156,7 @@ export async function generateInvoicePdfBytes({
 
   if (priceChanged) {
     page.drawText(
-      `Originally quoted £${Number(quotedAmount).toFixed(2)} - adjusted to reflect the work carried out`,
+      `Originally quoted ${formatCurrency(quotedAmount, currency)} - adjusted to reflect the work carried out`,
       { x: left, y, size: 9, font, color: grey }
     );
     y -= 14;

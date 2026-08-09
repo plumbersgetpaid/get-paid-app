@@ -10,6 +10,8 @@ const DEFAULTS = {
   header_tagline: null,
   payment_terms: null,
   bank_details: null,
+  currency: "GBP",
+  include_weekends: true,
 };
 
 export async function getBusinessSettings() {

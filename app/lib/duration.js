@@ -1,20 +1,32 @@
-// Converts a duration value + unit into total hours, for scheduling maths.
-// "months" is approximated as 30 days - fine for job-duration estimates,
-// not meant for precise calendar arithmetic.
-export function durationToHours(value, unit) {
-  const n = Number(value) || 0;
-  switch (unit) {
-    case "minutes":
-      return n / 60;
-    case "hours":
-      return n;
-    case "days":
-      return n * 24;
-    case "weeks":
-      return n * 24 * 7;
-    case "months":
-      return n * 24 * 30;
-    default:
-      return n;
+// Computes the end Date for a job booking. Minutes/hours are always linear
+// time. For days/weeks/months, if includeWeekends is false, Saturdays and
+// Sundays don't count toward the duration (so "1 week" = 5 working days).
+export function computeScheduleEnd(start, durationValue, durationUnit, includeWeekends = true) {
+  const n = Number(durationValue) || 0;
+
+  if (durationUnit === "minutes" || durationUnit === "hours") {
+    const hours = durationUnit === "minutes" ? n / 60 : n;
+    return new Date(start.getTime() + hours * 60 * 60 * 1000);
   }
+
+  let totalDays;
+  if (durationUnit === "weeks") totalDays = n * 7;
+  else if (durationUnit === "months") totalDays = n * 30;
+  else totalDays = n; // "days"
+
+  if (includeWeekends) {
+    return new Date(start.getTime() + totalDays * 24 * 60 * 60 * 1000);
+  }
+
+  // Step forward day by day, only counting Mon-Fri toward the duration
+  let remaining = totalDays;
+  let current = new Date(start);
+  while (remaining > 0) {
+    current = new Date(current.getTime() + 24 * 60 * 60 * 1000);
+    const day = current.getDay(); // 0 = Sunday, 6 = Saturday
+    if (day !== 0 && day !== 6) {
+      remaining -= 1;
+    }
+  }
+  return current;
 }
