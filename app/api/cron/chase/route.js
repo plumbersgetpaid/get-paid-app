@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
+import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -33,6 +34,7 @@ export async function GET(req) {
     headerTagline: settings.header_tagline,
     paymentTerms: settings.payment_terms,
     bankDetails: settings.bank_details,
+    currency: settings.currency,
   };
 
   let sent = 0;
@@ -52,11 +54,12 @@ export async function GET(req) {
 
     if (templateKey && inv.email && resend) {
       const pdfBytes = await generateInvoicePdfBytes({
-        invoiceIdShort: inv.invoice_id.slice(0, 8).toUpperCase(),
+        invoiceNumber: formatInvoiceNumber(inv.invoice_number),
         customerName: inv.customer_name,
         customerEmail: inv.email,
         customerPhone: inv.phone,
         jobType: inv.job_type,
+        location: inv.location,
         amount: inv.amount,
         dueDate: inv.due_date,
         status: "unpaid",
@@ -86,7 +89,7 @@ export async function GET(req) {
         html,
         attachments: [
           {
-            filename: `invoice-${inv.invoice_id.slice(0, 8)}.pdf`,
+            filename: `invoice-${formatInvoiceNumber(inv.invoice_number)}.pdf`,
             content: Buffer.from(pdfBytes),
           },
         ],
