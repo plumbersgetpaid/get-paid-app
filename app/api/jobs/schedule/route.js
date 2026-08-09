@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
-import { durationToHours } from "../../../lib/duration";
+import { computeScheduleEnd } from "../../../lib/duration";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -13,7 +13,7 @@ export async function POST(req) {
   const startTime = form.get("startTime");
   const durationValue = parseFloat(form.get("durationValue") || "2");
   const durationUnit = form.get("durationUnit") || "hours";
-  const durationHours = durationToHours(durationValue, durationUnit);
+  const location = (form.get("location") || "").toString().trim();
   const force = form.get("force") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
   const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
@@ -22,8 +22,9 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing scheduling details" }, { status: 400 });
   }
 
+  const settings = await getBusinessSettings();
   const start = new Date(`${startDate}T${startTime}:00`);
-  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+  const end = computeScheduleEnd(start, durationValue, durationUnit, settings.include_weekends);
 
   const db = supabaseAdmin();
 
@@ -54,6 +55,7 @@ export async function POST(req) {
       redirectUrl.searchParams.set("startTime", startTime);
       redirectUrl.searchParams.set("durationValue", String(durationValue));
       redirectUrl.searchParams.set("durationUnit", durationUnit);
+      redirectUrl.searchParams.set("location", location);
       redirectUrl.searchParams.set(
         "conflict",
         `This overlaps with ${conflictCustomer?.name || "another job"} (${
@@ -69,6 +71,7 @@ export async function POST(req) {
     .update({
       scheduled_start: start.toISOString(),
       scheduled_end: end.toISOString(),
+      location: location || null,
       reminder_sent_at: null, // reset so the day-before reminder fires for the new time
     })
     .eq("id", jobId)
@@ -89,7 +92,6 @@ export async function POST(req) {
       .single();
 
     if (customer) {
-      const settings = await getBusinessSettings();
       const template = await getTemplate("booking_confirmation");
       const vars = {
         customer_name: customer.name,
