@@ -6,6 +6,7 @@ export default function VoiceScheduleAssist({
   initialDate = "",
   initialTime = "09:00",
   initialDuration = "2",
+  initialDurationUnit = "hours",
 }) {
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -14,6 +15,7 @@ export default function VoiceScheduleAssist({
   const [startDate, setStartDate] = useState(initialDate);
   const [startTime, setStartTime] = useState(initialTime);
   const [duration, setDuration] = useState(initialDuration);
+  const [durationUnit, setDurationUnit] = useState(initialDurationUnit);
 
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -74,9 +76,10 @@ export default function VoiceScheduleAssist({
         setTranscript(data.transcript || "");
         if (data.startDate) setStartDate(data.startDate);
         if (data.startTime) setStartTime(data.startTime);
-        if (data.durationHours !== null && data.durationHours !== undefined) {
-          setDuration(String(data.durationHours));
+        if (data.durationValue !== null && data.durationValue !== undefined) {
+          setDuration(String(data.durationValue));
         }
+        if (data.durationUnit) setDurationUnit(data.durationUnit);
       }
     } catch (e) {
       console.error("Voice upload error:", e);
@@ -134,17 +137,28 @@ export default function VoiceScheduleAssist({
         </label>
       </div>
       <label style={{ fontSize: 12, color: "#666" }}>
-        Duration (hours)
-        <input
-          type="number"
-          name="durationHours"
-          min="0.5"
-          step="0.5"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-          required
-          style={inputStyle}
-        />
+        Expected duration
+        <div style={{ display: "flex", gap: 10 }}>
+          <input
+            type="number"
+            name="durationValue"
+            min="0.5"
+            step="0.5"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            required
+            style={{ ...inputStyle, flex: 2 }}
+          />
+          <select
+            name="durationUnit"
+            value={durationUnit}
+            onChange={(e) => setDurationUnit(e.target.value)}
+            style={{ ...inputStyle, flex: 1 }}
+          >
+            <option value="hours">Hours</option>
+            <option value="days">Days</option>
+          </select>
+        </div>
       </label>
     </div>
   );
