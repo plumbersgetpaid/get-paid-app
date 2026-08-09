@@ -128,9 +128,14 @@ export default async function Dashboard() {
     <main>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{ fontSize: 22, margin: 0 }}>Get Paid</h1>
-        <Link href="/settings" style={settingsLinkStyle}>
-          Settings
-        </Link>
+        <div style={{ display: "flex", gap: 14 }}>
+          <Link href="/calendar" style={settingsLinkStyle}>
+            Calendar
+          </Link>
+          <Link href="/settings" style={settingsLinkStyle}>
+            Settings
+          </Link>
+        </div>
       </div>
 
       {(jobsError || outstandingError) && (
@@ -243,32 +248,64 @@ export default async function Dashboard() {
             borderRadius: 10,
             padding: 14,
             marginBottom: 8,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
           }}
         >
-          <div>
-            <div style={{ fontWeight: 600 }}>{job.customers?.name}</div>
-            <div style={{ fontSize: 13, color: "#888" }}>
-              {job.job_type} · £{job.amount}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>{job.customers?.name}</div>
+              <div style={{ fontSize: 13, color: "#888" }}>
+                {job.job_type} · £{job.amount}
+              </div>
+              {job.scheduled_start && (
+                <div style={{ fontSize: 12, color: "#16a34a", marginTop: 2 }}>
+                  📅{" "}
+                  {new Date(job.scheduled_start).toLocaleString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+              )}
             </div>
           </div>
-          <Link
-            href={`/jobs/complete/${job.id}`}
-            style={{
-              background: "#16a34a",
-              color: "white",
-              border: "none",
-              padding: "8px 12px",
-              borderRadius: 8,
-              fontWeight: 600,
-              textDecoration: "none",
-              fontSize: 14,
-            }}
-          >
-            Mark done
-          </Link>
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <Link
+              href={`/jobs/schedule/${job.id}`}
+              style={{
+                flex: 1,
+                textAlign: "center",
+                background: "white",
+                color: "#111",
+                border: "1px solid #ddd",
+                padding: "8px 12px",
+                borderRadius: 8,
+                fontWeight: 600,
+                textDecoration: "none",
+                fontSize: 14,
+              }}
+            >
+              {job.scheduled_start ? "Reschedule" : "Book in"}
+            </Link>
+            <Link
+              href={`/jobs/complete/${job.id}`}
+              style={{
+                flex: 1,
+                textAlign: "center",
+                background: "#16a34a",
+                color: "white",
+                border: "none",
+                padding: "8px 12px",
+                borderRadius: 8,
+                fontWeight: 600,
+                textDecoration: "none",
+                fontSize: 14,
+              }}
+            >
+              Mark done
+            </Link>
+          </div>
         </div>
       ))}
 
