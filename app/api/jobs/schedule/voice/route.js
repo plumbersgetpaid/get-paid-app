@@ -75,7 +75,7 @@ export async function POST(req) {
         messages: [
           {
             role: "user",
-            content: `A UK tradesperson is booking a job into their calendar and spoke a rough voice note about when it's happening. Today is ${todayLabel}. Reply with ONLY a JSON object, no markdown fences, no explanation, in this exact shape: {"startDate": "YYYY-MM-DD", "startTime": "HH:MM" (24-hour), "durationHours": a plain number}. If no duration was mentioned, use 2. If no time was mentioned, use "09:00".\n\nTranscript: "${transcript}"`,
+            content: `A UK tradesperson is booking a job into their calendar and spoke a rough voice note about when it's happening. Today is ${todayLabel}. Reply with ONLY a JSON object, no markdown fences, no explanation, in this exact shape: {"startDate": "YYYY-MM-DD", "startTime": "HH:MM" (24-hour), "durationValue": a plain number, "durationUnit": "hours" or "days"}. Use "days" as the unit if they describe it in days (e.g. "should take two days" or "a week" -> 7 days), otherwise use "hours". If no duration was mentioned, use 2 hours. If no time was mentioned, use "09:00".\n\nTranscript: "${transcript}"`,
           },
         ],
       }),
@@ -87,17 +87,25 @@ export async function POST(req) {
 
     let startDate = null;
     let startTime = null;
-    let durationHours = null;
+    let durationValue = null;
+    let durationUnit = null;
     try {
       const parsed = JSON.parse(cleaned);
       startDate = parsed.startDate || null;
       startTime = parsed.startTime || null;
-      durationHours = parsed.durationHours ?? null;
+      durationValue = parsed.durationValue ?? null;
+      durationUnit = parsed.durationUnit || null;
     } catch (e) {
       console.error("Could not parse schedule extraction:", rawText);
     }
 
-    return NextResponse.json({ transcript, startDate, startTime, durationHours });
+    return NextResponse.json({
+      transcript,
+      startDate,
+      startTime,
+      durationValue,
+      durationUnit,
+    });
   } catch (e) {
     console.error("Voice schedule error:", e);
     return NextResponse.json(
