@@ -17,6 +17,7 @@ export default function QuickBook({ searchParams }) {
   const initialTime = searchParams?.startTime || "09:00";
   const initialDuration = searchParams?.durationValue || "2";
   const initialDurationUnit = searchParams?.durationUnit || "hours";
+  const initialLocation = searchParams?.location || "";
   const conflictMessage = searchParams?.conflict;
 
   return (
@@ -56,6 +57,13 @@ export default function QuickBook({ searchParams }) {
           initialTime={initialTime}
           initialDuration={initialDuration}
           initialDurationUnit={initialDurationUnit}
+        />
+
+        <input
+          name="location"
+          placeholder="Job location / address (optional)"
+          defaultValue={initialLocation}
+          style={inputStyle}
         />
 
         <div style={{ display: "grid", gap: 8 }}>
