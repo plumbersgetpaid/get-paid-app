@@ -75,7 +75,7 @@ export async function POST(req) {
         messages: [
           {
             role: "user",
-            content: `A UK tradesperson is booking a job into their calendar and spoke a rough voice note about when it's happening. Today is ${todayLabel}. Reply with ONLY a JSON object, no markdown fences, no explanation, in this exact shape: {"startDate": "YYYY-MM-DD", "startTime": "HH:MM" (24-hour), "durationValue": a plain number, "durationUnit": "hours" or "days"}. Use "days" as the unit if they describe it in days (e.g. "should take two days" or "a week" -> 7 days), otherwise use "hours". If no duration was mentioned, use 2 hours. If no time was mentioned, use "09:00".\n\nTranscript: "${transcript}"`,
+            content: `A UK tradesperson is booking a job into their calendar and spoke a rough voice note about when it's happening. Today is ${todayLabel}. Reply with ONLY a JSON object, no markdown fences, no explanation, in this exact shape: {"startDate": "YYYY-MM-DD", "startTime": "HH:MM" (24-hour), "durationValue": a plain number, "durationUnit": "minutes", "hours", "days", "weeks", or "months"}. Pick whichever unit best matches how they described it. If no duration was mentioned, use 2 hours. If no time was mentioned, use "09:00".\n\nTranscript: "${transcript}"`,
           },
         ],
       }),
