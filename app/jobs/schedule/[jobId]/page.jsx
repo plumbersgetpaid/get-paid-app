@@ -21,7 +21,7 @@ export default async function ScheduleJob({ params, searchParams }) {
 
   const { data: customer } = await db
     .from("customers")
-    .select("name")
+    .select("name, email, phone")
     .eq("id", job.customer_id)
     .single();
 
@@ -87,6 +87,38 @@ export default async function ScheduleJob({ params, searchParams }) {
           initialDuration={initialDuration}
           initialDurationUnit={initialDurationUnit}
         />
+
+        <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
+            Let the client know
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+            <input
+              type="checkbox"
+              name="notifyEmail"
+              value="1"
+              defaultChecked={!!customer?.email}
+              disabled={!customer?.email}
+            />
+            Email
+            {!customer?.email && (
+              <span style={{ color: "#888", fontSize: 12 }}>(no email on file)</span>
+            )}
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+            <input
+              type="checkbox"
+              name="notifyWhatsapp"
+              value="1"
+              defaultChecked={!!customer?.phone}
+              disabled={!customer?.phone}
+            />
+            WhatsApp
+            {!customer?.phone && (
+              <span style={{ color: "#888", fontSize: 12 }}>(no phone on file)</span>
+            )}
+          </label>
+        </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <Link href="/" style={cancelButtonStyle}>
