@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
+import { durationToHours } from "../../../lib/duration";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -12,7 +13,7 @@ export async function POST(req) {
   const startTime = form.get("startTime");
   const durationValue = parseFloat(form.get("durationValue") || "2");
   const durationUnit = form.get("durationUnit") || "hours";
-  const durationHours = durationUnit === "days" ? durationValue * 24 : durationValue;
+  const durationHours = durationToHours(durationValue, durationUnit);
   const force = form.get("force") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
   const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
