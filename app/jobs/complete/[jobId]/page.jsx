@@ -49,7 +49,7 @@ export default async function CompleteJob({ params }) {
       >
         <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
         <div style={{ fontSize: 13, color: "#888" }}>
-          {job.job_type || "Job"} · £{job.amount}
+          {job.job_type || "Job"} · originally quoted £{job.amount}
         </div>
         {!customer?.email && (
           <div style={{ fontSize: 12, color: "#b45309", marginTop: 8 }}>
@@ -64,6 +64,23 @@ export default async function CompleteJob({ params }) {
         style={{ display: "grid", gap: 12 }}
       >
         <input type="hidden" name="jobId" value={job.id} />
+
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Final invoice amount
+          <input
+            type="number"
+            name="amount"
+            step="0.01"
+            min="0"
+            defaultValue={job.amount}
+            required
+            style={{ ...inputStyle, marginTop: 6 }}
+          />
+          <span style={{ fontSize: 12, color: "#888" }}>
+            Adjust this if more or less work was done than originally quoted -
+            the customer gets an invoice for this amount, not the quote.
+          </span>
+        </label>
 
         <label style={{ fontSize: 13, color: "#666" }}>
           Payment due date
