@@ -55,6 +55,10 @@ export default async function ScheduleJob({ params, searchParams }) {
 
   const conflictMessage = searchParams?.conflict;
   const initialLocation = searchParams?.location ?? job.location ?? "";
+  const initialIncludeWeekends =
+    searchParams?.includeWeekends !== undefined
+      ? searchParams.includeWeekends === "1"
+      : settings.include_weekends;
 
   return (
     <main>
@@ -99,6 +103,29 @@ export default async function ScheduleJob({ params, searchParams }) {
           defaultValue={initialLocation}
           style={locationInputStyle}
         />
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 14,
+            background: "white",
+            padding: 12,
+            borderRadius: 8,
+          }}
+        >
+          <input
+            type="checkbox"
+            name="includeWeekends"
+            value="1"
+            defaultChecked={initialIncludeWeekends}
+          />
+          Include weekends for this booking
+          <span style={{ color: "#888", fontSize: 12 }}>
+            (off = counts working days only, e.g. "1 week" = 5 days)
+          </span>
+        </label>
 
         <div style={{ display: "grid", gap: 8 }}>
           <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
