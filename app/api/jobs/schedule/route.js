@@ -1,4 +1,8 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
+import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
+import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
+import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -10,6 +14,8 @@ export async function POST(req) {
   const durationUnit = form.get("durationUnit") || "hours";
   const durationHours = durationUnit === "days" ? durationValue * 24 : durationValue;
   const force = form.get("force") === "1";
+  const notifyEmail = form.get("notifyEmail") === "1";
+  const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
 
   if (!jobId || !startDate || !startTime) {
     return NextResponse.json({ error: "Missing scheduling details" }, { status: 400 });
@@ -57,18 +63,70 @@ export async function POST(req) {
     }
   }
 
-  const { error } = await db
+  const { data: updatedJob, error } = await db
     .from("jobs")
     .update({
       scheduled_start: start.toISOString(),
       scheduled_end: end.toISOString(),
       reminder_sent_at: null, // reset so the day-before reminder fires for the new time
     })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .select("*")
+    .single();
 
   if (error) {
     console.error("Schedule save error:", error);
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  // Let the client know, on whichever channels were requested
+  if ((notifyEmail || notifyWhatsapp) && updatedJob) {
+    const { data: customer } = await db
+      .from("customers")
+      .select("*")
+      .eq("id", updatedJob.customer_id)
+      .single();
+
+    if (customer) {
+      const settings = await getBusinessSettings();
+      const template = await getTemplate("booking_confirmation");
+      const vars = {
+        customer_name: customer.name,
+        job_type: updatedJob.job_type || "your job",
+        start_date: start.toLocaleDateString("en-GB", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        }),
+        start_time: startTime,
+        duration: `${durationValue} ${durationUnit}`,
+        business_name: settings.business_name,
+      };
+      const bodyText = renderTemplate(template.body, vars);
+      const subject = renderTemplate(template.subject, vars) || "Booking confirmed";
+
+      if (notifyEmail && customer.email && process.env.RESEND_API_KEY) {
+        try {
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
+            /\n/g,
+            "<br/>"
+          )}</div>`;
+          await resend.emails.send({
+            from: `${settings.business_name} <onboarding@resend.dev>`,
+            to: customer.email,
+            subject,
+            html,
+          });
+        } catch (e) {
+          console.error("Booking confirmation email error:", e);
+        }
+      }
+
+      if (notifyWhatsapp && customer.phone) {
+        await sendWhatsAppMessage(customer.phone, bodyText);
+      }
+    }
   }
 
   return NextResponse.redirect(new URL("/calendar", req.url));
