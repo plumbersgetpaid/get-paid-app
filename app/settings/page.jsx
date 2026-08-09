@@ -131,6 +131,37 @@ export default async function Settings({ searchParams }) {
         </label>
 
         <label style={labelStyle}>
+          Currency
+          <select name="currency" defaultValue={settings.currency} style={inputStyle}>
+            <option value="GBP">£ GBP - British Pound</option>
+            <option value="USD">$ USD - US Dollar</option>
+            <option value="EUR">€ EUR - Euro</option>
+          </select>
+        </label>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 13,
+            color: "#666",
+            fontWeight: 600,
+          }}
+        >
+          <input
+            type="checkbox"
+            name="include_weekends"
+            value="1"
+            defaultChecked={settings.include_weekends}
+          />
+          Include weekends when booking multi-day jobs
+          <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}>
+            (off = a "week" means 5 working days)
+          </span>
+        </label>
+
+        <label style={labelStyle}>
           Payment terms (optional, shown on every invoice)
           <textarea
             name="payment_terms"
