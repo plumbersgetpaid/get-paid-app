@@ -13,6 +13,8 @@ export async function POST(req) {
   const header_tagline = form.get("header_tagline") || null;
   const payment_terms = form.get("payment_terms") || null;
   const bank_details = form.get("bank_details") || null;
+  const currency = form.get("currency") || "GBP";
+  const include_weekends = form.get("include_weekends") === "1";
 
   const db = supabaseAdmin();
 
@@ -27,6 +29,8 @@ export async function POST(req) {
     header_tagline,
     payment_terms,
     bank_details,
+    currency,
+    include_weekends,
     updated_at: new Date().toISOString(),
   });
 
