@@ -183,7 +183,6 @@ export async function generateInvoicePdfBytes({
   };
 
   row("Due date", dueDate);
-  row("Status", status);
   if (paidAt) {
     row("Paid on", new Date(paidAt).toLocaleDateString("en-GB"));
   }
