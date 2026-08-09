@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
+import { formatCurrency, formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -86,14 +87,16 @@ export async function POST(req) {
         headerTagline: settings.header_tagline,
         paymentTerms: settings.payment_terms,
         bankDetails: settings.bank_details,
+        currency: settings.currency,
       };
 
       const pdfBytes = await generateInvoicePdfBytes({
-        invoiceIdShort: invoice.id.slice(0, 8).toUpperCase(),
+        invoiceNumber: formatInvoiceNumber(invoice.invoice_number),
         customerName: customer.name,
         customerEmail: customer.email,
         customerPhone: customer.phone,
         jobType: job.job_type,
+        location: job.location,
         amount: invoice.amount,
         dueDate: invoice.due_date,
         status: invoice.status,
@@ -107,7 +110,7 @@ export async function POST(req) {
       const invoiceVars = {
         customer_name: customer.name,
         job_type: job.job_type || "Plumbing work",
-        amount: finalAmount.toFixed(2),
+        amount: formatCurrency(finalAmount, settings.currency).replace(/^[^\d-]*/, ""),
         due_date: dueDate.toDateString(),
         business_name: settings.business_name,
       };
@@ -116,12 +119,16 @@ export async function POST(req) {
         `Invoice for ${job.job_type || "your recent job"}`;
 
       let bodyText = renderTemplate(invoiceTemplate.body, invoiceVars);
+      if (job.location) {
+        bodyText += `\n\nJob location: ${job.location}`;
+      }
 
       // Price-change context is dynamic, so it's appended after the
       // template rather than being part of the editable text itself
       if (priceChanged) {
-        bodyText += `\n\nOriginally quoted £${quotedAmount.toFixed(
-          2
+        bodyText += `\n\nOriginally quoted ${formatCurrency(
+          quotedAmount,
+          settings.currency
         )} - adjusted to reflect the work carried out.`;
         if (noteInput) {
           bodyText += `\n${noteInput}`;
@@ -142,7 +149,7 @@ export async function POST(req) {
         html,
         attachments: [
           {
-            filename: `invoice-${invoice.id.slice(0, 8)}.pdf`,
+            filename: `invoice-${formatInvoiceNumber(invoice.invoice_number)}.pdf`,
             content: Buffer.from(pdfBytes),
           },
         ],
