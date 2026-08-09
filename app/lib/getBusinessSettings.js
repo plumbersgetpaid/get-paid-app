@@ -7,6 +7,9 @@ const DEFAULTS = {
   accent_color: "#111111",
   logo_url: null,
   invoice_note: null,
+  header_tagline: null,
+  payment_terms: null,
+  bank_details: null,
 };
 
 export async function getBusinessSettings() {

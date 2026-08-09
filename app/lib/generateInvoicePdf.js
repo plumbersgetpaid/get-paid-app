@@ -19,7 +19,8 @@ function hexToRgb(hex) {
 // bulk/multi-page downloads without re-fetching data in a fixed shape.
 //
 // `business` carries the branding: { businessName, accentColor, logoUrl,
-// contactEmail, contactPhone, invoiceNote } - all optional.
+// contactEmail, contactPhone, invoiceNote, headerTagline, paymentTerms,
+// bankDetails } - all optional.
 export async function generateInvoicePdfBytes({
   invoiceIdShort,
   customerName,
@@ -42,6 +43,9 @@ export async function generateInvoicePdfBytes({
     contactEmail,
     contactPhone,
     invoiceNote,
+    headerTagline,
+    paymentTerms,
+    bankDetails,
   } = business;
 
   const pdfDoc = await PDFDocument.create();
@@ -77,7 +81,11 @@ export async function generateInvoicePdfBytes({
 
   if (businessName) {
     page.drawText(businessName, { x: left, y, size: 14, font: bold, color: accent });
-    y -= 22;
+    y -= 18;
+  }
+  if (headerTagline) {
+    page.drawText(headerTagline, { x: left, y, size: 10, font, color: grey });
+    y -= 18;
   }
 
   page.drawText("Invoice", { x: left, y, size: 22, font: bold });
@@ -180,11 +188,29 @@ export async function generateInvoicePdfBytes({
     row("Paid on", new Date(paidAt).toLocaleDateString("en-GB"));
   }
 
-  // Footer: custom note + contact details, pinned near the bottom
-  let footerY = 90;
+  // Footer: custom note, payment terms, bank details, then contact line,
+  // pinned near the bottom. Each field can be multiple lines (e.g. sort
+  // code on one line, account number on the next).
+  const drawFooterBlock = (text, startY) => {
+    let currentY = startY;
+    for (const line of text.split("\n")) {
+      if (line.trim()) {
+        page.drawText(line, { x: left, y: currentY, size: 9, font, color: grey });
+      }
+      currentY -= 13;
+    }
+    return currentY;
+  };
+
+  let footerY = 130;
   if (invoiceNote) {
-    page.drawText(invoiceNote, { x: left, y: footerY, size: 9, font, color: grey });
-    footerY -= 14;
+    footerY = drawFooterBlock(invoiceNote, footerY);
+  }
+  if (paymentTerms) {
+    footerY = drawFooterBlock(paymentTerms, footerY);
+  }
+  if (bankDetails) {
+    footerY = drawFooterBlock(bankDetails, footerY);
   }
   const contactLine = [contactEmail, contactPhone].filter(Boolean).join(" \u00b7 ");
   if (contactLine) {
