@@ -17,6 +17,7 @@ export async function POST(req) {
   const proposedTime = form.get("proposedTime") || "09:00";
   const durationValue = form.get("durationValue");
   const durationUnit = form.get("durationUnit") || "hours";
+  const includeWeekends = form.get("includeWeekends") === "1";
 
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
@@ -43,7 +44,7 @@ export async function POST(req) {
       start,
       parseFloat(durationValue),
       durationUnit,
-      settings.include_weekends
+      includeWeekends
     ).toISOString();
   }
 
