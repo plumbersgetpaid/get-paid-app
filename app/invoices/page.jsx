@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "../lib/supabaseClient";
+import { formatCurrency, formatInvoiceNumber } from "../lib/formatCurrency";
+import { getBusinessSettings } from "../lib/getBusinessSettings";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -7,8 +9,10 @@ export const revalidate = 0;
 
 export default async function AllInvoices({ searchParams }) {
   const db = supabaseAdmin();
+  const settings = await getBusinessSettings();
   const rangeStart = searchParams?.start || "";
   const rangeEnd = searchParams?.end || "";
+  const q = (searchParams?.q || "").trim().toLowerCase();
 
   let query = db.from("invoices").select("*").order("created_at", { ascending: false });
 
@@ -54,6 +58,17 @@ export default async function AllInvoices({ searchParams }) {
     });
   }
 
+  if (q) {
+    invoices = invoices.filter((inv) => {
+      const numberLabel = formatInvoiceNumber(inv.invoice_number).toLowerCase();
+      return (
+        (inv.customer_name || "").toLowerCase().includes(q) ||
+        numberLabel.includes(q) ||
+        String(inv.invoice_number).includes(q)
+      );
+    });
+  }
+
   const totalInvoiced = invoices.reduce((sum, i) => sum + Number(i.amount), 0);
   const totalPaid = invoices
     .filter((i) => i.status === "paid")
@@ -93,6 +108,21 @@ export default async function AllInvoices({ searchParams }) {
         accountant, or tap any invoice to download it as a PDF.
       </p>
 
+      <form action="/invoices" method="GET" style={{ display: "flex", gap: 8, margin: "16px 0" }}>
+        {rangeStart && <input type="hidden" name="start" value={rangeStart} />}
+        {rangeEnd && <input type="hidden" name="end" value={rangeEnd} />}
+        <input
+          type="search"
+          name="q"
+          placeholder="Search by customer or invoice #"
+          defaultValue={searchParams?.q || ""}
+          style={dateInputStyle}
+        />
+        <button type="submit" style={applyRangeButtonStyle}>
+          Search
+        </button>
+      </form>
+
       <section
         style={{
           background: "white",
@@ -109,6 +139,7 @@ export default async function AllInvoices({ searchParams }) {
           method="GET"
           style={{ display: "grid", gap: 10 }}
         >
+          {searchParams?.q && <input type="hidden" name="q" value={searchParams.q} />}
           <div style={{ display: "flex", gap: 10 }}>
             <label style={{ flex: 1, fontSize: 12, color: "#666" }}>
               From
@@ -175,19 +206,19 @@ export default async function AllInvoices({ searchParams }) {
         <div>
           <div style={{ fontSize: 12, color: "#888" }}>Total invoiced</div>
           <div style={{ fontSize: 17, fontWeight: 700 }}>
-            £{totalInvoiced.toFixed(2)}
+            {formatCurrency(totalInvoiced, settings.currency)}
           </div>
         </div>
         <div>
           <div style={{ fontSize: 12, color: "#888" }}>Total paid</div>
           <div style={{ fontSize: 17, fontWeight: 700 }}>
-            £{totalPaid.toFixed(2)}
+            {formatCurrency(totalPaid, settings.currency)}
           </div>
         </div>
         <div>
           <div style={{ fontSize: 12, color: "#888" }}>Outstanding</div>
           <div style={{ fontSize: 17, fontWeight: 700 }}>
-            £{totalOutstanding.toFixed(2)}
+            {formatCurrency(totalOutstanding, settings.currency)}
           </div>
         </div>
       </section>
@@ -238,10 +269,10 @@ export default async function AllInvoices({ searchParams }) {
         >
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
-            <div style={{ fontWeight: 600 }}>£{inv.amount}</div>
+            <div style={{ fontWeight: 600 }}>{formatCurrency(inv.amount, settings.currency)}</div>
           </div>
           <div style={{ fontSize: 13, color: "#888" }}>
-            {inv.job_type || "Job"} · due {inv.due_date} ·{" "}
+            {formatInvoiceNumber(inv.invoice_number)} · {inv.job_type || "Job"} · due {inv.due_date} ·{" "}
             <span style={{ textTransform: "capitalize" }}>{inv.status}</span>
           </div>
         </Link>
