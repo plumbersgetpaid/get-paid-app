@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
+import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { formatCurrency } from "../../../lib/formatCurrency";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import VoiceScheduleAssist from "./VoiceScheduleAssist";
@@ -25,6 +27,8 @@ export default async function ScheduleJob({ params, searchParams }) {
     .eq("id", job.customer_id)
     .single();
 
+  const settings = await getBusinessSettings();
+
   // Defaults: tomorrow at 9am for 2 hours, unless we're coming back from a
   // double-booking warning (keep what was entered) or the job's already
   // got a scheduled time saved
@@ -50,6 +54,7 @@ export default async function ScheduleJob({ params, searchParams }) {
   }
 
   const conflictMessage = searchParams?.conflict;
+  const initialLocation = searchParams?.location ?? job.location ?? "";
 
   return (
     <main>
@@ -63,7 +68,7 @@ export default async function ScheduleJob({ params, searchParams }) {
       <section style={summaryCardStyle}>
         <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
         <div style={{ fontSize: 13, color: "#888" }}>
-          {job.job_type || "Job"} · £{job.amount}
+          {job.job_type || "Job"} · {formatCurrency(job.amount, settings.currency)}
         </div>
       </section>
 
@@ -86,6 +91,13 @@ export default async function ScheduleJob({ params, searchParams }) {
           initialTime={initialTime}
           initialDuration={initialDuration}
           initialDurationUnit={initialDurationUnit}
+        />
+
+        <input
+          name="location"
+          placeholder="Job location / address (optional)"
+          defaultValue={initialLocation}
+          style={locationInputStyle}
         />
 
         <div style={{ display: "grid", gap: 8 }}>
@@ -153,6 +165,15 @@ const summaryCardStyle = {
   padding: 16,
   margin: "16px 0",
   boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+};
+
+const locationInputStyle = {
+  padding: "12px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  fontSize: 15,
+  width: "100%",
+  boxSizing: "border-box",
 };
 
 const warningBoxStyle = {
