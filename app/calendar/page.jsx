@@ -79,6 +79,25 @@ export default async function Calendar() {
     });
   }
 
+  const { data: reminders } = await db
+    .from("personal_events")
+    .select("*")
+    .order("scheduled_start", { ascending: true });
+
+  for (const reminder of reminders || []) {
+    const dateKey = reminder.scheduled_start.slice(0, 10);
+    if (!entriesByDate[dateKey]) entriesByDate[dateKey] = [];
+    entriesByDate[dateKey].push({
+      type: "reminder",
+      time: new Date(reminder.scheduled_start).toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      label: reminder.title,
+      href: `/calendar/reminder/${reminder.id}`,
+    });
+  }
+
   const sortedDates = Object.keys(entriesByDate).sort();
 
   return (
@@ -90,25 +109,43 @@ export default async function Calendar() {
         <h1 style={{ fontSize: 20, margin: 0 }}>Calendar</h1>
       </div>
 
-      <Link
-        href="/calendar/quick-book"
-        style={{
-          display: "block",
-          textAlign: "center",
-          background: "#111",
-          color: "white",
-          padding: "12px",
-          borderRadius: 10,
-          textDecoration: "none",
-          fontWeight: 600,
-          margin: "16px 0",
-        }}
-      >
-        + Quick book
-      </Link>
+      <div style={{ display: "flex", gap: 10, margin: "16px 0" }}>
+        <Link
+          href="/calendar/quick-book"
+          style={{
+            flex: 1,
+            textAlign: "center",
+            background: "#111",
+            color: "white",
+            padding: "12px",
+            borderRadius: 10,
+            textDecoration: "none",
+            fontWeight: 600,
+          }}
+        >
+          + Quick book
+        </Link>
+        <Link
+          href="/calendar/reminder/new"
+          style={{
+            flex: 1,
+            textAlign: "center",
+            background: "white",
+            color: "#111",
+            border: "1px solid #ddd",
+            padding: "12px",
+            borderRadius: 10,
+            textDecoration: "none",
+            fontWeight: 600,
+          }}
+        >
+          + Reminder
+        </Link>
+      </div>
 
       <p style={{ fontSize: 13, color: "#888" }}>
-        🔧 booked jobs and 💰 payment due dates, in one place.
+        🔧 booked jobs, 💰 payment due dates, and 📌 personal reminders - all
+        in one place.
       </p>
 
       {sortedDates.length === 0 && (
@@ -155,7 +192,7 @@ export default async function Calendar() {
                   }}
                 >
                   <span style={{ marginRight: 8 }}>
-                    {entry.type === "job" ? "🔧" : "💰"}
+                    {entry.type === "job" ? "🔧" : entry.type === "payment" ? "💰" : "📌"}
                   </span>
                   {entry.time && (
                     <span style={{ color: "#888", marginRight: 8 }}>
