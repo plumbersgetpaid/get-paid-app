@@ -1,4 +1,9 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
+import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
+import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
+import { durationToHours } from "../../../lib/duration";
+import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -13,6 +18,8 @@ export async function POST(req) {
   const durationValue = parseFloat(form.get("durationValue") || "2");
   const durationUnit = form.get("durationUnit") || "hours";
   const force = form.get("force") === "1";
+  const notifyEmail = form.get("notifyEmail") === "1";
+  const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
 
   if (!customerName || !startDate || !startTime) {
     return NextResponse.json(
@@ -21,7 +28,7 @@ export async function POST(req) {
     );
   }
 
-  const durationHours = durationUnit === "days" ? durationValue * 24 : durationValue;
+  const durationHours = durationToHours(durationValue, durationUnit);
   const start = new Date(`${startDate}T${startTime}:00`);
   const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
 
@@ -49,6 +56,8 @@ export async function POST(req) {
 
       const redirectUrl = new URL("/calendar/quick-book", req.url);
       redirectUrl.searchParams.set("customerName", customerName);
+      redirectUrl.searchParams.set("phone", phone);
+      redirectUrl.searchParams.set("email", email);
       redirectUrl.searchParams.set("jobType", jobType);
       redirectUrl.searchParams.set("amount", amountInput);
       redirectUrl.searchParams.set("startDate", startDate);
@@ -75,6 +84,8 @@ export async function POST(req) {
     .maybeSingle();
 
   let customerId;
+  let customerEmail = email || null;
+  let customerPhone = phone || null;
   if (existingCustomer) {
     customerId = existingCustomer.id;
     // Fill in any missing contact details, without overwriting what's there
@@ -84,6 +95,8 @@ export async function POST(req) {
     if (Object.keys(updates).length > 0) {
       await db.from("customers").update(updates).eq("id", customerId);
     }
+    customerEmail = existingCustomer.email || email || null;
+    customerPhone = existingCustomer.phone || phone || null;
   } else {
     const { data: newCustomer, error: custErr } = await db
       .from("customers")
@@ -111,6 +124,48 @@ export async function POST(req) {
   if (jobErr) {
     console.error("Quick-book job insert error:", jobErr);
     return NextResponse.json({ error: jobErr.message }, { status: 400 });
+  }
+
+  // Let the client know, on whichever channels were requested
+  if (notifyEmail || notifyWhatsapp) {
+    const settings = await getBusinessSettings();
+    const template = await getTemplate("booking_confirmation");
+    const vars = {
+      customer_name: customerName,
+      job_type: jobType || "your job",
+      start_date: start.toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }),
+      start_time: startTime,
+      duration: `${durationValue} ${durationUnit}`,
+      business_name: settings.business_name,
+    };
+    const bodyText = renderTemplate(template.body, vars);
+    const subject = renderTemplate(template.subject, vars) || "Booking confirmed";
+
+    if (notifyEmail && customerEmail && process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
+          /\n/g,
+          "<br/>"
+        )}</div>`;
+        await resend.emails.send({
+          from: `${settings.business_name} <onboarding@resend.dev>`,
+          to: customerEmail,
+          subject,
+          html,
+        });
+      } catch (e) {
+        console.error("Booking confirmation email error:", e);
+      }
+    }
+
+    if (notifyWhatsapp && customerPhone) {
+      await sendWhatsAppMessage(customerPhone, bodyText);
+    }
   }
 
   return NextResponse.redirect(new URL("/calendar", req.url));
