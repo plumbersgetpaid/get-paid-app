@@ -49,6 +49,19 @@ const TEMPLATE_INFO = [
     description: "Sent automatically once, 2 weeks after an invoice is overdue.",
     placeholders: ["customer_name", "amount", "business_name"],
   },
+  {
+    key: "booking_confirmation",
+    label: "Booking confirmation",
+    description: "Sent when you book a job in, by email and/or WhatsApp.",
+    placeholders: [
+      "customer_name",
+      "job_type",
+      "start_date",
+      "start_time",
+      "duration",
+      "business_name",
+    ],
+  },
 ];
 
 export default async function TemplatesSettings({ searchParams }) {
