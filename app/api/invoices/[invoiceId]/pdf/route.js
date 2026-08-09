@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
+import { formatInvoiceNumber } from "../../../../lib/formatCurrency";
 
 export async function GET(req, { params }) {
   const { invoiceId } = params;
@@ -40,14 +41,16 @@ export async function GET(req, { params }) {
     headerTagline: settings.header_tagline,
     paymentTerms: settings.payment_terms,
     bankDetails: settings.bank_details,
+    currency: settings.currency,
   };
 
   const pdfBytes = await generateInvoicePdfBytes({
-    invoiceIdShort: invoice.id.slice(0, 8).toUpperCase(),
+    invoiceNumber: formatInvoiceNumber(invoice.invoice_number),
     customerName: customer?.name,
     customerEmail: customer?.email,
     customerPhone: customer?.phone,
     jobType: job?.job_type,
+    location: job?.location,
     amount: invoice.amount,
     dueDate: invoice.due_date,
     status: invoice.status,
@@ -60,7 +63,9 @@ export async function GET(req, { params }) {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="invoice-${invoice.id.slice(0, 8)}.pdf"`,
+      "Content-Disposition": `attachment; filename="invoice-${formatInvoiceNumber(
+        invoice.invoice_number
+      )}.pdf"`,
     },
   });
 }
