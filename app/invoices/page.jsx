@@ -5,13 +5,23 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function AllInvoices() {
+export default async function AllInvoices({ searchParams }) {
   const db = supabaseAdmin();
+  const rangeStart = searchParams?.start || "";
+  const rangeEnd = searchParams?.end || "";
 
-  const { data: rawInvoices, error } = await db
-    .from("invoices")
-    .select("*")
-    .order("created_at", { ascending: false });
+  let query = db.from("invoices").select("*").order("created_at", { ascending: false });
+
+  if (rangeStart) {
+    query = query.gte("created_at", rangeStart);
+  }
+  if (rangeEnd) {
+    const endDate = new Date(rangeEnd);
+    endDate.setDate(endDate.getDate() + 1);
+    query = query.lt("created_at", endDate.toISOString().slice(0, 10));
+  }
+
+  const { data: rawInvoices, error } = await query;
 
   let invoices = rawInvoices || [];
 
@@ -51,9 +61,11 @@ export default async function AllInvoices() {
   const totalOutstanding = totalInvoiced - totalPaid;
 
   // Build a list of months that actually have invoices, for the bulk
-  // download filter - newest first
+  // download filter - based on the FULL history, not the current filter,
+  // so the dropdown doesn't shrink when a custom range is applied
+  const { data: allDates } = await db.from("invoices").select("created_at");
   const monthsSet = new Set(
-    invoices.map((inv) => inv.created_at.slice(0, 7))
+    (allDates || []).map((inv) => inv.created_at.slice(0, 7))
   );
   const availableMonths = [...monthsSet]
     .sort()
@@ -80,6 +92,72 @@ export default async function AllInvoices() {
         A full record of every invoice you've raised - handy to send your
         accountant, or tap any invoice to download it as a PDF.
       </p>
+
+      <section
+        style={{
+          background: "white",
+          borderRadius: 12,
+          padding: 16,
+          margin: "16px 0",
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
+          Custom date range
+        </div>
+        <form
+          action="/invoices"
+          method="GET"
+          style={{ display: "grid", gap: 10 }}
+        >
+          <div style={{ display: "flex", gap: 10 }}>
+            <label style={{ flex: 1, fontSize: 12, color: "#666" }}>
+              From
+              <input
+                type="date"
+                name="start"
+                defaultValue={rangeStart}
+                style={dateInputStyle}
+              />
+            </label>
+            <label style={{ flex: 1, fontSize: 12, color: "#666" }}>
+              To
+              <input
+                type="date"
+                name="end"
+                defaultValue={rangeEnd}
+                style={dateInputStyle}
+              />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="submit" style={applyRangeButtonStyle}>
+              View this period
+            </button>
+            {(rangeStart || rangeEnd) && (
+              <Link href="/invoices" style={clearRangeButtonStyle}>
+                Clear
+              </Link>
+            )}
+          </div>
+        </form>
+
+        {(rangeStart || rangeEnd) && (
+          <div style={{ marginTop: 10 }}>
+            <a
+              href={`/api/invoices/bulk-pdf?start=${rangeStart}&end=${rangeEnd}`}
+              style={downloadRangeLinkStyle}
+            >
+              Download PDF for this period →
+            </a>
+          </div>
+        )}
+      </section>
+
+      {(rangeStart || rangeEnd) && (
+        <div style={{ fontSize: 12, color: "#888", marginBottom: 4 }}>
+          Showing {rangeStart || "the beginning"} to {rangeEnd || "now"}
+        </div>
+      )}
 
       <section
         style={{
@@ -203,4 +281,45 @@ const bulkDownloadButtonStyle = {
   borderRadius: 8,
   fontWeight: 600,
   fontSize: 14,
+};
+
+const dateInputStyle = {
+  display: "block",
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "10px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  fontSize: 14,
+  marginTop: 4,
+};
+
+const applyRangeButtonStyle = {
+  background: "#111",
+  color: "white",
+  border: "none",
+  padding: "10px 16px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 13,
+  flex: 1,
+};
+
+const clearRangeButtonStyle = {
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "10px 16px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 13,
+  textDecoration: "none",
+  textAlign: "center",
+};
+
+const downloadRangeLinkStyle = {
+  fontSize: 13,
+  color: "#111",
+  fontWeight: 600,
+  textDecoration: "underline",
 };
