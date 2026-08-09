@@ -34,7 +34,8 @@ export default async function ScheduleJob({ params, searchParams }) {
 
   let initialDate = searchParams?.startDate || defaultDate;
   let initialTime = searchParams?.startTime || "09:00";
-  let initialDuration = searchParams?.durationHours || "2";
+  let initialDuration = searchParams?.durationValue || "2";
+  let initialDurationUnit = searchParams?.durationUnit || "hours";
 
   if (!searchParams?.startDate && job.scheduled_start) {
     const existingStart = new Date(job.scheduled_start);
@@ -44,6 +45,7 @@ export default async function ScheduleJob({ params, searchParams }) {
       const hours =
         (new Date(job.scheduled_end) - existingStart) / (1000 * 60 * 60);
       initialDuration = String(hours);
+      initialDurationUnit = "hours";
     }
   }
 
@@ -83,6 +85,7 @@ export default async function ScheduleJob({ params, searchParams }) {
           initialDate={initialDate}
           initialTime={initialTime}
           initialDuration={initialDuration}
+          initialDurationUnit={initialDurationUnit}
         />
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
