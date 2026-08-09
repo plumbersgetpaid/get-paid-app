@@ -2,13 +2,19 @@
 
 import { useRef, useState } from "react";
 
-export default function VoiceQuoteAssist({ initialJobType = "", initialAmount = "" }) {
+export default function VoiceQuoteAssist({
+  initialJobType = "",
+  initialAmount = "",
+  initialLocation = "",
+}) {
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState(null);
   const [jobType, setJobType] = useState(initialJobType);
   const [amount, setAmount] = useState(initialAmount);
+  const [location, setLocation] = useState(initialLocation);
 
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -80,6 +86,30 @@ export default function VoiceQuoteAssist({ initialJobType = "", initialAmount = 
     }
   }
 
+  async function enhanceDescription() {
+    if (!jobType.trim()) return;
+    setEnhancing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/quotes/enhance-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobType }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Couldn't enhance that description.");
+      } else if (data.jobType) {
+        setJobType(data.jobType);
+      }
+    } catch (e) {
+      console.error("Enhance error:", e);
+      setError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setEnhancing(false);
+    }
+  }
+
   return (
     <div style={{ display: "grid", gap: 10 }}>
       <button
@@ -103,13 +133,23 @@ export default function VoiceQuoteAssist({ initialJobType = "", initialAmount = 
         </div>
       )}
 
-      <input
-        name="jobType"
-        placeholder="Job type (e.g. Boiler service)"
-        value={jobType}
-        onChange={(e) => setJobType(e.target.value)}
-        style={inputStyle}
-      />
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          name="jobType"
+          placeholder="Job type (e.g. Boiler service)"
+          value={jobType}
+          onChange={(e) => setJobType(e.target.value)}
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <button
+          type="button"
+          onClick={enhanceDescription}
+          disabled={enhancing || !jobType.trim()}
+          style={enhanceButtonStyle}
+        >
+          {enhancing ? "..." : "✨"}
+        </button>
+      </div>
       <input
         name="amount"
         type="number"
@@ -118,6 +158,13 @@ export default function VoiceQuoteAssist({ initialJobType = "", initialAmount = 
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
         required
+        style={inputStyle}
+      />
+      <input
+        name="location"
+        placeholder="Job location / address (optional)"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
         style={inputStyle}
       />
     </div>
@@ -151,6 +198,16 @@ const recordingButtonStyle = {
   borderRadius: 10,
   fontWeight: 600,
   fontSize: 14,
+};
+
+const enhanceButtonStyle = {
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "12px 14px",
+  borderRadius: 10,
+  fontWeight: 600,
+  fontSize: 16,
 };
 
 const errorBoxStyle = {
