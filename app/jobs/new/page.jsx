@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import VoiceQuoteAssist from "./VoiceQuoteAssist";
 
-export default function NewQuote() {
+export default async function NewQuote() {
+  const settings = await getBusinessSettings();
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -66,6 +68,26 @@ export default function NewQuote() {
                 <option value="months">Months</option>
               </select>
             </div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 13,
+                color: "#666",
+              }}
+            >
+              <input
+                type="checkbox"
+                name="includeWeekends"
+                value="1"
+                defaultChecked={settings.include_weekends}
+              />
+              Include weekends
+              <span style={{ color: "#888", fontSize: 12 }}>
+                (off = working days only)
+              </span>
+            </label>
           </div>
         </details>
 
