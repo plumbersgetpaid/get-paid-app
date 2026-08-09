@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -27,11 +28,6 @@ export async function POST(req) {
     return NextResponse.json({ error: "Invoice not found" }, { status: 400 });
   }
 
-  const message =
-    inv.days_overdue > 0
-      ? `Hi ${inv.customer_name}, just chasing up your invoice of £${inv.amount}, which is now ${inv.days_overdue} day(s) overdue. Please let us know if you have any questions.`
-      : `Hi ${inv.customer_name}, just a reminder that your invoice of £${inv.amount} is due on ${inv.due_date}. Thanks!`;
-
   if (inv.email && process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
@@ -57,13 +53,27 @@ export async function POST(req) {
         business,
       });
 
+      const template = await getTemplate("chase_manual");
+      const vars = {
+        customer_name: inv.customer_name,
+        amount: inv.amount,
+        due_date: inv.due_date,
+        business_name: settings.business_name,
+      };
+      const subject = renderTemplate(template.subject, vars) || "Payment reminder";
+      const bodyText = renderTemplate(template.body, vars);
+      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
+        /\n/g,
+        "<br/>"
+      )}</div>`;
+
       await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
         from: `${settings.business_name} <onboarding@resend.dev>`,
         to: inv.email,
-        subject: "Payment reminder",
-        html: `<p>${message}</p><p>A copy of the invoice is attached.</p><p>Thanks,<br/>${settings.business_name}</p>`,
+        subject,
+        html,
         attachments: [
           {
             filename: `invoice-${inv.invoice_id.slice(0, 8)}.pdf`,
@@ -74,7 +84,7 @@ export async function POST(req) {
 
       await db.from("chase_log").insert({
         invoice_id: inv.invoice_id,
-        message,
+        message: bodyText,
         channel: "email",
       });
     } catch (e) {
