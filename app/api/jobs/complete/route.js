@@ -8,6 +8,7 @@ export async function POST(req) {
   const form = await req.formData();
   const jobId = form.get("jobId");
   const dueDateInput = form.get("dueDate"); // yyyy-mm-dd from the form, optional
+  const amountInput = form.get("amount"); // optional - lets the price be adjusted from the original quote
 
   const db = supabaseAdmin();
 
@@ -43,11 +44,18 @@ export async function POST(req) {
     dueDate.setDate(dueDate.getDate() + 14);
   }
 
+  // The amount can be adjusted on the complete-job screen if more or less
+  // work was done than originally quoted. job.amount still holds the
+  // original quote, so we keep that as the historical record.
+  const quotedAmount = Number(job.amount);
+  const finalAmount = amountInput ? Number(amountInput) : quotedAmount;
+  const priceChanged = Math.abs(finalAmount - quotedAmount) > 0.001;
+
   const { data: invoice, error: invErr } = await db
     .from("invoices")
     .insert({
       job_id: job.id,
-      amount: job.amount,
+      amount: finalAmount,
       due_date: dueDate.toISOString().slice(0, 10),
       status: "unpaid",
     })
@@ -98,7 +106,12 @@ export async function POST(req) {
           <p>Hi ${customer.name},</p>
           <p>Thanks for your business. Here's your invoice:</p>
           <p><strong>Job:</strong> ${job.job_type || "Plumbing work"}<br/>
-          <strong>Amount due:</strong> £${job.amount}<br/>
+          ${
+            priceChanged
+              ? `<strong>Originally quoted:</strong> £${quotedAmount.toFixed(2)}<br/>
+          <strong>Final amount due:</strong> £${finalAmount.toFixed(2)} (adjusted to reflect the work carried out)<br/>`
+              : `<strong>Amount due:</strong> £${finalAmount.toFixed(2)}<br/>`
+          }
           <strong>Due date:</strong> ${dueDate.toDateString()}</p>
           <p>A PDF copy of this invoice is attached.</p>
           <p>Thanks,<br/>${settings.business_name}</p>
