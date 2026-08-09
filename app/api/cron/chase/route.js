@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -35,18 +36,18 @@ export async function GET(req) {
 
   for (const inv of outstanding || []) {
     const daysOverdue = inv.days_overdue;
-    let message = null;
+    let templateKey = null;
 
     // Escalating tone based on how overdue the invoice is
     if (daysOverdue === 3) {
-      message = `Hi ${inv.customer_name}, just a friendly reminder that your invoice of £${inv.amount} is now due. Let us know if you have any questions!`;
+      templateKey = "chase_3day";
     } else if (daysOverdue === 7) {
-      message = `Hi ${inv.customer_name}, your invoice of £${inv.amount} is now a week overdue. Please arrange payment when you get a chance.`;
+      templateKey = "chase_7day";
     } else if (daysOverdue === 14) {
-      message = `Hi ${inv.customer_name}, this is a follow-up that your invoice of £${inv.amount} is 2 weeks overdue. Please get in touch to sort payment.`;
+      templateKey = "chase_14day";
     }
 
-    if (message && inv.email && resend) {
+    if (templateKey && inv.email && resend) {
       const pdfBytes = await generateInvoicePdfBytes({
         invoiceIdShort: inv.invoice_id.slice(0, 8).toUpperCase(),
         customerName: inv.customer_name,
@@ -59,13 +60,27 @@ export async function GET(req) {
         business,
       });
 
+      const template = await getTemplate(templateKey);
+      const vars = {
+        customer_name: inv.customer_name,
+        amount: inv.amount,
+        due_date: inv.due_date,
+        business_name: settings.business_name,
+      };
+      const subject = renderTemplate(template.subject, vars) || "Payment reminder";
+      const bodyText = renderTemplate(template.body, vars);
+      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
+        /\n/g,
+        "<br/>"
+      )}</div>`;
+
       await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
         from: `${settings.business_name} <onboarding@resend.dev>`,
         to: inv.email,
-        subject: "Payment reminder",
-        html: `<p>${message}</p><p>A copy of the invoice is attached.</p><p>Thanks,<br/>${settings.business_name}</p>`,
+        subject,
+        html,
         attachments: [
           {
             filename: `invoice-${inv.invoice_id.slice(0, 8)}.pdf`,
@@ -76,7 +91,7 @@ export async function GET(req) {
 
       await db.from("chase_log").insert({
         invoice_id: inv.invoice_id,
-        message,
+        message: bodyText,
         channel: "email",
       });
 
