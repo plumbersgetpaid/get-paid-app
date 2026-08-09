@@ -9,6 +9,8 @@ export default function QuickBook({ searchParams }) {
   const defaultDate = tomorrow.toISOString().slice(0, 10);
 
   const initialCustomerName = searchParams?.customerName || "";
+  const initialPhone = searchParams?.phone || "";
+  const initialEmail = searchParams?.email || "";
   const initialJobType = searchParams?.jobType || "";
   const initialAmount = searchParams?.amount || "";
   const initialDate = searchParams?.startDate || defaultDate;
@@ -46,6 +48,8 @@ export default function QuickBook({ searchParams }) {
 
         <VoiceQuickBookAssist
           initialCustomerName={initialCustomerName}
+          initialPhone={initialPhone}
+          initialEmail={initialEmail}
           initialJobType={initialJobType}
           initialAmount={initialAmount}
           initialDate={initialDate}
@@ -54,8 +58,19 @@ export default function QuickBook({ searchParams }) {
           initialDurationUnit={initialDurationUnit}
         />
 
-        <input name="phone" placeholder="Phone (optional)" style={inputStyle} />
-        <input name="email" type="email" placeholder="Email (optional)" style={inputStyle} />
+        <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
+            Let the client know (if you add their email/phone above)
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+            <input type="checkbox" name="notifyEmail" value="1" defaultChecked />
+            Email
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+            <input type="checkbox" name="notifyWhatsapp" value="1" defaultChecked />
+            WhatsApp
+          </label>
+        </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <Link href="/calendar" style={cancelButtonStyle}>

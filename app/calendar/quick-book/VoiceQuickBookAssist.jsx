@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 
 export default function VoiceQuickBookAssist({
   initialCustomerName = "",
+  initialPhone = "",
+  initialEmail = "",
   initialJobType = "",
   initialAmount = "",
   initialDate = "",
@@ -17,6 +19,8 @@ export default function VoiceQuickBookAssist({
   const [error, setError] = useState(null);
 
   const [customerName, setCustomerName] = useState(initialCustomerName);
+  const [phone, setPhone] = useState(initialPhone);
+  const [email, setEmail] = useState(initialEmail);
   const [jobType, setJobType] = useState(initialJobType);
   const [amount, setAmount] = useState(initialAmount);
   const [startDate, setStartDate] = useState(initialDate);
@@ -82,6 +86,8 @@ export default function VoiceQuickBookAssist({
       } else {
         setTranscript(data.transcript || "");
         if (data.customerName) setCustomerName(data.customerName);
+        if (data.customerEmail) setEmail(data.customerEmail);
+        if (data.customerPhone) setPhone(data.customerPhone);
         if (data.jobType) setJobType(data.jobType);
         if (data.amount !== null && data.amount !== undefined) {
           setAmount(String(data.amount));
@@ -130,6 +136,21 @@ export default function VoiceQuickBookAssist({
         value={customerName}
         onChange={(e) => setCustomerName(e.target.value)}
         required
+        style={inputStyle}
+      />
+      <input
+        name="phone"
+        placeholder="Phone (optional)"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        style={inputStyle}
+      />
+      <input
+        name="email"
+        type="email"
+        placeholder="Email (optional)"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         style={inputStyle}
       />
       <input
@@ -193,8 +214,11 @@ export default function VoiceQuickBookAssist({
             onChange={(e) => setDurationUnit(e.target.value)}
             style={{ ...inputStyle, flex: 1 }}
           >
+            <option value="minutes">Minutes</option>
             <option value="hours">Hours</option>
             <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
           </select>
         </div>
       </label>
