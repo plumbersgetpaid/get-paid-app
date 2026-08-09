@@ -27,6 +27,10 @@ const DEFAULTS = {
     subject: "Payment reminder",
     body: "Hi {{customer_name}}, this is a follow-up that your invoice of £{{amount}} is 2 weeks overdue. Please get in touch to sort payment.",
   },
+  booking_confirmation: {
+    subject: "Booking confirmed - {{job_type}}",
+    body: "Hi {{customer_name}},\n\nJust confirming we've got you booked in:\n\nJob: {{job_type}}\nStart: {{start_date}} at {{start_time}}\nExpected duration: {{duration}}\n\nSee you then!\n\nThanks,\n{{business_name}}",
+  },
 };
 
 export async function getTemplate(key) {
