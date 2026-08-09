@@ -87,7 +87,24 @@ export default async function Calendar() {
         <h1 style={{ fontSize: 20, margin: 0 }}>Calendar</h1>
       </div>
 
-      <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
+      <Link
+        href="/calendar/quick-book"
+        style={{
+          display: "block",
+          textAlign: "center",
+          background: "#111",
+          color: "white",
+          padding: "12px",
+          borderRadius: 10,
+          textDecoration: "none",
+          fontWeight: 600,
+          margin: "16px 0",
+        }}
+      >
+        + Quick book
+      </Link>
+
+      <p style={{ fontSize: 13, color: "#888" }}>
         🔧 booked jobs and 💰 payment due dates, in one place.
       </p>
 
