@@ -24,6 +24,25 @@ export default async function Settings({ searchParams }) {
         PDFs update automatically.
       </p>
 
+      <Link
+        href="/settings/templates"
+        style={{
+          display: "block",
+          background: "white",
+          borderRadius: 12,
+          padding: 16,
+          margin: "16px 0",
+          textDecoration: "none",
+          color: "#111",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 14 }}>Message templates →</div>
+        <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+          Edit the wording of every automated quote, invoice, and reminder
+        </div>
+      </Link>
+
       {saved && (
         <div
           style={{
