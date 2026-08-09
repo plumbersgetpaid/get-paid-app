@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function CompleteJob({ params }) {
+export default async function CompleteJob({ params, searchParams }) {
   const { jobId } = params;
   const db = supabaseAdmin();
 
@@ -28,6 +28,13 @@ export default async function CompleteJob({ params }) {
   const defaultDueDate = new Date();
   defaultDueDate.setDate(defaultDueDate.getDate() + 14);
   const defaultDueDateStr = defaultDueDate.toISOString().slice(0, 10);
+
+  // If we're returning from an "Enhance with AI" round trip, keep whatever
+  // the tradie had entered instead of resetting back to the defaults
+  const amountValue = searchParams?.amount || job.amount;
+  const dueDateValue = searchParams?.dueDate || defaultDueDateStr;
+  const noteValue = searchParams?.note || "";
+  const aiError = searchParams?.aiError === "1";
 
   return (
     <main>
@@ -58,6 +65,22 @@ export default async function CompleteJob({ params }) {
         )}
       </section>
 
+      {aiError && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 12,
+            fontSize: 13,
+          }}
+        >
+          Couldn't reach the AI just now - your note's been kept as you wrote
+          it, feel free to edit it manually.
+        </div>
+      )}
+
       <form
         action="/api/jobs/complete"
         method="POST"
@@ -72,7 +95,7 @@ export default async function CompleteJob({ params }) {
             name="amount"
             step="0.01"
             min="0"
-            defaultValue={job.amount}
+            defaultValue={amountValue}
             required
             style={{ ...inputStyle, marginTop: 6 }}
           />
@@ -87,11 +110,34 @@ export default async function CompleteJob({ params }) {
           <input
             type="date"
             name="dueDate"
-            defaultValue={defaultDueDateStr}
+            defaultValue={dueDateValue}
             required
             style={{ ...inputStyle, marginTop: 6 }}
           />
         </label>
+
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Reason for price change (optional)
+          <textarea
+            name="note"
+            placeholder="e.g. found an extra leak while there, customer also asked for a tap swap"
+            defaultValue={noteValue}
+            rows={3}
+            style={{ ...inputStyle, marginTop: 6, resize: "vertical" }}
+          />
+          <span style={{ fontSize: 12, color: "#888" }}>
+            Only shown to the customer if the final amount differs from the
+            quote. Jot it down rough - AI can tidy it up for you below.
+          </span>
+        </label>
+
+        <button
+          type="submit"
+          formAction="/api/jobs/complete/enhance-note"
+          style={enhanceButtonStyle}
+        >
+          ✨ Enhance note with AI
+        </button>
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <Link href="/" style={cancelButtonStyle}>
@@ -149,4 +195,14 @@ const submitButtonStyle = {
   border: "none",
   fontWeight: 600,
   flex: 2,
+};
+
+const enhanceButtonStyle = {
+  background: "white",
+  color: "#111",
+  padding: "12px",
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  fontWeight: 600,
+  fontSize: 14,
 };
