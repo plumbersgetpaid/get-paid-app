@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
-import { durationToHours } from "../../../lib/duration";
+import { computeScheduleEnd } from "../../../lib/duration";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -12,6 +12,7 @@ export async function POST(req) {
   const phone = (form.get("phone") || "").toString().trim();
   const email = (form.get("email") || "").toString().trim();
   const jobType = (form.get("jobType") || "").toString().trim();
+  const location = (form.get("location") || "").toString().trim();
   const amountInput = (form.get("amount") || "").toString().trim();
   const startDate = form.get("startDate");
   const startTime = form.get("startTime");
@@ -28,9 +29,9 @@ export async function POST(req) {
     );
   }
 
-  const durationHours = durationToHours(durationValue, durationUnit);
+  const settings = await getBusinessSettings();
   const start = new Date(`${startDate}T${startTime}:00`);
-  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+  const end = computeScheduleEnd(start, durationValue, durationUnit, settings.include_weekends);
 
   const db = supabaseAdmin();
 
@@ -59,6 +60,7 @@ export async function POST(req) {
       redirectUrl.searchParams.set("phone", phone);
       redirectUrl.searchParams.set("email", email);
       redirectUrl.searchParams.set("jobType", jobType);
+      redirectUrl.searchParams.set("location", location);
       redirectUrl.searchParams.set("amount", amountInput);
       redirectUrl.searchParams.set("startDate", startDate);
       redirectUrl.searchParams.set("startTime", startTime);
@@ -114,6 +116,7 @@ export async function POST(req) {
   const { error: jobErr } = await db.from("jobs").insert({
     customer_id: customerId,
     job_type: jobType || null,
+    location: location || null,
     amount: amountInput ? parseFloat(amountInput) : 0,
     status: "in_progress",
     accepted_at: new Date().toISOString(),
@@ -128,7 +131,6 @@ export async function POST(req) {
 
   // Let the client know, on whichever channels were requested
   if (notifyEmail || notifyWhatsapp) {
-    const settings = await getBusinessSettings();
     const template = await getTemplate("booking_confirmation");
     const vars = {
       customer_name: customerName,
