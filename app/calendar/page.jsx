@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "../lib/supabaseClient";
+import { getBusinessSettings } from "../lib/getBusinessSettings";
+import { formatCurrency } from "../lib/formatCurrency";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +9,7 @@ export const revalidate = 0;
 
 export default async function Calendar() {
   const db = supabaseAdmin();
+  const settings = await getBusinessSettings();
 
   const { data: scheduledJobs } = await db
     .from("jobs")
@@ -71,7 +74,7 @@ export default async function Calendar() {
     entriesByDate[dateKey].push({
       type: "payment",
       time: null,
-      label: `${inv.customer_name} - £${inv.amount} due`,
+      label: `${inv.customer_name} - ${formatCurrency(inv.amount, settings.currency)} due`,
       href: `/invoices/${inv.invoice_id}`,
     });
   }
