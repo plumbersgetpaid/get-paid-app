@@ -10,6 +10,9 @@ export async function POST(req) {
   const accent_color = form.get("accent_color") || "#111111";
   const logo_url = form.get("logo_url") || null;
   const invoice_note = form.get("invoice_note") || null;
+  const header_tagline = form.get("header_tagline") || null;
+  const payment_terms = form.get("payment_terms") || null;
+  const bank_details = form.get("bank_details") || null;
 
   const db = supabaseAdmin();
 
@@ -21,6 +24,9 @@ export async function POST(req) {
     accent_color,
     logo_url,
     invoice_note,
+    header_tagline,
+    payment_terms,
+    bank_details,
     updated_at: new Date().toISOString(),
   });
 
