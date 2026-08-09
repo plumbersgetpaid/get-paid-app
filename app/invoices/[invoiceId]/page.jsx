@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "../../lib/supabaseClient";
+import { getBusinessSettings } from "../../lib/getBusinessSettings";
+import { formatCurrency, formatInvoiceNumber } from "../../lib/formatCurrency";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -7,6 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function InvoiceDetail({ params }) {
   const { invoiceId } = params;
   const db = supabaseAdmin();
+  const settings = await getBusinessSettings();
 
   const { data: invoice, error } = await db
     .from("invoices")
@@ -54,7 +57,7 @@ export default async function InvoiceDetail({ params }) {
       >
         <h2 style={{ fontSize: 22, marginBottom: 4 }}>Invoice</h2>
         <div style={{ color: "#888", marginBottom: 20, fontSize: 13 }}>
-          Invoice #{invoice.id.slice(0, 8).toUpperCase()} ·{" "}
+          {formatInvoiceNumber(invoice.invoice_number)} ·{" "}
           {new Date(invoice.created_at).toLocaleDateString("en-GB")}
         </div>
 
@@ -65,6 +68,9 @@ export default async function InvoiceDetail({ params }) {
           )}
           {customer?.phone && (
             <div style={{ color: "#888", fontSize: 14 }}>{customer.phone}</div>
+          )}
+          {job?.location && (
+            <div style={{ color: "#888", fontSize: 14 }}>{job.location}</div>
           )}
         </div>
 
@@ -92,7 +98,7 @@ export default async function InvoiceDetail({ params }) {
                 {job?.job_type || "Plumbing work"}
               </td>
               <td style={{ padding: "10px 0", textAlign: "right" }}>
-                £{invoice.amount}
+                {formatCurrency(invoice.amount, settings.currency)}
               </td>
             </tr>
           </tbody>
