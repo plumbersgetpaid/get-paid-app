@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -46,22 +47,28 @@ export async function POST(req) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       const settings = await getBusinessSettings();
+      const template = await getTemplate("quote");
+      const vars = {
+        customer_name: name,
+        job_type: jobType || "Plumbing work",
+        amount,
+        business_name: settings.business_name,
+      };
+      const subject =
+        renderTemplate(template.subject, vars) || `Quote for ${jobType || "your job"}`;
+      const bodyText = renderTemplate(template.body, vars);
+      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
+        /\n/g,
+        "<br/>"
+      )}</div>`;
+
       await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
         from: `${settings.business_name} <onboarding@resend.dev>`,
         to: email,
-        subject: `Quote for ${jobType || "your job"}`,
-        html: `
-          <p>Hi ${name},</p>
-          <p>Thanks for the opportunity to quote for your job. Here are the details:</p>
-          <p><strong>Job:</strong> ${jobType || "Plumbing work"}<br/>
-          <strong>Quoted price:</strong> £${amount}</p>
-          <p>Let us know if you'd like to go ahead and we'll get it booked in.</p>
-          <p>Thanks,<br/>${settings.business_name}${
-          settings.contact_phone ? `<br/>${settings.contact_phone}` : ""
-        }</p>
-        `,
+        subject,
+        html,
       });
     } catch (e) {
       console.error("Quote email send error:", e);
