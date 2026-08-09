@@ -9,6 +9,7 @@ export async function POST(req) {
   const jobId = form.get("jobId");
   const dueDateInput = form.get("dueDate"); // yyyy-mm-dd from the form, optional
   const amountInput = form.get("amount"); // optional - lets the price be adjusted from the original quote
+  const noteInput = (form.get("note") || "").toString().trim(); // optional explanation for a price change
 
   const db = supabaseAdmin();
 
@@ -93,6 +94,8 @@ export async function POST(req) {
         dueDate: invoice.due_date,
         status: invoice.status,
         createdAt: invoice.created_at,
+        quotedAmount: priceChanged ? quotedAmount : undefined,
+        priceChangeNote: priceChanged ? noteInput : undefined,
         business,
       });
 
@@ -113,6 +116,11 @@ export async function POST(req) {
               : `<strong>Amount due:</strong> £${finalAmount.toFixed(2)}<br/>`
           }
           <strong>Due date:</strong> ${dueDate.toDateString()}</p>
+          ${
+            priceChanged && noteInput
+              ? `<p style="color:#555;">${noteInput}</p>`
+              : ""
+          }
           <p>A PDF copy of this invoice is attached.</p>
           <p>Thanks,<br/>${settings.business_name}</p>
         `,
