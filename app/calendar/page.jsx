@@ -37,15 +37,30 @@ export default async function Calendar() {
   for (const job of jobs) {
     const dateKey = job.scheduled_start.slice(0, 10);
     if (!entriesByDate[dateKey]) entriesByDate[dateKey] = [];
+
+    const startDateObj = new Date(job.scheduled_start);
+    const endDateObj = new Date(job.scheduled_end);
+    const sameDay = startDateObj.toDateString() === endDateObj.toDateString();
+    const completionLabel = sameDay
+      ? `finishes ~${endDateObj.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`
+      : `expected completion ${endDateObj.toLocaleDateString("en-GB", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+        })}`;
+
     entriesByDate[dateKey].push({
       type: "job",
-      time: new Date(job.scheduled_start).toLocaleTimeString("en-GB", {
+      time: startDateObj.toLocaleTimeString("en-GB", {
         hour: "2-digit",
         minute: "2-digit",
       }),
       label: `${jobCustomerName[job.customer_id] || "Customer"} - ${
         job.job_type || "Job"
-      }`,
+      } (${completionLabel})`,
       href: `/jobs/schedule/${job.id}`,
     });
   }
