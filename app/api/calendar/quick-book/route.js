@@ -3,6 +3,8 @@ import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
 import { computeScheduleEnd } from "../../../lib/duration";
+import { findExistingCustomer } from "../../../lib/findCustomer";
+import { textToEmailHtml } from "../../../lib/emailHtml";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -78,14 +80,13 @@ export async function POST(req) {
     }
   }
 
-  // Reuse an existing customer with a matching name if one exists, rather
-  // than creating a duplicate every time the same regular customer is booked
-  const { data: existingCustomer } = await db
-    .from("customers")
-    .select("*")
-    .ilike("name", customerName)
-    .limit(1)
-    .maybeSingle();
+  // Reuse an existing customer matching by email/phone (or name) if one
+  // exists, rather than creating a duplicate every time
+  const existingCustomer = await findExistingCustomer(db, {
+    name: customerName,
+    email,
+    phone,
+  });
 
   let customerId;
   let customerEmail = email || null;
@@ -152,9 +153,8 @@ export async function POST(req) {
     if (notifyEmail && customerEmail && process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
-          /\n/g,
-          "<br/>"
+        const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
+          bodyText
         )}</div>`;
         await resend.emails.send({
           from: `${settings.business_name} <onboarding@resend.dev>`,
