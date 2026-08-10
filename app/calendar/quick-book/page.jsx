@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BackButton from "../../components/BackButton";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import VoiceQuickBookAssist from "./VoiceQuickBookAssist";
 
@@ -29,9 +30,7 @@ export default async function QuickBook({ searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/calendar" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/calendar" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Quick book</h1>
       </div>
 
