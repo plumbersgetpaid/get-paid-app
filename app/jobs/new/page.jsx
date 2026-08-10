@@ -81,7 +81,7 @@ export default async function NewQuote() {
                 type="checkbox"
                 name="includeWeekends"
                 value="1"
-                defaultChecked={settings.include_weekends}
+                defaultChecked={true}
               />
               Include weekends
               <span style={{ color: "#888", fontSize: 12 }}>
