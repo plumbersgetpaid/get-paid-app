@@ -1,3 +1,20 @@
+// Advances a date by a recurrence value+unit (used for recurring jobs).
+// Uses calendar-correct month/year stepping - JS's normal Date overflow
+// quirks apply for month-end edge cases (e.g. 31 Jan + 1 month -> 3 Mar),
+// which is an acceptable tradeoff for a recurring-reminder date, not meant
+// to be perfectly precise financial-calendar math.
+export function advanceDate(dateStr, value, unit) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  if (unit === "weeks") {
+    d.setUTCDate(d.getUTCDate() + value * 7);
+  } else if (unit === "years") {
+    d.setUTCFullYear(d.getUTCFullYear() + value);
+  } else {
+    d.setUTCMonth(d.getUTCMonth() + value);
+  }
+  return d.toISOString().slice(0, 10);
+}
+
 // Computes the end Date for a job booking. Minutes/hours are always linear
 // time. For days/weeks/months, if includeWeekends is false, Saturdays and
 // Sundays don't count toward the duration (so "1 week" = 5 working days).
