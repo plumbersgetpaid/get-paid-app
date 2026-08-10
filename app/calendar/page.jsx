@@ -225,12 +225,7 @@ export default async function Calendar({ searchParams }) {
 
   return (
     <main>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
-        <h1 style={{ fontSize: 20, margin: 0 }}>Calendar</h1>
-      </div>
+      <h1 style={{ fontSize: 20, margin: 0 }}>Calendar</h1>
 
       <div style={{ display: "flex", gap: 10, margin: "16px 0" }}>
         <Link href="/calendar/quick-book" style={quickBookButtonStyle}>
