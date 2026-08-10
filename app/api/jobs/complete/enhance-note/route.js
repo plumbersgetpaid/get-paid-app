@@ -6,10 +6,12 @@ export async function POST(req) {
   const dueDate = (form.get("dueDate") || "").toString();
   const amount = (form.get("amount") || "").toString();
   const note = (form.get("note") || "").toString().trim();
+  const from = (form.get("from") || "").toString();
 
   const redirectUrl = new URL(`/jobs/complete/${jobId}`, req.url);
   if (dueDate) redirectUrl.searchParams.set("dueDate", dueDate);
   if (amount) redirectUrl.searchParams.set("amount", amount);
+  if (from) redirectUrl.searchParams.set("from", from);
 
   // Nothing to enhance, or no API key set up yet - just bounce back with
   // whatever was typed, unchanged
