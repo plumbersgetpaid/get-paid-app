@@ -70,24 +70,42 @@ export default async function CompleteJob({ params, searchParams }) {
         )}
       </section>
 
-      <Link
-        href={`/jobs/photos/${job.id}`}
-        style={{
-          display: "block",
-          textAlign: "center",
-          marginBottom: 16,
-          background: "white",
-          color: "#111",
-          border: "1px solid #ddd",
-          padding: "10px",
-          borderRadius: 10,
-          fontWeight: 600,
-          textDecoration: "none",
-          fontSize: 14,
-        }}
-      >
-        📷 Add / view photos
-      </Link>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <Link
+          href={`/jobs/photos/${job.id}`}
+          style={{
+            flex: 1,
+            textAlign: "center",
+            background: "white",
+            color: "#111",
+            border: "1px solid #ddd",
+            padding: "10px",
+            borderRadius: 10,
+            fontWeight: 600,
+            textDecoration: "none",
+            fontSize: 14,
+          }}
+        >
+          📷 Photos
+        </Link>
+        <Link
+          href={`/jobs/notes/${job.id}`}
+          style={{
+            flex: 1,
+            textAlign: "center",
+            background: "white",
+            color: "#111",
+            border: "1px solid #ddd",
+            padding: "10px",
+            borderRadius: 10,
+            fontWeight: 600,
+            textDecoration: "none",
+            fontSize: 14,
+          }}
+        >
+          📝 Notes
+        </Link>
+      </div>
 
       {aiError && (
         <div
