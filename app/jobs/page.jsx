@@ -1,0 +1,169 @@
+import { supabaseAdmin } from "../lib/supabaseClient";
+import { getBusinessSettings } from "../lib/getBusinessSettings";
+import { formatCurrency } from "../lib/formatCurrency";
+import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
+
+const STATUS_COLORS = {
+  quote_sent: "#f59e0b",
+  declined: "#9ca3af",
+  in_progress: "#2563eb",
+  complete: "#2563eb",
+  invoiced: "#dc2626",
+  paid: "#16a34a",
+};
+
+export default async function AllJobs({ searchParams }) {
+  const db = supabaseAdmin();
+  const settings = await getBusinessSettings();
+  const q = (searchParams?.q || "").trim().toLowerCase();
+
+  const { data: rawJobs } = await db
+    .from("jobs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  let jobs = rawJobs || [];
+
+  const customerIds = [...new Set(jobs.map((j) => j.customer_id))];
+  const { data: customers } = customerIds.length
+    ? await db.from("customers").select("id, name").in("id", customerIds)
+    : { data: [] };
+  const nameById = Object.fromEntries((customers || []).map((c) => [c.id, c.name]));
+
+  const jobIds = jobs.map((j) => j.id);
+  const { data: invoices } = jobIds.length
+    ? await db.from("invoices").select("id, job_id").in("job_id", jobIds)
+    : { data: [] };
+  const invoiceIdByJobId = Object.fromEntries(
+    (invoices || []).map((inv) => [inv.job_id, inv.id])
+  );
+
+  jobs = jobs.map((j) => ({
+    ...j,
+    customer_name: nameById[j.customer_id] || "Unknown customer",
+    invoice_id: invoiceIdByJobId[j.id],
+  }));
+
+  if (q) {
+    jobs = jobs.filter((j) =>
+      [j.customer_name, j.job_type, j.location].some((field) =>
+        (field || "").toLowerCase().includes(q)
+      )
+    );
+  }
+
+  return (
+    <main>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Link href="/" aria-label="Back" style={backButtonStyle}>
+          ←
+        </Link>
+        <h1 style={{ fontSize: 20, margin: 0 }}>All jobs</h1>
+      </div>
+
+      <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
+        Every quote and job you've ever created, whatever stage it's at.
+      </p>
+
+      <form action="/jobs" method="GET" style={{ display: "flex", gap: 8, margin: "16px 0" }}>
+        <input
+          type="search"
+          name="q"
+          placeholder="Search by customer, job type, or address"
+          defaultValue={searchParams?.q || ""}
+          style={searchInputStyle}
+        />
+        <button type="submit" style={searchButtonStyle}>
+          Search
+        </button>
+      </form>
+
+      {jobs.length === 0 && <p style={{ color: "#888" }}>No jobs found.</p>}
+
+      {jobs.map((job) => (
+        <div key={job.id} style={cardStyle(STATUS_COLORS[job.status] || "#ccc")}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
+            <div style={{ fontWeight: 600 }}>{formatCurrency(job.amount, settings.currency)}</div>
+          </div>
+          <div style={{ fontSize: 13, color: "#888" }}>
+            {job.job_type || "Job"} ·{" "}
+            <span style={{ textTransform: "capitalize" }}>
+              {job.status.replace("_", " ")}
+            </span>{" "}
+            · {new Date(job.created_at).toLocaleDateString("en-GB")}
+          </div>
+          {job.location && (
+            <div style={{ fontSize: 12, color: "#888" }}>📍 {job.location}</div>
+          )}
+          <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+            {job.status === "in_progress" && (
+              <Link href={`/jobs/schedule/${job.id}`} style={jobLinkStyle}>
+                Book / reschedule →
+              </Link>
+            )}
+            {job.invoice_id && (
+              <Link href={`/invoices/${job.invoice_id}`} style={jobLinkStyle}>
+                View invoice →
+              </Link>
+            )}
+            <Link href={`/jobs/photos/${job.id}`} style={jobLinkStyle}>
+              📷 Photos →
+            </Link>
+          </div>
+        </div>
+      ))}
+    </main>
+  );
+}
+
+const backButtonStyle = {
+  background: "white",
+  border: "1px solid #ddd",
+  borderRadius: 8,
+  width: 36,
+  height: 36,
+  fontSize: 18,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textDecoration: "none",
+  color: "#111",
+};
+
+const searchInputStyle = {
+  flex: 1,
+  padding: "12px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  fontSize: 15,
+};
+
+const searchButtonStyle = {
+  background: "#111",
+  color: "white",
+  border: "none",
+  padding: "12px 16px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 14,
+};
+
+const cardStyle = (color) => ({
+  background: "white",
+  borderRadius: 10,
+  padding: 14,
+  marginBottom: 8,
+  borderLeft: `4px solid ${color}`,
+});
+
+const jobLinkStyle = {
+  fontSize: 12,
+  color: "#111",
+  textDecoration: "underline",
+};
