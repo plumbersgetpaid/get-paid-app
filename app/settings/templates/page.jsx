@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BackButton from "../../components/BackButton";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { TEMPLATE_DEFAULTS } from "../../lib/getTemplate";
 
@@ -79,9 +80,7 @@ export default async function TemplatesSettings({ searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/settings" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/settings" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Message templates</h1>
       </div>
 
