@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
+import { textToEmailHtml } from "../../../lib/emailHtml";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -61,9 +62,8 @@ export async function POST(req) {
 
           if (customer.email && process.env.RESEND_API_KEY) {
             const resend = new Resend(process.env.RESEND_API_KEY);
-            const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
-              /\n/g,
-              "<br/>"
+            const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
+              bodyText
             )}</div>`;
             await resend.emails.send({
               from: `${settings.business_name} <onboarding@resend.dev>`,
