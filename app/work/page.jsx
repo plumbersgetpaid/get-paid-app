@@ -30,7 +30,9 @@ export default async function Work({ searchParams }) {
       </div>
 
       {tab === "quotes" && <QuotesTab db={db} settings={settings} />}
-      {tab === "jobs" && <JobsTab db={db} settings={settings} />}
+      {tab === "jobs" && (
+        <JobsTab db={db} settings={settings} sub={searchParams?.sub || "today"} />
+      )}
       {tab === "invoices" && <InvoicesTab db={db} settings={settings} />}
     </main>
   );
@@ -148,7 +150,11 @@ async function QuotesTab({ db, settings }) {
   );
 }
 
-async function JobsTab({ db, settings }) {
+async function JobsTab({ db, settings, sub }) {
+  const activeSub = ["today", "upcoming", "unscheduled", "completed"].includes(sub)
+    ? sub
+    : "today";
+
   const { data: rawJobs } = await db.from("jobs").select("*").eq("status", "in_progress");
   let jobs = rawJobs || [];
   const customerIds = [...new Set(jobs.map((j) => j.customer_id))];
@@ -175,7 +181,39 @@ async function JobsTab({ db, settings }) {
     .select("id", { count: "exact", head: true })
     .in("status", ["complete", "invoiced", "paid"]);
 
-  const photoJobIds = jobs.map((j) => j.id);
+  // Only fetch the completed preview list when that sub-tab is actually
+  // being viewed - no point loading it every time
+  let completedJobs = [];
+  if (activeSub === "completed") {
+    const { data: rawCompleted } = await db
+      .from("jobs")
+      .select("*")
+      .in("status", ["complete", "invoiced", "paid"])
+      .order("completed_at", { ascending: false })
+      .limit(8);
+    const completedCustomerIds = [...new Set((rawCompleted || []).map((j) => j.customer_id))];
+    const { data: completedCustomers } = completedCustomerIds.length
+      ? await db.from("customers").select("id, name").in("id", completedCustomerIds)
+      : { data: [] };
+    const completedNameById = Object.fromEntries(
+      (completedCustomers || []).map((c) => [c.id, c.name])
+    );
+    completedJobs = (rawCompleted || []).map((j) => ({
+      ...j,
+      customer_name: completedNameById[j.customer_id] || "Unknown customer",
+    }));
+  }
+
+  const activeList =
+    activeSub === "today"
+      ? todayJobs
+      : activeSub === "upcoming"
+      ? upcomingJobs
+      : activeSub === "unscheduled"
+      ? unscheduledJobs
+      : completedJobs;
+
+  const photoJobIds = [...jobs.map((j) => j.id), ...completedJobs.map((j) => j.id)];
   const { data: photoRows } = photoJobIds.length
     ? await db.from("job_photos").select("job_id").in("job_id", photoJobIds)
     : { data: [] };
@@ -184,27 +222,25 @@ async function JobsTab({ db, settings }) {
     photoCountByJob[p.job_id] = (photoCountByJob[p.job_id] || 0) + 1;
   }
 
-  const displayJobs = [...todayJobs, ...upcomingJobs, ...unscheduledJobs].slice(0, 8);
+  const subTabs = [
+    { key: "today", label: "Today", count: todayJobs.length },
+    { key: "upcoming", label: "Upcoming", count: upcomingJobs.length },
+    { key: "unscheduled", label: "Unscheduled", count: unscheduledJobs.length },
+    { key: "completed", label: "Completed", count: completedCount || 0 },
+  ];
 
   return (
     <div>
-      <div style={statRowStyle}>
-        <div style={statBlockStyle}>
-          <div style={statNumberStyle}>{todayJobs.length}</div>
-          <div style={statLabelStyle}>Today</div>
-        </div>
-        <div style={statBlockStyle}>
-          <div style={statNumberStyle}>{upcomingJobs.length}</div>
-          <div style={statLabelStyle}>Upcoming</div>
-        </div>
-        <Link href="/jobs?status=unscheduled" style={statBlockLinkStyle}>
-          <div style={statNumberStyle}>{unscheduledJobs.length}</div>
-          <div style={statLabelStyle}>Unscheduled</div>
-        </Link>
-        <Link href="/jobs?status=done" style={statBlockLinkStyle}>
-          <div style={statNumberStyle}>{completedCount || 0}</div>
-          <div style={statLabelStyle}>Completed</div>
-        </Link>
+      <div style={subTabRowStyle}>
+        {subTabs.map((t) => (
+          <Link
+            key={t.key}
+            href={`/work?tab=jobs&sub=${t.key}`}
+            style={subTabStyle(activeSub === t.key)}
+          >
+            {t.label} ({t.count})
+          </Link>
+        ))}
       </div>
 
       <form action="/jobs" method="GET" style={searchFormStyle}>
@@ -218,11 +254,31 @@ async function JobsTab({ db, settings }) {
         🔁 Manage recurring jobs →
       </Link>
 
-      {jobs.length === 0 && <p style={{ color: "#888" }}>No jobs in progress.</p>}
+      {activeList.length === 0 && (
+        <p style={{ color: "#888" }}>Nothing in {subTabs.find((t) => t.key === activeSub).label.toLowerCase()}.</p>
+      )}
 
-      {displayJobs.map((job) => {
+      {activeList.map((job) => {
+        if (activeSub === "completed") {
+          return (
+            <div key={job.id} style={cardStyle("#16a34a")}>
+              <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
+              <div style={{ fontSize: 13, color: "#888" }}>
+                {job.job_type} · {formatCurrency(job.amount, settings.currency)} ·{" "}
+                <span style={{ textTransform: "capitalize" }}>{job.status}</span>
+              </div>
+              <Link href={`/jobs/photos/${job.id}`} style={jobLinkStyle}>
+                📷 Photos{photoCountByJob[job.id] ? ` (${photoCountByJob[job.id]})` : ""}
+              </Link>
+            </div>
+          );
+        }
+
         const isLate =
-          job.scheduled_end && new Date(job.scheduled_end) < new Date() && !job.status.startsWith("complete");
+          job.scheduled_end &&
+          new Date(job.scheduled_end) < new Date() &&
+          !job.status.startsWith("complete");
+
         return (
           <div key={job.id} style={cardStyle(isLate ? "#dc2626" : "#2563eb")}>
             <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
@@ -262,9 +318,12 @@ async function JobsTab({ db, settings }) {
         );
       })}
 
-      {jobs.length > 8 && (
-        <Link href="/jobs?status=in_progress" style={viewAllLinkStyle}>
-          View all {jobs.length} jobs in progress →
+      {(activeSub === "unscheduled" || activeSub === "completed") && (
+        <Link
+          href={`/jobs?status=${activeSub === "completed" ? "done" : "unscheduled"}`}
+          style={viewAllLinkStyle}
+        >
+          View all in {subTabs.find((t) => t.key === activeSub).label} →
         </Link>
       )}
     </div>
@@ -374,6 +433,28 @@ const tabStyle = (active) => ({
   background: active ? "#111" : "white",
   color: active ? "white" : "#111",
 });
+
+const subTabRowStyle = { display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" };
+
+const subTabStyle = (active) => ({
+  flex: "1 1 auto",
+  textAlign: "center",
+  padding: "8px 6px",
+  borderRadius: 8,
+  textDecoration: "none",
+  fontWeight: 600,
+  fontSize: 12,
+  whiteSpace: "nowrap",
+  background: active ? "#2563eb" : "white",
+  color: active ? "white" : "#111",
+  border: active ? "none" : "1px solid #ddd",
+});
+
+const jobLinkStyle = {
+  fontSize: 12,
+  color: "#111",
+  textDecoration: "underline",
+};
 
 const statRowStyle = { display: "flex", gap: 8, margin: "4px 0 16px" };
 
