@@ -6,12 +6,47 @@ import { formatCurrency, formatInvoiceNumber } from "../../../lib/formatCurrency
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
+// Builds a simple before/after photo gallery as inline HTML for the
+// invoice email, if the tradie opted in and photos exist for this job.
+async function buildPhotosHtml(db, jobId, attachPhotos) {
+  if (!attachPhotos) return "";
+
+  const { data: photos } = await db
+    .from("job_photos")
+    .select("*")
+    .eq("job_id", jobId)
+    .order("created_at", { ascending: true });
+
+  if (!photos || photos.length === 0) return "";
+
+  const imgTag = (p) =>
+    `<img src="${p.url}" alt="${p.label}" style="width:150px;height:110px;object-fit:cover;border-radius:6px;margin:4px;" />`;
+
+  const before = photos.filter((p) => p.label === "before");
+  const after = photos.filter((p) => p.label === "after");
+
+  let html = `<div style="margin-top:20px;">`;
+  if (before.length > 0) {
+    html += `<div style="font-weight:600;margin-bottom:4px;">Before</div><div>${before
+      .map(imgTag)
+      .join("")}</div>`;
+  }
+  if (after.length > 0) {
+    html += `<div style="font-weight:600;margin:10px 0 4px;">After</div><div>${after
+      .map(imgTag)
+      .join("")}</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
 export async function POST(req) {
   const form = await req.formData();
   const jobId = form.get("jobId");
   const dueDateInput = form.get("dueDate"); // yyyy-mm-dd from the form, optional
   const amountInput = form.get("amount"); // optional - lets the price be adjusted from the original quote
   const noteInput = (form.get("note") || "").toString().trim(); // optional explanation for a price change
+  const attachPhotos = form.get("attachPhotos") === "1";
 
   const db = supabaseAdmin();
 
@@ -138,7 +173,7 @@ export async function POST(req) {
       const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
         /\n/g,
         "<br/>"
-      )}</div>`;
+      )}${await buildPhotosHtml(db, job.id, attachPhotos)}</div>`;
 
       const result = await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
