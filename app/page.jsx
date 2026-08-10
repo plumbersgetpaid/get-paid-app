@@ -135,6 +135,12 @@ export default async function Dashboard() {
     (sum, i) => sum + Number(i.amount),
     0
   );
+  const overdueCount = (outstanding || []).filter((i) => i.days_overdue > 0).length;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const jobsTodayCount = jobs.filter(
+    (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) === todayStr
+  ).length;
+  const needsBookingCount = jobs.filter((j) => !j.scheduled_start).length;
 
   return (
     <main>
@@ -169,19 +175,43 @@ export default async function Dashboard() {
         </div>
       )}
 
-      <section
-        style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 16,
-          margin: "16px 0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
-      >
-        <div style={{ fontSize: 14, color: "#666" }}>Total outstanding</div>
-        <div style={{ fontSize: 32, fontWeight: 700 }}>
-          {formatCurrency(totalOwed, settings.currency)}
-        </div>
+      <section style={glanceCardStyle}>
+        {quotes.length > 0 && (
+          <a href="#quotes" style={glanceRowStyle}>
+            <span>📝 {quotes.length} quote{quotes.length === 1 ? "" : "s"} awaiting response</span>
+            <span style={glanceChevronStyle}>›</span>
+          </a>
+        )}
+        {jobsTodayCount > 0 && (
+          <a href="#jobs" style={glanceRowStyle}>
+            <span>🔧 {jobsTodayCount} job{jobsTodayCount === 1 ? "" : "s"} today</span>
+            <span style={glanceChevronStyle}>›</span>
+          </a>
+        )}
+        {needsBookingCount > 0 && (
+          <a href="#jobs" style={glanceRowStyle}>
+            <span>
+              📅 {needsBookingCount} job{needsBookingCount === 1 ? "" : "s"} need
+              {needsBookingCount === 1 ? "s" : ""} booking in
+            </span>
+            <span style={glanceChevronStyle}>›</span>
+          </a>
+        )}
+        <a href="#invoices" style={{ ...glanceRowStyle, borderBottom: "none" }}>
+          <span>
+            💰 {formatCurrency(totalOwed, settings.currency)} awaiting payment
+            {overdueCount > 0 ? ` · ${overdueCount} overdue` : ""}
+          </span>
+          <span style={glanceChevronStyle}>›</span>
+        </a>
+        {quotes.length === 0 &&
+          jobsTodayCount === 0 &&
+          needsBookingCount === 0 &&
+          totalOwed === 0 && (
+            <div style={{ padding: "10px 4px", color: "#888", fontSize: 14 }}>
+              All caught up 🎉
+            </div>
+          )}
       </section>
 
       <Link
@@ -201,20 +231,14 @@ export default async function Dashboard() {
         + New quote
       </Link>
 
-      <h2 style={{ fontSize: 16 }}>Quotes awaiting response</h2>
+      <h2 id="quotes" style={sectionHeadingStyle("#f59e0b")}>
+        Quotes awaiting response {quotes.length > 0 ? `(${quotes.length})` : ""}
+      </h2>
       {quotes.length === 0 && (
         <p style={{ color: "#888" }}>No quotes waiting on a reply.</p>
       )}
       {quotes.map((q) => (
-        <div
-          key={q.id}
-          style={{
-            background: "white",
-            borderRadius: 10,
-            padding: 14,
-            marginBottom: 8,
-          }}
-        >
+        <div key={q.id} style={cardStyle("#f59e0b")}>
           <div style={{ fontWeight: 600 }}>{q.customer_name}</div>
           <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
             {q.job_type || "Job"} · {formatCurrency(q.amount, settings.currency)}
@@ -251,20 +275,19 @@ export default async function Dashboard() {
         </div>
       ))}
 
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>Jobs in progress</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 24 }}>
+        <h2 id="jobs" style={{ ...sectionHeadingStyle("#2563eb"), marginTop: 0 }}>
+          Jobs in progress {jobs.length > 0 ? `(${jobs.length})` : ""}
+        </h2>
+        <Link href="/jobs" style={{ fontSize: 12, color: "#666", textDecoration: "underline" }}>
+          All jobs →
+        </Link>
+      </div>
       {(jobs || []).length === 0 && (
         <p style={{ color: "#888" }}>No jobs in progress.</p>
       )}
       {(jobs || []).map((job) => (
-        <div
-          key={job.id}
-          style={{
-            background: "white",
-            borderRadius: 10,
-            padding: 14,
-            marginBottom: 8,
-          }}
-        >
+        <div key={job.id} style={cardStyle("#2563eb")}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div style={{ fontWeight: 600 }}>{job.customers?.name}</div>
@@ -345,20 +368,14 @@ export default async function Dashboard() {
         </div>
       ))}
 
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>Outstanding invoices</h2>
+      <h2 id="invoices" style={sectionHeadingStyle("#dc2626")}>
+        Outstanding invoices {(outstanding || []).length > 0 ? `(${outstanding.length})` : ""}
+      </h2>
       {(outstanding || []).length === 0 && (
         <p style={{ color: "#888" }}>Nothing owed right now 🎉</p>
       )}
       {(outstanding || []).map((inv) => (
-        <div
-          key={inv.invoice_id}
-          style={{
-            background: "white",
-            borderRadius: 10,
-            padding: 14,
-            marginBottom: 8,
-          }}
-        >
+        <div key={inv.invoice_id} style={cardStyle("#dc2626")}>
           <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
           <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
             {formatCurrency(inv.amount, settings.currency)} · due {inv.due_date} ·{" "}
@@ -387,28 +404,32 @@ export default async function Dashboard() {
         </div>
       ))}
 
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>Recently paid</h2>
-      {paidInvoices.length === 0 && (
-        <p style={{ color: "#888" }}>No paid invoices yet.</p>
-      )}
-      {paidInvoices.map((inv) => (
-        <div
-          key={inv.id}
+      <details style={{ marginTop: 24 }}>
+        <summary
           style={{
-            background: "white",
-            borderRadius: 10,
-            padding: 14,
-            marginBottom: 8,
-            opacity: 0.85,
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: "pointer",
+            color: "#666",
           }}
         >
-          <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
-          <div style={{ fontSize: 13, color: "#888" }}>
-            {formatCurrency(inv.amount, settings.currency)} · {inv.job_type || "Job"} · paid{" "}
-            {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("en-GB") : ""}
-          </div>
+          Recently paid {paidInvoices.length > 0 ? `(${paidInvoices.length})` : ""}
+        </summary>
+        <div style={{ marginTop: 12 }}>
+          {paidInvoices.length === 0 && (
+            <p style={{ color: "#888" }}>No paid invoices yet.</p>
+          )}
+          {paidInvoices.map((inv) => (
+            <div key={inv.id} style={{ ...cardStyle("#9ca3af"), opacity: 0.85 }}>
+              <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
+              <div style={{ fontSize: 13, color: "#888" }}>
+                {formatCurrency(inv.amount, settings.currency)} · {inv.job_type || "Job"} · paid{" "}
+                {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("en-GB") : ""}
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      </details>
 
       <Link
         href="/invoices"
@@ -426,6 +447,46 @@ export default async function Dashboard() {
     </main>
   );
 }
+
+const cardStyle = (color) => ({
+  background: "white",
+  borderRadius: 10,
+  padding: 14,
+  marginBottom: 8,
+  borderLeft: `4px solid ${color}`,
+});
+
+const sectionHeadingStyle = (color) => ({
+  fontSize: 16,
+  marginTop: 24,
+  paddingLeft: 10,
+  borderLeft: `4px solid ${color}`,
+});
+
+const glanceCardStyle = {
+  background: "white",
+  borderRadius: 12,
+  padding: "4px 16px",
+  margin: "16px 0",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+};
+
+const glanceRowStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "12px 4px",
+  borderBottom: "1px solid #f0f0f0",
+  textDecoration: "none",
+  color: "#111",
+  fontSize: 15,
+  fontWeight: 600,
+};
+
+const glanceChevronStyle = {
+  color: "#ccc",
+  fontSize: 18,
+};
 
 const chaseButtonStyle = {
   width: "100%",
