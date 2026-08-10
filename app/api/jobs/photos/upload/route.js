@@ -22,7 +22,9 @@ export async function POST(req) {
 
   if (uploadError) {
     console.error("Job photo upload error:", uploadError);
-    return NextResponse.redirect(new URL(`/jobs/photos/${jobId}?error=1`, req.url));
+    const redirectUrl = new URL(`/jobs/photos/${jobId}`, req.url);
+    redirectUrl.searchParams.set("error", uploadError.message || "Upload failed");
+    return NextResponse.redirect(redirectUrl);
   }
 
   const { data: publicUrlData } = db.storage.from("job-photos").getPublicUrl(path);
