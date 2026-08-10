@@ -60,7 +60,6 @@ export default async function RecurringJobs() {
                   month: "short",
                 })}`
               : "Paused"}
-            {r.auto_invoice ? " · auto-invoices" : ""}
             {r.confirm_time_later ? " · confirms time nearer the day" : ""}
           </div>
           {r.next_occurrence_time && (
