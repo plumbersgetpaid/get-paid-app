@@ -31,6 +31,10 @@ const DEFAULTS = {
     subject: "Booking confirmed - {{job_type}}",
     body: "Hi {{customer_name}},\n\nJust confirming we've got you booked in:\n\nJob: {{job_type}}\nStart: {{start_date}} at {{start_time}}\nExpected duration: {{duration}}\n\nSee you then!\n\nThanks,\n{{business_name}}",
   },
+  review_request: {
+    subject: "Thanks for your payment!",
+    body: "Hi {{customer_name}},\n\nThanks for your payment - really appreciate it.\n\nIf you were happy with the work, would you mind leaving us a quick Google review? It genuinely helps a small business like ours.\n\n{{review_link}}\n\nThanks again,\n{{business_name}}",
+  },
 };
 
 export async function getTemplate(key) {

@@ -12,6 +12,8 @@ const DEFAULTS = {
   bank_details: null,
   currency: "GBP",
   include_weekends: true,
+  google_review_link: null,
+  send_review_requests: true,
 };
 
 export async function getBusinessSettings() {
