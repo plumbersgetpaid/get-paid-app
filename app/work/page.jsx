@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../lib/supabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
+import { getTodayInLondon } from "../lib/today";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -130,7 +131,7 @@ async function JobsTab({ db, settings }) {
     customer_name: nameById[j.customer_id] || "Unknown customer",
   }));
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getTodayInLondon();
   const todayJobs = jobs.filter(
     (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) === todayStr
   );
@@ -242,6 +243,10 @@ async function InvoicesTab({ db, settings }) {
 
   return (
     <div>
+      <Link href="/invoices" style={accountantLinkStyle}>
+        📄 Full invoice history &amp; PDF export (for your accountant) →
+      </Link>
+
       <div style={statRowStyle}>
         <Link href="/invoices" style={statBlockLinkStyle}>
           <div style={{ ...statNumberStyle, color: "#dc2626", fontSize: 17 }}>
@@ -455,4 +460,18 @@ const viewAllLinkStyle = {
   color: "#666",
   textDecoration: "underline",
   marginTop: 8,
+};
+
+const accountantLinkStyle = {
+  display: "block",
+  textAlign: "center",
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "12px",
+  borderRadius: 10,
+  fontWeight: 600,
+  fontSize: 13,
+  textDecoration: "none",
+  marginBottom: 16,
 };
