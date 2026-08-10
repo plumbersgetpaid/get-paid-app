@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export default async function JobPhotos({ params }) {
+export default async function JobPhotos({ params, searchParams }) {
   const { jobId } = params;
   const db = supabaseAdmin();
 
@@ -46,6 +46,21 @@ export default async function JobPhotos({ params }) {
         <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
         <div style={{ fontSize: 13, color: "#888" }}>{job.job_type || "Job"}</div>
       </section>
+
+      {searchParams?.error && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 12,
+            fontSize: 13,
+          }}
+        >
+          Couldn't upload that photo: {searchParams.error}
+        </div>
+      )}
 
       <form
         action="/api/jobs/photos/upload"
