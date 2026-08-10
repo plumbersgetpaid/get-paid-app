@@ -39,7 +39,7 @@ export async function POST(req) {
   if (invoice?.job_id) {
     try {
       const settings = await getBusinessSettings();
-      if (settings.send_review_requests && settings.google_review_link) {
+      if (settings.google_review_link) {
         const { data: job } = await db
           .from("jobs")
           .select("customer_id")
