@@ -79,35 +79,65 @@ async function QuotesTab({ db, settings }) {
 
       {quotes.length === 0 && <p style={{ color: "#888" }}>No quotes waiting on a reply.</p>}
 
-      {quotes.slice(0, 8).map((q) => (
-        <div key={q.id} style={cardStyle("#f59e0b")}>
-          <div style={{ fontWeight: 600 }}>{q.customer_name}</div>
-          <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
-            {q.job_type || "Job"} · {formatCurrency(q.amount, settings.currency)}
-            {q.quote_chased_at ? " · already chased" : ""}
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <form action="/api/jobs/accept-quote" method="POST" style={{ flex: 1 }}>
+      {quotes.slice(0, 8).map((q) => {
+        const sentDate = q.quote_sent_at ? new Date(q.quote_sent_at) : null;
+        const daysSince = sentDate
+          ? Math.floor((Date.now() - sentDate.getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+        const sentLabel =
+          daysSince === null
+            ? null
+            : daysSince === 0
+            ? "Sent today"
+            : daysSince === 1
+            ? "Sent 1 day ago"
+            : `Sent ${daysSince} days ago`;
+        const worthChasing = daysSince !== null && daysSince >= 3 && !q.quote_chased_at;
+
+        return (
+          <div key={q.id} style={cardStyle("#f59e0b")}>
+            <div style={{ fontWeight: 600 }}>{q.customer_name}</div>
+            <div style={{ fontSize: 13, color: "#888", marginBottom: 4 }}>
+              {q.job_type || "Job"} · {formatCurrency(q.amount, settings.currency)}
+            </div>
+            {sentLabel && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: worthChasing ? "#b45309" : "#888",
+                  fontWeight: worthChasing ? 700 : 400,
+                  marginBottom: 10,
+                }}
+              >
+                {worthChasing ? "⏰ " : ""}
+                {sentLabel}
+                {q.quote_chased_at ? " · already chased" : ""}
+                {worthChasing ? " · worth chasing" : ""}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <form action="/api/jobs/accept-quote" method="POST" style={{ flex: 1 }}>
+                <input type="hidden" name="jobId" value={q.id} />
+                <button type="submit" style={primaryButtonStyle}>
+                  Accept quote
+                </button>
+              </form>
+              <form action="/api/jobs/chase-quote" method="POST" style={{ flex: 1 }}>
+                <input type="hidden" name="jobId" value={q.id} />
+                <button type="submit" style={secondaryButtonStyle}>
+                  Chase quote
+                </button>
+              </form>
+            </div>
+            <form action="/api/jobs/decline-quote" method="POST" style={{ marginTop: 6 }}>
               <input type="hidden" name="jobId" value={q.id} />
-              <button type="submit" style={primaryButtonStyle}>
-                Accept quote
+              <button type="submit" style={declineLinkStyle}>
+                Decline / lost job
               </button>
             </form>
-            <form action="/api/jobs/chase-quote" method="POST" style={{ flex: 1 }}>
-              <input type="hidden" name="jobId" value={q.id} />
-              <button type="submit" style={secondaryButtonStyle}>
-                Chase quote
-              </button>
-            </form>
           </div>
-          <form action="/api/jobs/decline-quote" method="POST" style={{ marginTop: 6 }}>
-            <input type="hidden" name="jobId" value={q.id} />
-            <button type="submit" style={declineLinkStyle}>
-              Decline / lost job
-            </button>
-          </form>
-        </div>
-      ))}
+        );
+      })}
 
       {quotes.length > 8 && (
         <Link href="/jobs?status=quote_sent" style={viewAllLinkStyle}>
@@ -186,37 +216,47 @@ async function JobsTab({ db, settings }) {
 
       {jobs.length === 0 && <p style={{ color: "#888" }}>No jobs in progress.</p>}
 
-      {displayJobs.map((job) => (
-        <div key={job.id} style={cardStyle("#2563eb")}>
-          <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
-          <div style={{ fontSize: 13, color: "#888" }}>
-            {job.job_type} · {formatCurrency(job.amount, settings.currency)}
-          </div>
-          {job.scheduled_start && (
-            <div style={{ fontSize: 12, color: "#16a34a", marginTop: 2 }}>
-              📅{" "}
-              {new Date(job.scheduled_start).toLocaleString("en-GB", {
-                weekday: "short",
-                day: "numeric",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+      {displayJobs.map((job) => {
+        const isLate =
+          job.scheduled_end && new Date(job.scheduled_end) < new Date() && !job.status.startsWith("complete");
+        return (
+          <div key={job.id} style={cardStyle(isLate ? "#dc2626" : "#2563eb")}>
+            <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
+            <div style={{ fontSize: 13, color: "#888" }}>
+              {job.job_type} · {formatCurrency(job.amount, settings.currency)}
             </div>
-          )}
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <Link href={`/jobs/schedule/${job.id}`} style={secondaryLinkButtonStyle}>
-              {job.scheduled_start ? "Reschedule" : "Book in"}
-            </Link>
-            <Link href={`/jobs/complete/${job.id}`} style={primaryLinkButtonStyle}>
-              Mark done
+            {isLate ? (
+              <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 2 }}>
+                ⚠️ Running late
+              </div>
+            ) : (
+              job.scheduled_start && (
+                <div style={{ fontSize: 12, color: "#16a34a", marginTop: 2 }}>
+                  📅{" "}
+                  {new Date(job.scheduled_start).toLocaleString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+              )
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <Link href={`/jobs/schedule/${job.id}`} style={secondaryLinkButtonStyle}>
+                {job.scheduled_start ? "Reschedule" : "Book in"}
+              </Link>
+              <Link href={`/jobs/complete/${job.id}`} style={primaryLinkButtonStyle}>
+                Mark done
+              </Link>
+            </div>
+            <Link href={`/jobs/photos/${job.id}`} style={photosLinkButtonStyle}>
+              📷 Photos{photoCountByJob[job.id] ? ` (${photoCountByJob[job.id]})` : ""}
             </Link>
           </div>
-          <Link href={`/jobs/photos/${job.id}`} style={photosLinkButtonStyle}>
-            📷 Photos{photoCountByJob[job.id] ? ` (${photoCountByJob[job.id]})` : ""}
-          </Link>
-        </div>
-      ))}
+        );
+      })}
 
       {jobs.length > 8 && (
         <Link href="/jobs?status=in_progress" style={viewAllLinkStyle}>
