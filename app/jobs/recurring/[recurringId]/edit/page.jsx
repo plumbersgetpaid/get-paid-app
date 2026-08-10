@@ -1,0 +1,234 @@
+import { supabaseAdmin } from "../../../../lib/supabaseClient";
+import { notFound } from "next/navigation";
+import BackButton from "../../../../components/BackButton";
+import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+
+export default async function EditRecurringJob({ params }) {
+  const { recurringId } = params;
+  const db = supabaseAdmin();
+
+  const { data: recurring, error } = await db
+    .from("recurring_jobs")
+    .select("*")
+    .eq("id", recurringId)
+    .single();
+
+  if (error || !recurring) {
+    notFound();
+  }
+
+  const { data: customer } = await db
+    .from("customers")
+    .select("name")
+    .eq("id", recurring.customer_id)
+    .single();
+
+  return (
+    <main>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <BackButton fallbackHref="/jobs/recurring" />
+        <h1 style={{ fontSize: 20, margin: 0 }}>Edit recurring job</h1>
+      </div>
+
+      <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
+        For {customer?.name || "this customer"} - changes here apply to
+        future occurrences, not ones already booked in.
+      </p>
+
+      <form
+        action="/api/jobs/recurring/update"
+        method="POST"
+        style={{ display: "grid", gap: 12, marginTop: 16 }}
+      >
+        <input type="hidden" name="recurringId" value={recurring.id} />
+
+        <input
+          name="jobType"
+          placeholder="Job type"
+          defaultValue={recurring.job_type || ""}
+          style={inputStyle}
+        />
+        <input
+          name="location"
+          placeholder="Job location / address (optional)"
+          defaultValue={recurring.location || ""}
+          style={inputStyle}
+        />
+        <input
+          name="amount"
+          type="number"
+          step="0.01"
+          placeholder="Price"
+          defaultValue={recurring.amount || ""}
+          style={inputStyle}
+        />
+
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Preferred start time
+          <input
+            type="time"
+            name="preferredTime"
+            defaultValue={recurring.preferred_time || "09:00"}
+            style={{ ...inputStyle, marginTop: 6 }}
+          />
+        </label>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 14,
+            background: "white",
+            padding: 12,
+            borderRadius: 8,
+          }}
+        >
+          <input
+            type="checkbox"
+            name="confirmTimeLater"
+            value="1"
+            defaultChecked={recurring.confirm_time_later}
+          />
+          I'll confirm the exact time closer to each occurrence, rather than
+          fixing it
+        </label>
+
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Repeats every
+          <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+            <input
+              type="number"
+              name="frequencyValue"
+              min="1"
+              defaultValue={recurring.frequency_value}
+              required
+              style={{ ...inputStyle, flex: 1 }}
+            />
+            <select
+              name="frequencyUnit"
+              defaultValue={recurring.frequency_unit}
+              style={{ ...inputStyle, flex: 2 }}
+            >
+              <option value="weeks">Week(s)</option>
+              <option value="months">Month(s)</option>
+              <option value="years">Year(s)</option>
+            </select>
+          </div>
+        </label>
+
+        <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
+            Let the client know each time
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+            <input
+              type="checkbox"
+              name="notifyEmail"
+              value="1"
+              defaultChecked={recurring.notify_email}
+            />
+            Email
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+            <input
+              type="checkbox"
+              name="notifyWhatsapp"
+              value="1"
+              defaultChecked={recurring.notify_whatsapp}
+            />
+            WhatsApp
+          </label>
+        </div>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 14,
+            background: "white",
+            padding: 12,
+            borderRadius: 8,
+          }}
+        >
+          <input
+            type="checkbox"
+            name="autoInvoice"
+            value="1"
+            defaultChecked={recurring.auto_invoice}
+          />
+          Automatically send an invoice each time
+        </label>
+
+        <label style={oneOffCardStyle}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "#92400e" }}>
+            📌 One-off: I already know the time for the very next occurrence
+            only
+          </div>
+          <input
+            type="time"
+            name="nextOccurrenceTime"
+            defaultValue={recurring.next_occurrence_time || ""}
+            style={{ ...inputStyle, marginTop: 8 }}
+          />
+          <span style={{ fontSize: 12, color: "#92400e" }}>
+            Leave blank to use the usual settings above. If filled in, it
+            only affects the next occurrence - after that, this clears
+            itself and things go back to normal.
+          </span>
+        </label>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+          <Link href="/jobs/recurring" style={cancelButtonStyle}>
+            Cancel
+          </Link>
+          <button type="submit" style={submitButtonStyle}>
+            Save changes
+          </button>
+        </div>
+      </form>
+    </main>
+  );
+}
+
+const inputStyle = {
+  padding: "12px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  fontSize: 15,
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+const cancelButtonStyle = {
+  background: "white",
+  color: "#111",
+  padding: "14px",
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  fontWeight: 600,
+  flex: 1,
+  textAlign: "center",
+  textDecoration: "none",
+};
+
+const submitButtonStyle = {
+  background: "#16a34a",
+  color: "white",
+  padding: "14px",
+  borderRadius: 10,
+  border: "none",
+  fontWeight: 600,
+  flex: 2,
+};
+
+const oneOffCardStyle = {
+  display: "block",
+  background: "#fef3c7",
+  border: "1px solid #fde68a",
+  borderRadius: 10,
+  padding: 12,
+};
