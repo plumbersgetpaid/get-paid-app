@@ -32,7 +32,7 @@ export default async function Today() {
   const needsBooking = (activeJobs || []).filter((j) => !j.scheduled_start);
   const now = new Date();
   const lateJobs = (activeJobs || []).filter(
-    (j) => j.scheduled_end && new Date(j.scheduled_end) < now
+    (j) => j.time_confirmed !== false && j.scheduled_end && new Date(j.scheduled_end) < now
   );
 
   const jobCustomerIds = [...new Set(jobsToday.map((j) => j.customer_id))];
@@ -52,12 +52,14 @@ export default async function Today() {
   const agenda = [
     ...jobsToday.map((j) => ({
       time: j.scheduled_start,
+      timeConfirmed: j.time_confirmed !== false,
       icon: "🔧",
       label: `${jobCustomerNameById[j.customer_id] || "Customer"} · ${j.job_type || "Job"}`,
       href: `/jobs/complete/${j.id}?from=today`,
     })),
     ...(remindersToday || []).map((r) => ({
       time: r.scheduled_start,
+      timeConfirmed: true,
       icon: "📌",
       label: r.title,
       href: `/calendar/reminder/${r.id}`,
@@ -90,10 +92,12 @@ export default async function Today() {
         {agenda.map((item, i) => (
           <Link key={i} href={item.href} style={agendaRowStyle}>
             <span style={{ fontWeight: 700, minWidth: 54 }}>
-              {new Date(item.time).toLocaleTimeString("en-GB", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {item.timeConfirmed
+                ? new Date(item.time).toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "⏰ TBC"}
             </span>
             <span>
               {item.icon} {item.label}
