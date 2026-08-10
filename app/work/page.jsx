@@ -288,7 +288,7 @@ async function InvoicesTab({ db, settings }) {
   return (
     <div>
       <Link href="/invoices" style={accountantLinkStyle}>
-        📄 Full invoice history &amp; PDF export (for your accountant) →
+        📄 Full invoice history export (for your accountant) →
       </Link>
 
       <div style={statRowStyle}>
