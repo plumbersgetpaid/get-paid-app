@@ -56,7 +56,11 @@ export default async function AllJobs({ searchParams }) {
   } else if (status === "late") {
     const now = new Date();
     jobs = jobs.filter(
-      (j) => j.status === "in_progress" && j.scheduled_end && new Date(j.scheduled_end) < now
+      (j) =>
+        j.status === "in_progress" &&
+        j.time_confirmed !== false &&
+        j.scheduled_end &&
+        new Date(j.scheduled_end) < now
     );
   } else if (status === "done") {
     jobs = jobs.filter((j) => ["complete", "invoiced", "paid"].includes(j.status));
