@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BackButton from "../components/BackButton";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +14,7 @@ export default async function Settings({ searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Business settings</h1>
       </div>
 
