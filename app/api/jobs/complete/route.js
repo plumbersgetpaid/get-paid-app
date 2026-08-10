@@ -48,6 +48,7 @@ export async function POST(req) {
   const amountInput = form.get("amount"); // optional - lets the price be adjusted from the original quote
   const noteInput = (form.get("note") || "").toString().trim(); // optional explanation for a price change
   const attachPhotos = form.get("attachPhotos") === "1";
+  const from = (form.get("from") || "").toString();
 
   const db = supabaseAdmin();
 
@@ -211,6 +212,9 @@ export async function POST(req) {
   // 4. Also send an SMS confirmation (optional - requires Twilio setup)
   // See README for enabling this.
 
-  return NextResponse.redirect(new URL("/", req.url));
+  // Take the tradie back to wherever they came from, rather than always
+  // dumping them on the Today screen
+  const returnPath = from === "work" ? "/work?tab=jobs" : "/";
+  return NextResponse.redirect(new URL(returnPath, req.url));
 }
 
