@@ -56,6 +56,13 @@ export default function BottomNav() {
             >
               📌 Personal reminder
             </Link>
+            <Link
+              href="/jobs/recurring/new"
+              style={fabMenuItemStyle}
+              onClick={() => setMenuOpen(false)}
+            >
+              🔁 Recurring job
+            </Link>
           </div>
         )}
       </div>
