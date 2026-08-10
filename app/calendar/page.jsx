@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../lib/supabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getTodayInLondon } from "../lib/today";
+import { advanceDate } from "../lib/duration";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +62,22 @@ function getDateRange(range, offset, todayStr) {
   return { start: day, end: day };
 }
 
+// Projects every future date a recurring job would land on within
+// [rangeStartStr, rangeEndStr], without creating any real job rows - the
+// actual booking only gets created once the daily cron reaches that date,
+// but the calendar should still show it coming up in advance
+function projectRecurringOccurrences(nextOccurrence, value, unit, rangeStartStr, rangeEndStr) {
+  const dates = [];
+  let current = nextOccurrence;
+  let guard = 0;
+  while (current <= rangeEndStr && guard < 60) {
+    if (current >= rangeStartStr) dates.push(current);
+    current = advanceDate(current, value, unit);
+    guard += 1;
+  }
+  return dates;
+}
+
 export default async function Calendar({ searchParams }) {
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
@@ -112,6 +129,19 @@ export default async function Calendar({ searchParams }) {
     .gte("scheduled_start", `${rangeStartStr}T00:00:00`)
     .lte("scheduled_start", `${rangeEndStr}T23:59:59`)
     .order("scheduled_start", { ascending: true });
+
+  const { data: recurringJobs } = await db
+    .from("recurring_jobs")
+    .select("*")
+    .eq("active", true);
+
+  const recurringCustomerIds = [...new Set((recurringJobs || []).map((r) => r.customer_id))];
+  const { data: recurringCustomers } = recurringCustomerIds.length
+    ? await db.from("customers").select("id, name").in("id", recurringCustomerIds)
+    : { data: [] };
+  const recurringCustomerName = Object.fromEntries(
+    (recurringCustomers || []).map((c) => [c.id, c.name])
+  );
 
   // Combine job bookings, payment due dates, and reminders into one
   // date-grouped timeline
@@ -170,6 +200,27 @@ export default async function Calendar({ searchParams }) {
     });
   }
 
+  for (const r of recurringJobs || []) {
+    const occurrenceDates = projectRecurringOccurrences(
+      r.next_occurrence,
+      r.frequency_value,
+      r.frequency_unit,
+      rangeStartStr,
+      rangeEndStr
+    );
+    for (const dateKey of occurrenceDates) {
+      if (!entriesByDate[dateKey]) entriesByDate[dateKey] = [];
+      entriesByDate[dateKey].push({
+        type: "recurring",
+        time: null,
+        label: `${recurringCustomerName[r.customer_id] || "Customer"} - ${
+          r.job_type || "Job"
+        } (recurring, not yet booked)`,
+        href: "/jobs/recurring",
+      });
+    }
+  }
+
   const sortedDates = Object.keys(entriesByDate).sort();
 
   return (
@@ -218,7 +269,8 @@ export default async function Calendar({ searchParams }) {
       )}
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 12 }}>
-        🔧 booked jobs, 💰 payment due dates, and 📌 personal reminders.
+        🔧 booked jobs, 💰 payment due dates, 📌 personal reminders, and 🔁
+        upcoming recurring jobs.
       </p>
 
       {sortedDates.length === 0 && (
@@ -245,7 +297,13 @@ export default async function Calendar({ searchParams }) {
                 .map((entry, i) => (
                   <Link key={i} href={entry.href} style={entryRowStyle(entry.type)}>
                     <span style={{ marginRight: 8 }}>
-                      {entry.type === "job" ? "🔧" : entry.type === "payment" ? "💰" : "📌"}
+                      {entry.type === "job"
+                        ? "🔧"
+                        : entry.type === "payment"
+                        ? "💰"
+                        : entry.type === "recurring"
+                        ? "🔁"
+                        : "📌"}
                     </span>
                     {entry.time && (
                       <span style={{ color: "#888", marginRight: 8 }}>{entry.time}</span>
@@ -378,7 +436,13 @@ const entryRowStyle = (type) => ({
   background: "white",
   border: "1px solid #eee",
   borderLeft: `4px solid ${
-    type === "job" ? "#2563eb" : type === "payment" ? "#dc2626" : "#9333ea"
+    type === "job"
+      ? "#2563eb"
+      : type === "payment"
+      ? "#dc2626"
+      : type === "recurring"
+      ? "#ca8a04"
+      : "#9333ea"
   }`,
   borderRadius: 6,
   padding: "10px 12px",
