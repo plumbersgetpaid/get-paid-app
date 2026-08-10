@@ -47,6 +47,37 @@ export default function NewRecurringJob() {
         </label>
 
         <label style={{ fontSize: 13, color: "#666" }}>
+          Preferred start time
+          <input
+            type="time"
+            name="preferredTime"
+            defaultValue="09:00"
+            required
+            style={{ ...inputStyle, marginTop: 6 }}
+          />
+          <span style={{ fontSize: 12, color: "#888" }}>
+            Only used if you're not confirming the time closer to each
+            occurrence (below)
+          </span>
+        </label>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 14,
+            background: "white",
+            padding: 12,
+            borderRadius: 8,
+          }}
+        >
+          <input type="checkbox" name="confirmTimeLater" value="1" />
+          I'll confirm the exact time closer to each occurrence, rather than
+          fixing it now
+        </label>
+
+        <label style={{ fontSize: 13, color: "#666" }}>
           Repeats every
           <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
             <input
@@ -67,6 +98,21 @@ export default function NewRecurringJob() {
             e.g. every 3 months for quarterly, every 12 months for yearly
           </span>
         </label>
+
+        <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
+            Let the client know each time (if you've added their email/phone
+            above)
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+            <input type="checkbox" name="notifyEmail" value="1" defaultChecked />
+            Email
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+            <input type="checkbox" name="notifyWhatsapp" value="1" defaultChecked />
+            WhatsApp
+          </label>
+        </div>
 
         <label
           style={{
