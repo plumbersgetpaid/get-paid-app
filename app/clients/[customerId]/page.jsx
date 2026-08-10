@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BackButton from "../../components/BackButton";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
@@ -86,9 +87,7 @@ export default async function ClientDetail({ params }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/clients" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/clients" />
         <h1 style={{ fontSize: 20, margin: 0 }}>{customer.name}</h1>
       </div>
 
