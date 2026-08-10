@@ -17,8 +17,10 @@ export default async function Today() {
 
   const { data: outstanding } = await db.from("outstanding_invoices").select("*");
   const totalOwed = (outstanding || []).reduce((sum, i) => sum + Number(i.amount), 0);
-  const overdueInvoices = (outstanding || []).filter((i) => i.days_overdue > 0);
-  const overdueAmount = overdueInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
+  // "Needs attention" for invoices due today or already overdue - not just
+  // strictly overdue, so a payment due today doesn't get missed
+  const dueOrOverdueInvoices = (outstanding || []).filter((i) => i.days_overdue >= 0);
+  const overdueAmount = dueOrOverdueInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
 
   const { data: quotes } = await db.from("jobs").select("id").eq("status", "quote_sent");
 
@@ -52,7 +54,7 @@ export default async function Today() {
       time: j.scheduled_start,
       icon: "🔧",
       label: `${jobCustomerNameById[j.customer_id] || "Customer"} · ${j.job_type || "Job"}`,
-      href: `/jobs/complete/${j.id}`,
+      href: `/jobs/complete/${j.id}?from=today`,
     })),
     ...(remindersToday || []).map((r) => ({
       time: r.scheduled_start,
@@ -64,14 +66,10 @@ export default async function Today() {
 
   const quotesCount = (quotes || []).length;
   const needsBookingCount = needsBooking.length;
-  const overdueCount = overdueInvoices.length;
+  const overdueCount = dueOrOverdueInvoices.length;
   const lateCount = lateJobs.length;
   const allClear =
-    quotesCount === 0 &&
-    needsBookingCount === 0 &&
-    overdueCount === 0 &&
-    lateCount === 0 &&
-    totalOwed === 0;
+    quotesCount === 0 && needsBookingCount === 0 && overdueCount === 0 && lateCount === 0;
 
   return (
     <main>
@@ -121,19 +119,19 @@ export default async function Today() {
             </Link>
           )}
           {lateCount > 0 && (
-            <Link href="/work?tab=jobs" style={attentionRowStyle}>
+            <Link href="/jobs?status=late" style={attentionRowStyle}>
               🔴 {lateCount} job{lateCount === 1 ? "" : "s"} running late
             </Link>
           )}
           {needsBookingCount > 0 && (
-            <Link href="/work?tab=jobs" style={attentionRowStyle}>
+            <Link href="/jobs?status=unscheduled" style={attentionRowStyle}>
               🔵 {needsBookingCount} job{needsBookingCount === 1 ? "" : "s"} need
               {needsBookingCount === 1 ? "s" : ""} booking in
             </Link>
           )}
           {overdueCount > 0 && (
             <Link href="/work?tab=invoices" style={attentionRowStyle}>
-              🔴 {overdueCount} invoice{overdueCount === 1 ? "" : "s"} overdue
+              🔴 {overdueCount} invoice{overdueCount === 1 ? "" : "s"} due or overdue
             </Link>
           )}
         </section>
