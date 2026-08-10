@@ -153,6 +153,7 @@ export default async function Calendar({ searchParams }) {
 
     const startDateObj = new Date(job.scheduled_start);
     const endDateObj = new Date(job.scheduled_end);
+    const timeUnconfirmed = job.time_confirmed === false;
     const sameDay = startDateObj.toDateString() === endDateObj.toDateString();
     const completionLabel = sameDay
       ? `finishes ~${endDateObj.toLocaleTimeString("en-GB", {
@@ -167,10 +168,16 @@ export default async function Calendar({ searchParams }) {
 
     entriesByDate[dateKey].push({
       type: "job",
-      time: startDateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
-      label: `${jobCustomerName[job.customer_id] || "Customer"} - ${
-        job.job_type || "Job"
-      } (${completionLabel})`,
+      time: timeUnconfirmed
+        ? null
+        : startDateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      label: timeUnconfirmed
+        ? `${jobCustomerName[job.customer_id] || "Customer"} - ${
+            job.job_type || "Job"
+          } (⏰ time to be confirmed)`
+        : `${jobCustomerName[job.customer_id] || "Customer"} - ${
+            job.job_type || "Job"
+          } (${completionLabel})`,
       href: `/jobs/schedule/${job.id}`,
     });
   }
@@ -215,7 +222,7 @@ export default async function Calendar({ searchParams }) {
         time: null,
         label: `${recurringCustomerName[r.customer_id] || "Customer"} - ${
           r.job_type || "Job"
-        } (recurring, not yet booked)`,
+        } (repeats here - books itself automatically nearer the time)`,
         href: "/jobs/recurring",
       });
     }
