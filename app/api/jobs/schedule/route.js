@@ -4,6 +4,7 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { textToEmailHtml } from "../../../lib/emailHtml";
+import { getEmailFrom } from "../../../lib/emailFrom";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -75,6 +76,7 @@ export async function POST(req) {
       scheduled_start: start.toISOString(),
       scheduled_end: end.toISOString(),
       location: location || null,
+      time_confirmed: true, // a human has now explicitly set/confirmed the time
       reminder_sent_at: null, // reset so the day-before reminder fires for the new time
     })
     .eq("id", jobId)
@@ -118,7 +120,7 @@ export async function POST(req) {
             bodyText
           )}</div>`;
           await resend.emails.send({
-            from: `${settings.business_name} <onboarding@resend.dev>`,
+            from: getEmailFrom(settings.business_name),
             to: customer.email,
             subject,
             html,
