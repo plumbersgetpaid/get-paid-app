@@ -268,8 +268,8 @@ async function JobsTab({ db, settings, sub }) {
         </button>
       </form>
 
-      <Link href="/jobs/recurring" style={viewAllLinkStyle}>
-        🔁 Manage recurring jobs →
+      <Link href="/jobs/recurring" style={recurringButtonStyle}>
+        🔁 Recurring jobs
       </Link>
 
       {activeList.length === 0 && (
@@ -293,6 +293,7 @@ async function JobsTab({ db, settings, sub }) {
         }
 
         const isLate =
+          job.time_confirmed !== false &&
           job.scheduled_end &&
           new Date(job.scheduled_end) < new Date() &&
           !job.status.startsWith("complete");
@@ -306,6 +307,16 @@ async function JobsTab({ db, settings, sub }) {
             {isLate ? (
               <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 2 }}>
                 ⚠️ Running late
+              </div>
+            ) : job.time_confirmed === false ? (
+              <div style={{ fontSize: 12, color: "#b45309", fontWeight: 700, marginTop: 2 }}>
+                📅{" "}
+                {new Date(job.scheduled_start).toLocaleDateString("en-GB", {
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                })}{" "}
+                · ⏰ time to be confirmed
               </div>
             ) : (
               job.scheduled_start && (
@@ -637,6 +648,21 @@ const viewAllLinkStyle = {
   color: "#666",
   textDecoration: "underline",
   marginTop: 8,
+};
+
+const recurringButtonStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  background: "#fef3c7",
+  color: "#92400e",
+  border: "1px solid #fde68a",
+  borderRadius: 999,
+  padding: "8px 14px",
+  fontSize: 13,
+  fontWeight: 700,
+  textDecoration: "none",
+  marginBottom: 16,
 };
 
 const accountantLinkStyle = {
