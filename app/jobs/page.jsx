@@ -52,6 +52,11 @@ export default async function AllJobs({ searchParams }) {
 
   if (status === "unscheduled") {
     jobs = jobs.filter((j) => j.status === "in_progress" && !j.scheduled_start);
+  } else if (status === "late") {
+    const now = new Date();
+    jobs = jobs.filter(
+      (j) => j.status === "in_progress" && j.scheduled_end && new Date(j.scheduled_end) < now
+    );
   } else if (status === "done") {
     jobs = jobs.filter((j) => ["complete", "invoiced", "paid"].includes(j.status));
   } else if (status) {
@@ -75,6 +80,8 @@ export default async function AllJobs({ searchParams }) {
         <h1 style={{ fontSize: 20, margin: 0 }}>
           {status === "unscheduled"
             ? "Jobs needing booked in"
+            : status === "late"
+            ? "Jobs running late"
             : status === "done"
             ? "Completed jobs"
             : status
