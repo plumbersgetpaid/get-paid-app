@@ -1,60 +1,30 @@
-// Looks for an existing customer matching by email or phone first (the
-// most reliable signal that this is genuinely the same person), falling
-// back to an exact name match only if neither was provided. Returns the
-// matching customer row, or null if nothing matches.
-//
-// Uses separate, safe query-builder lookups rather than a single combined
-// filter string - combined filters can silently misbehave on values
-// containing dots (very common in real email addresses), and a failure
-// here should never be allowed to block the customer/job being created.
-export async function findExistingCustomer(db, { name, email, phone }) {
+// Looks for an existing customer to reuse, but only on a genuinely strong
+// signal: an exact match on BOTH email and phone. Anything weaker (just an
+// email, just a phone, or just a name) creates a new customer instead -
+// the duplicate-flagging system on the Clients pages will pick up any
+// real duplicate for a human to review and merge, which is safer than the
+// system silently deciding two records are the same person and attaching
+// a job to the wrong one.
+export async function findExistingCustomer(db, { email, phone }) {
   const trimmedEmail = (email || "").trim();
   const trimmedPhone = (phone || "").trim();
-  const trimmedName = (name || "").trim();
 
-  if (trimmedEmail) {
-    try {
-      const { data, error } = await db
-        .from("customers")
-        .select("*")
-        .ilike("email", trimmedEmail)
-        .limit(1)
-        .maybeSingle();
-      if (error) console.error("findExistingCustomer email lookup error:", error);
-      if (data) return data;
-    } catch (e) {
-      console.error("findExistingCustomer email lookup threw:", e);
-    }
+  if (!trimmedEmail || !trimmedPhone) {
+    return null;
   }
 
-  if (trimmedPhone) {
-    try {
-      const { data, error } = await db
-        .from("customers")
-        .select("*")
-        .eq("phone", trimmedPhone)
-        .limit(1)
-        .maybeSingle();
-      if (error) console.error("findExistingCustomer phone lookup error:", error);
-      if (data) return data;
-    } catch (e) {
-      console.error("findExistingCustomer phone lookup threw:", e);
-    }
-  }
-
-  if (trimmedName) {
-    try {
-      const { data, error } = await db
-        .from("customers")
-        .select("*")
-        .ilike("name", trimmedName)
-        .limit(1)
-        .maybeSingle();
-      if (error) console.error("findExistingCustomer name lookup error:", error);
-      if (data) return data;
-    } catch (e) {
-      console.error("findExistingCustomer name lookup threw:", e);
-    }
+  try {
+    const { data, error } = await db
+      .from("customers")
+      .select("*")
+      .ilike("email", trimmedEmail)
+      .eq("phone", trimmedPhone)
+      .limit(1)
+      .maybeSingle();
+    if (error) console.error("findExistingCustomer lookup error:", error);
+    if (data) return data;
+  } catch (e) {
+    console.error("findExistingCustomer lookup threw:", e);
   }
 
   return null;
