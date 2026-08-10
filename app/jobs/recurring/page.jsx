@@ -61,9 +61,21 @@ export default async function RecurringJobs() {
                 })}`
               : "Paused"}
             {r.auto_invoice ? " · auto-invoices" : ""}
+            {r.confirm_time_later ? " · confirms time nearer the day" : ""}
           </div>
+          {r.next_occurrence_time && (
+            <div style={{ fontSize: 12, color: "#92400e", marginTop: 2 }}>
+              📌 Next occurrence set for {r.next_occurrence_time} (one-off)
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <Link
+              href={`/jobs/recurring/${r.id}/edit`}
+              style={{ ...secondaryButtonStyle, textAlign: "center", textDecoration: "none" }}
+            >
+              Edit
+            </Link>
             <form action="/api/jobs/recurring/pause" method="POST" style={{ flex: 1 }}>
               <input type="hidden" name="recurringId" value={r.id} />
               <input type="hidden" name="active" value={r.active ? "0" : "1"} />
