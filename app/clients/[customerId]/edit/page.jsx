@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "../../../lib/supabaseClient";
+import BackButton from "../../../components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +22,7 @@ export default async function EditClient({ params }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href={`/clients/${customerId}`} aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref={`/clients/${customerId}`} />
         <h1 style={{ fontSize: 20, margin: 0 }}>Edit client</h1>
       </div>
 
