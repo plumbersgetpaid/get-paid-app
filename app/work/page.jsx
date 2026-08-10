@@ -29,16 +29,22 @@ export default async function Work({ searchParams }) {
         </Link>
       </div>
 
-      {tab === "quotes" && <QuotesTab db={db} settings={settings} />}
+      {tab === "quotes" && (
+        <QuotesTab db={db} settings={settings} sub={searchParams?.sub || "waiting"} />
+      )}
       {tab === "jobs" && (
         <JobsTab db={db} settings={settings} sub={searchParams?.sub || "today"} />
       )}
-      {tab === "invoices" && <InvoicesTab db={db} settings={settings} />}
+      {tab === "invoices" && (
+        <InvoicesTab db={db} settings={settings} sub={searchParams?.sub || "overdue"} />
+      )}
     </main>
   );
 }
 
-async function QuotesTab({ db, settings }) {
+async function QuotesTab({ db, settings, sub }) {
+  const activeSub = ["waiting", "chased"].includes(sub) ? sub : "waiting";
+
   const { data: rawQuotes } = await db
     .from("jobs")
     .select("*")
@@ -56,19 +62,27 @@ async function QuotesTab({ db, settings }) {
     customer_name: nameById[q.customer_id] || "Unknown customer",
   }));
 
-  const chasedCount = quotes.filter((q) => q.quote_chased_at).length;
+  const waitingQuotes = quotes.filter((q) => !q.quote_chased_at);
+  const chasedQuotes = quotes.filter((q) => q.quote_chased_at);
+  const activeList = activeSub === "chased" ? chasedQuotes : waitingQuotes;
+
+  const subTabs = [
+    { key: "waiting", label: "Waiting response", count: waitingQuotes.length },
+    { key: "chased", label: "Already chased", count: chasedQuotes.length },
+  ];
 
   return (
     <div>
-      <div style={statRowStyle}>
-        <Link href="/jobs?status=quote_sent" style={statBlockLinkStyle}>
-          <div style={statNumberStyle}>{quotes.length}</div>
-          <div style={statLabelStyle}>Awaiting response</div>
-        </Link>
-        <Link href="/jobs?status=quote_sent" style={statBlockLinkStyle}>
-          <div style={statNumberStyle}>{chasedCount}</div>
-          <div style={statLabelStyle}>Already chased</div>
-        </Link>
+      <div style={subTabRowStyle}>
+        {subTabs.map((t) => (
+          <Link
+            key={t.key}
+            href={`/work?tab=quotes&sub=${t.key}`}
+            style={subTabStyle(activeSub === t.key)}
+          >
+            {t.label} ({t.count})
+          </Link>
+        ))}
       </div>
 
       <form action="/jobs" method="GET" style={searchFormStyle}>
@@ -79,9 +93,13 @@ async function QuotesTab({ db, settings }) {
         </button>
       </form>
 
-      {quotes.length === 0 && <p style={{ color: "#888" }}>No quotes waiting on a reply.</p>}
+      {activeList.length === 0 && (
+        <p style={{ color: "#888" }}>
+          {activeSub === "chased" ? "No quotes chased yet." : "No quotes waiting on a reply."}
+        </p>
+      )}
 
-      {quotes.slice(0, 8).map((q) => {
+      {activeList.slice(0, 8).map((q) => {
         const sentDate = q.quote_sent_at ? new Date(q.quote_sent_at) : null;
         const daysSince = sentDate
           ? Math.floor((Date.now() - sentDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -141,7 +159,7 @@ async function QuotesTab({ db, settings }) {
         );
       })}
 
-      {quotes.length > 8 && (
+      {activeList.length > 8 && (
         <Link href="/jobs?status=quote_sent" style={viewAllLinkStyle}>
           View all {quotes.length} quotes →
         </Link>
@@ -330,7 +348,9 @@ async function JobsTab({ db, settings, sub }) {
   );
 }
 
-async function InvoicesTab({ db, settings }) {
+async function InvoicesTab({ db, settings, sub }) {
+  const activeSub = ["overdue", "awaiting", "paid"].includes(sub) ? sub : "overdue";
+
   const { data: outstanding } = await db
     .from("outstanding_invoices")
     .select("*")
@@ -338,11 +358,48 @@ async function InvoicesTab({ db, settings }) {
 
   const overdue = (outstanding || []).filter((i) => i.days_overdue > 0);
   const notYetDue = (outstanding || []).filter((i) => i.days_overdue <= 0);
-  const overdueAmount = overdue.reduce((s, i) => s + Number(i.amount), 0);
-  const notYetDueAmount = notYetDue.reduce((s, i) => s + Number(i.amount), 0);
 
-  const { data: paidInvoices } = await db.from("invoices").select("amount").eq("status", "paid");
-  const paidTotal = (paidInvoices || []).reduce((s, i) => s + Number(i.amount), 0);
+  const { data: paidInvoicesRaw } = await db
+    .from("invoices")
+    .select("*")
+    .eq("status", "paid")
+    .order("paid_at", { ascending: false });
+  const paidInvoices = paidInvoicesRaw || [];
+  const paidTotal = paidInvoices.reduce((s, i) => s + Number(i.amount), 0);
+
+  // Only fetch customer/job details for paid invoices when that sub-tab is
+  // actually being viewed - no point loading it every time
+  let paidPreview = [];
+  if (activeSub === "paid") {
+    const jobIds = [...new Set(paidInvoices.map((i) => i.job_id))];
+    const { data: jobs } = jobIds.length
+      ? await db.from("jobs").select("id, job_type, customer_id").in("id", jobIds)
+      : { data: [] };
+    const jobById = Object.fromEntries((jobs || []).map((j) => [j.id, j]));
+    const paidCustomerIds = [...new Set((jobs || []).map((j) => j.customer_id))];
+    const { data: paidCustomers } = paidCustomerIds.length
+      ? await db.from("customers").select("id, name").in("id", paidCustomerIds)
+      : { data: [] };
+    const paidNameById = Object.fromEntries((paidCustomers || []).map((c) => [c.id, c.name]));
+
+    paidPreview = paidInvoices.slice(0, 8).map((inv) => {
+      const job = jobById[inv.job_id];
+      return {
+        ...inv,
+        job_type: job?.job_type,
+        customer_name: job ? paidNameById[job.customer_id] : "Unknown customer",
+      };
+    });
+  }
+
+  const activeList =
+    activeSub === "overdue" ? overdue : activeSub === "awaiting" ? notYetDue : paidPreview;
+
+  const subTabs = [
+    { key: "overdue", label: "Overdue", count: overdue.length },
+    { key: "awaiting", label: "Awaiting", count: notYetDue.length },
+    { key: "paid", label: "Paid (all time)", count: paidInvoices.length },
+  ];
 
   return (
     <div>
@@ -350,25 +407,16 @@ async function InvoicesTab({ db, settings }) {
         📄 Full invoice history export (for your accountant) →
       </Link>
 
-      <div style={statRowStyle}>
-        <Link href="/invoices" style={statBlockLinkStyle}>
-          <div style={{ ...statNumberStyle, color: "#dc2626", fontSize: 17 }}>
-            {formatCurrency(overdueAmount, settings.currency)}
-          </div>
-          <div style={statLabelStyle}>Overdue ({overdue.length})</div>
-        </Link>
-        <Link href="/invoices" style={statBlockLinkStyle}>
-          <div style={{ ...statNumberStyle, fontSize: 17 }}>
-            {formatCurrency(notYetDueAmount, settings.currency)}
-          </div>
-          <div style={statLabelStyle}>Awaiting ({notYetDue.length})</div>
-        </Link>
-        <Link href="/invoices" style={statBlockLinkStyle}>
-          <div style={{ ...statNumberStyle, color: "#16a34a", fontSize: 17 }}>
-            {formatCurrency(paidTotal, settings.currency)}
-          </div>
-          <div style={statLabelStyle}>Paid (all time)</div>
-        </Link>
+      <div style={subTabRowStyle}>
+        {subTabs.map((t) => (
+          <Link
+            key={t.key}
+            href={`/work?tab=invoices&sub=${t.key}`}
+            style={subTabStyle(activeSub === t.key)}
+          >
+            {t.label} ({t.count})
+          </Link>
+        ))}
       </div>
 
       <form action="/invoices" method="GET" style={searchFormStyle}>
@@ -383,37 +431,63 @@ async function InvoicesTab({ db, settings }) {
         </button>
       </form>
 
-      {(outstanding || []).length === 0 && (
-        <p style={{ color: "#888" }}>Nothing owed right now 🎉</p>
+      {activeList.length === 0 && (
+        <p style={{ color: "#888" }}>
+          {activeSub === "overdue"
+            ? "Nothing overdue right now 🎉"
+            : activeSub === "awaiting"
+            ? "Nothing awaiting payment."
+            : "No paid invoices yet."}
+        </p>
       )}
 
-      {(outstanding || []).slice(0, 8).map((inv) => (
-        <div key={inv.invoice_id} style={cardStyle("#dc2626")}>
-          <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
-          <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
-            {formatCurrency(inv.amount, settings.currency)} · due {inv.due_date} ·{" "}
-            {inv.days_overdue > 0 ? `${inv.days_overdue} days overdue` : "not yet due"}
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <form action="/api/invoices/chase" method="POST" style={{ flex: 1 }}>
-              <input type="hidden" name="invoiceId" value={inv.invoice_id} />
-              <button type="submit" style={secondaryButtonStyle}>
-                Chase now
-              </button>
-            </form>
-            <form action="/api/invoices/mark-paid" method="POST" style={{ flex: 1 }}>
-              <input type="hidden" name="invoiceId" value={inv.invoice_id} />
-              <button type="submit" style={primaryButtonStyle}>
-                Mark as paid
-              </button>
-            </form>
-          </div>
-        </div>
-      ))}
+      {activeSub === "paid"
+        ? activeList.map((inv) => (
+            <div key={inv.id} style={cardStyle("#16a34a")}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
+                <div style={{ fontWeight: 600 }}>
+                  {formatCurrency(inv.amount, settings.currency)}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: "#888" }}>
+                {inv.job_type || "Job"} · paid{" "}
+                {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("en-GB") : ""}
+              </div>
+            </div>
+          ))
+        : activeList.slice(0, 8).map((inv) => (
+            <div key={inv.invoice_id} style={cardStyle("#dc2626")}>
+              <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
+              <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
+                {formatCurrency(inv.amount, settings.currency)} · due {inv.due_date} ·{" "}
+                {inv.days_overdue > 0 ? `${inv.days_overdue} days overdue` : "not yet due"}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <form action="/api/invoices/chase" method="POST" style={{ flex: 1 }}>
+                  <input type="hidden" name="invoiceId" value={inv.invoice_id} />
+                  <button type="submit" style={secondaryButtonStyle}>
+                    Chase now
+                  </button>
+                </form>
+                <form action="/api/invoices/mark-paid" method="POST" style={{ flex: 1 }}>
+                  <input type="hidden" name="invoiceId" value={inv.invoice_id} />
+                  <button type="submit" style={primaryButtonStyle}>
+                    Mark as paid
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))}
 
-      {(outstanding || []).length > 8 && (
+      {activeSub !== "paid" && activeList.length > 8 && (
         <Link href="/invoices" style={viewAllLinkStyle}>
-          View all outstanding invoices →
+          View all in {subTabs.find((t) => t.key === activeSub).label} →
+        </Link>
+      )}
+      {activeSub === "paid" && paidInvoices.length > 8 && (
+        <Link href="/invoices" style={viewAllLinkStyle}>
+          View all {paidInvoices.length} paid invoices →
         </Link>
       )}
     </div>
@@ -455,28 +529,6 @@ const jobLinkStyle = {
   color: "#111",
   textDecoration: "underline",
 };
-
-const statRowStyle = { display: "flex", gap: 8, margin: "4px 0 16px" };
-
-const statBlockStyle = {
-  flex: 1,
-  background: "white",
-  borderRadius: 10,
-  padding: "12px 8px",
-  textAlign: "center",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-};
-
-const statBlockLinkStyle = {
-  ...statBlockStyle,
-  textDecoration: "none",
-  color: "#111",
-  display: "block",
-};
-
-const statNumberStyle = { fontSize: 22, fontWeight: 700 };
-
-const statLabelStyle = { fontSize: 11, color: "#888", marginTop: 2 };
 
 const searchFormStyle = { display: "flex", gap: 8, marginBottom: 16 };
 
