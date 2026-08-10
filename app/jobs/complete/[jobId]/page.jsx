@@ -112,6 +112,9 @@ export default async function CompleteJob({ params, searchParams }) {
         style={{ display: "grid", gap: 12 }}
       >
         <input type="hidden" name="jobId" value={job.id} />
+        {searchParams?.from && (
+          <input type="hidden" name="from" value={searchParams.from} />
+        )}
 
         <label style={{ fontSize: 13, color: "#666" }}>
           Final invoice amount
