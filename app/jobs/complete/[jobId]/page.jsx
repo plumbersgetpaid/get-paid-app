@@ -24,6 +24,12 @@ export default async function CompleteJob({ params, searchParams }) {
     .eq("id", job.customer_id)
     .single();
 
+  const { data: photos } = await db
+    .from("job_photos")
+    .select("id")
+    .eq("job_id", jobId);
+  const hasPhotos = (photos || []).length > 0;
+
   // Default due date: 14 days from today, in yyyy-mm-dd for the date input
   const defaultDueDate = new Date();
   defaultDueDate.setDate(defaultDueDate.getDate() + 14);
@@ -64,6 +70,25 @@ export default async function CompleteJob({ params, searchParams }) {
           </div>
         )}
       </section>
+
+      <Link
+        href={`/jobs/photos/${job.id}`}
+        style={{
+          display: "block",
+          textAlign: "center",
+          marginBottom: 16,
+          background: "white",
+          color: "#111",
+          border: "1px solid #ddd",
+          padding: "10px",
+          borderRadius: 10,
+          fontWeight: 600,
+          textDecoration: "none",
+          fontSize: 14,
+        }}
+      >
+        📷 Add / view photos
+      </Link>
 
       {aiError && (
         <div
@@ -138,6 +163,23 @@ export default async function CompleteJob({ params, searchParams }) {
         >
           ✨ Enhance note with AI
         </button>
+
+        {hasPhotos && (
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 14,
+              background: "white",
+              padding: 12,
+              borderRadius: 8,
+            }}
+          >
+            <input type="checkbox" name="attachPhotos" value="1" defaultChecked />
+            Include before/after photos in the invoice email
+          </label>
+        )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <Link href="/" style={cancelButtonStyle}>
