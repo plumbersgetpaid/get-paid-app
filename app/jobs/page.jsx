@@ -62,6 +62,8 @@ export default async function AllJobs({ searchParams }) {
         j.scheduled_end &&
         new Date(j.scheduled_end) < now
     );
+  } else if (status === "needs-time") {
+    jobs = jobs.filter((j) => j.status === "in_progress" && j.time_confirmed === false);
   } else if (status === "done") {
     jobs = jobs.filter((j) => ["complete", "invoiced", "paid"].includes(j.status));
   } else if (status) {
@@ -85,6 +87,8 @@ export default async function AllJobs({ searchParams }) {
             ? "Jobs needing booked in"
             : status === "late"
             ? "Jobs running late"
+            : status === "needs-time"
+            ? "Jobs needing a time set"
             : status === "done"
             ? "Completed jobs"
             : status
@@ -134,6 +138,19 @@ export default async function AllJobs({ searchParams }) {
           </div>
           {job.location && (
             <div style={{ fontSize: 12, color: "#888" }}>📍 {job.location}</div>
+          )}
+          {job.status === "in_progress" && job.time_confirmed === false && (
+            <div style={{ fontSize: 12, color: "#b45309", fontWeight: 600 }}>
+              ⏰{" "}
+              {job.scheduled_start
+                ? new Date(job.scheduled_start).toLocaleDateString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })
+                : ""}{" "}
+              · time to be confirmed
+            </div>
           )}
           <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
             {job.status === "in_progress" && (
