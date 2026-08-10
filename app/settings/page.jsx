@@ -85,8 +85,8 @@ export default async function Settings({ searchParams }) {
             fontSize: 13,
           }}
         >
-          Couldn't send a test email - check your contact email is set below,
-          and that RESEND_API_KEY is configured in Vercel.
+          Couldn't send the test email
+          {searchParams?.testErrorMsg ? `: ${searchParams.testErrorMsg}` : "."}
         </div>
       )}
 
