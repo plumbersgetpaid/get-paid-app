@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
+import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
+import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurrence";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -21,7 +23,7 @@ export async function POST(req) {
   }
 
   const db = supabaseAdmin();
-  const { error } = await db
+  const { data: updated, error } = await db
     .from("recurring_jobs")
     .update({
       job_type: jobType || null,
@@ -36,11 +38,22 @@ export async function POST(req) {
       auto_invoice: autoInvoice,
       next_occurrence_time: nextOccurrenceTime || null,
     })
-    .eq("id", recurringId);
+    .eq("id", recurringId)
+    .select()
+    .single();
 
   if (error) {
     console.error("Update recurring job error:", error);
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  // If this recurring job's next occurrence is already due (today or
+  // earlier) and hasn't fired yet, don't make them wait for tomorrow's
+  // daily check - create it right now with whatever was just saved
+  const todayStr = new Date().toISOString().slice(0, 10);
+  if (updated?.active && updated.next_occurrence <= todayStr) {
+    const settings = await getBusinessSettings();
+    await createRecurringOccurrence(db, settings, updated);
   }
 
   return NextResponse.redirect(new URL("/jobs/recurring", req.url));
