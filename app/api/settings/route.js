@@ -14,6 +14,8 @@ export async function POST(req) {
   const payment_terms = form.get("payment_terms") || null;
   const bank_details = form.get("bank_details") || null;
   const currency = form.get("currency") || "GBP";
+  const google_review_link = form.get("google_review_link") || null;
+  const send_review_requests = form.get("send_review_requests") === "1";
 
   const db = supabaseAdmin();
 
@@ -29,6 +31,8 @@ export async function POST(req) {
     payment_terms,
     bank_details,
     currency,
+    google_review_link,
+    send_review_requests,
     updated_at: new Date().toISOString(),
   });
 
