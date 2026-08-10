@@ -43,6 +43,21 @@ export default async function ClientDetail({ params }) {
     photoCountByJob[p.job_id] = (photoCountByJob[p.job_id] || 0) + 1;
   }
 
+  // Look for other customer records that share this one's email or phone -
+  // likely duplicates worth merging
+  let duplicates = [];
+  if (customer.email || customer.phone) {
+    const orParts = [];
+    if (customer.email) orParts.push(`email.ilike.${customer.email}`);
+    if (customer.phone) orParts.push(`phone.eq.${customer.phone}`);
+    const { data: possibleDupes } = await db
+      .from("customers")
+      .select("*")
+      .or(orParts.join(","))
+      .neq("id", customer.id);
+    duplicates = possibleDupes || [];
+  }
+
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -72,6 +87,29 @@ export default async function ClientDetail({ params }) {
         </div>
       </section>
 
+      {duplicates.length > 0 && (
+        <section style={duplicateCardStyle}>
+          <div style={{ fontWeight: 700, color: "#b91c1c", marginBottom: 8 }}>
+            ⚠️ Possible duplicate{duplicates.length > 1 ? "s" : ""}
+          </div>
+          {duplicates.map((dupe) => (
+            <div key={dupe.id} style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{dupe.name}</div>
+              <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>
+                {[dupe.phone, dupe.email].filter(Boolean).join(" · ")}
+              </div>
+              <form action="/api/clients/merge" method="POST" style={{ display: "flex", gap: 8 }}>
+                <input type="hidden" name="keepId" value={customer.id} />
+                <input type="hidden" name="mergeId" value={dupe.id} />
+                <button type="submit" style={mergeButtonStyle}>
+                  Merge into {customer.name}
+                </button>
+              </form>
+            </div>
+          ))}
+        </section>
+      )}
+
       <h2 style={{ fontSize: 16, marginTop: 24 }}>Job history</h2>
       {(!jobs || jobs.length === 0) && (
         <p style={{ color: "#888" }}>No jobs for this client yet.</p>
@@ -95,6 +133,11 @@ export default async function ClientDetail({ params }) {
             </div>
             {job.location && (
               <div style={{ fontSize: 12, color: "#888" }}>📍 {job.location}</div>
+            )}
+            {job.completion_note && (
+              <div style={{ fontSize: 12, color: "#666", marginTop: 4, fontStyle: "italic" }}>
+                📝 {job.completion_note}
+              </div>
             )}
             <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
               {invoice && (
@@ -152,4 +195,22 @@ const jobCardStyle = {
   borderRadius: 10,
   padding: 14,
   marginBottom: 8,
+};
+
+const duplicateCardStyle = {
+  background: "#fef2f2",
+  border: "1px solid #fecaca",
+  borderRadius: 12,
+  padding: 16,
+  marginBottom: 16,
+};
+
+const mergeButtonStyle = {
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "8px 12px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 13,
 };
