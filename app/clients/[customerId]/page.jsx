@@ -44,6 +44,14 @@ export default async function ClientDetail({ params }) {
     photoCountByJob[p.job_id] = (photoCountByJob[p.job_id] || 0) + 1;
   }
 
+  const { data: noteRows } = jobIds.length
+    ? await db.from("job_notes").select("job_id").in("job_id", jobIds)
+    : { data: [] };
+  const noteCountByJob = {};
+  for (const n of noteRows || []) {
+    noteCountByJob[n.job_id] = (noteCountByJob[n.job_id] || 0) + 1;
+  }
+
   // Look for other customer records that share this one's email or phone -
   // likely duplicates worth merging, excluding any pair already dismissed.
   // Uses separate lookups rather than a combined filter, since combined
@@ -184,6 +192,12 @@ export default async function ClientDetail({ params }) {
                 style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
               >
                 📷 Photos{photoCountByJob[job.id] ? ` (${photoCountByJob[job.id]})` : ""}
+              </Link>
+              <Link
+                href={`/jobs/notes/${job.id}`}
+                style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
+              >
+                📝 Notes{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
               </Link>
             </div>
           </div>
