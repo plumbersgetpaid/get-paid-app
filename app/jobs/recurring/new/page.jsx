@@ -1,11 +1,13 @@
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
+import ReloadOnBack from "../../../components/ReloadOnBack";
 
 export default function NewRecurringJob() {
   const today = new Date().toISOString().slice(0, 10);
 
   return (
     <main>
+      <ReloadOnBack />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/jobs/recurring" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Recurring job</h1>
