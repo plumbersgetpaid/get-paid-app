@@ -28,6 +28,10 @@ export default async function Today() {
     (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) === todayStr
   );
   const needsBooking = (activeJobs || []).filter((j) => !j.scheduled_start);
+  const now = new Date();
+  const lateJobs = (activeJobs || []).filter(
+    (j) => j.scheduled_end && new Date(j.scheduled_end) < now
+  );
 
   const jobCustomerIds = [...new Set(jobsToday.map((j) => j.customer_id))];
   const { data: jobCustomers } = jobCustomerIds.length
@@ -48,7 +52,7 @@ export default async function Today() {
       time: j.scheduled_start,
       icon: "🔧",
       label: `${jobCustomerNameById[j.customer_id] || "Customer"} · ${j.job_type || "Job"}`,
-      href: `/jobs/schedule/${j.id}`,
+      href: `/jobs/complete/${j.id}`,
     })),
     ...(remindersToday || []).map((r) => ({
       time: r.scheduled_start,
@@ -61,8 +65,13 @@ export default async function Today() {
   const quotesCount = (quotes || []).length;
   const needsBookingCount = needsBooking.length;
   const overdueCount = overdueInvoices.length;
+  const lateCount = lateJobs.length;
   const allClear =
-    quotesCount === 0 && needsBookingCount === 0 && overdueCount === 0 && totalOwed === 0;
+    quotesCount === 0 &&
+    needsBookingCount === 0 &&
+    overdueCount === 0 &&
+    lateCount === 0 &&
+    totalOwed === 0;
 
   return (
     <main>
@@ -99,7 +108,9 @@ export default async function Today() {
       </section>
 
       {allClear ? (
-        <section style={allClearCardStyle}>✓ Everything else is sorted</section>
+        <section style={allClearCardStyle}>
+          ✓ Quotes, jobs, and invoices are all up to date
+        </section>
       ) : (
         <section style={cardStyle}>
           <div style={sectionTitleStyle}>⚡ Needs attention</div>
@@ -107,6 +118,11 @@ export default async function Today() {
             <Link href="/work?tab=quotes" style={attentionRowStyle}>
               🟠 {quotesCount} quote{quotesCount === 1 ? "" : "s"} need
               {quotesCount === 1 ? "s" : ""} a reply or chase
+            </Link>
+          )}
+          {lateCount > 0 && (
+            <Link href="/work?tab=jobs" style={attentionRowStyle}>
+              🔴 {lateCount} job{lateCount === 1 ? "" : "s"} running late
             </Link>
           )}
           {needsBookingCount > 0 && (
