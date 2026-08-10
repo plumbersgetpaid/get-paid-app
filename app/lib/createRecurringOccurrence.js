@@ -1,6 +1,4 @@
 import { getTemplate, renderTemplate } from "./getTemplate";
-import { generateInvoicePdfBytes } from "./generateInvoicePdf";
-import { formatCurrency, formatInvoiceNumber } from "./formatCurrency";
 import { textToEmailHtml } from "./emailHtml";
 import { getEmailFrom } from "./emailFrom";
 import { sendWhatsAppMessage } from "./sendWhatsApp";
@@ -9,10 +7,10 @@ import { Resend } from "resend";
 
 // Creates one real job from a recurring job template's current due
 // occurrence: books it in, warns about any genuine scheduling clash,
-// notifies the client if the time is real and that's turned on, sends an
-// invoice immediately only if auto-invoice is on AND the time is actually
-// confirmed (never invoices ahead of a time that's still to-be-decided),
-// then advances the template to its next occurrence.
+// notifies the client if the time is real and that's turned on, then
+// advances the template to its next occurrence. Never invoices
+// automatically - that always happens the normal way, when the tradie
+// marks the job done.
 export async function createRecurringOccurrence(db, settings, r) {
   const { data: customer } = await db
     .from("customers")
@@ -53,12 +51,6 @@ export async function createRecurringOccurrence(db, settings, r) {
     });
   }
 
-  // Only invoice immediately if auto-invoice is on AND there's an actual
-  // confirmed time - billing for a visit before you know when it happens
-  // would be confusing. If the time isn't confirmed yet, this just falls
-  // back to the normal "mark done" flow once the work is actually done.
-  const invoiceNow = !!r.auto_invoice && timeIsConfirmed;
-
   const { data: job, error: jobErr } = await db
     .from("jobs")
     .insert({
@@ -66,9 +58,8 @@ export async function createRecurringOccurrence(db, settings, r) {
       job_type: r.job_type,
       location: r.location,
       amount: r.amount,
-      status: invoiceNow ? "invoiced" : "in_progress",
+      status: "in_progress",
       accepted_at: new Date().toISOString(),
-      completed_at: invoiceNow ? new Date().toISOString() : null,
       scheduled_start: start.toISOString(),
       scheduled_end: end.toISOString(),
       time_confirmed: timeIsConfirmed,
@@ -145,85 +136,6 @@ export async function createRecurringOccurrence(db, settings, r) {
       }
     } catch (e) {
       console.error("Recurring booking confirmation error:", e);
-    }
-  }
-
-  if (invoiceNow && customer) {
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 14);
-
-    const { data: invoice, error: invErr } = await db
-      .from("invoices")
-      .insert({
-        job_id: job.id,
-        amount: r.amount,
-        due_date: dueDate.toISOString().slice(0, 10),
-        status: "unpaid",
-      })
-      .select()
-      .single();
-
-    if (!invErr && invoice && customer.email && process.env.RESEND_API_KEY) {
-      try {
-        const business = {
-          businessName: settings.business_name,
-          accentColor: settings.accent_color,
-          logoUrl: settings.logo_url,
-          contactEmail: settings.contact_email,
-          contactPhone: settings.contact_phone,
-          invoiceNote: settings.invoice_note,
-          headerTagline: settings.header_tagline,
-          paymentTerms: settings.payment_terms,
-          bankDetails: settings.bank_details,
-          currency: settings.currency,
-        };
-
-        const pdfBytes = await generateInvoicePdfBytes({
-          invoiceNumber: formatInvoiceNumber(invoice.invoice_number),
-          customerName: customer.name,
-          customerEmail: customer.email,
-          customerPhone: customer.phone,
-          jobType: job.job_type,
-          location: job.location,
-          amount: invoice.amount,
-          dueDate: invoice.due_date,
-          status: invoice.status,
-          createdAt: invoice.created_at,
-          business,
-        });
-
-        const invoiceTemplate = await getTemplate("invoice");
-        const vars = {
-          customer_name: customer.name,
-          job_type: job.job_type || "Recurring service",
-          amount: formatCurrency(r.amount, settings.currency).replace(/^[^\d-]*/, ""),
-          due_date: dueDate.toDateString(),
-          business_name: settings.business_name,
-        };
-        const subject =
-          renderTemplate(invoiceTemplate.subject, vars) ||
-          `Invoice for ${job.job_type || "your recurring service"}`;
-        const bodyText = renderTemplate(invoiceTemplate.body, vars);
-        const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
-          bodyText
-        )}</div>`;
-
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
-          from: getEmailFrom(settings.business_name),
-          to: customer.email,
-          subject,
-          html,
-          attachments: [
-            {
-              filename: `invoice-${formatInvoiceNumber(invoice.invoice_number)}.pdf`,
-              content: Buffer.from(pdfBytes),
-            },
-          ],
-        });
-      } catch (e) {
-        console.error("Recurring job invoice email error:", e);
-      }
     }
   }
 
