@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
+import BackButton from "../../../components/BackButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import VoiceScheduleAssist from "./VoiceScheduleAssist";
@@ -63,9 +64,7 @@ export default async function ScheduleJob({ params, searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/work?tab=jobs" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Book this job in</h1>
       </div>
 
@@ -160,9 +159,9 @@ export default async function ScheduleJob({ params, searchParams }) {
         </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          <Link href="/" style={cancelButtonStyle}>
+          <BackButton fallbackHref="/work?tab=jobs" style={cancelButtonStyle}>
             Cancel
-          </Link>
+          </BackButton>
           <button type="submit" style={submitButtonStyle}>
             {conflictMessage ? "Book anyway" : "Confirm booking"}
           </button>
