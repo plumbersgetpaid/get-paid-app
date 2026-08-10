@@ -58,6 +58,69 @@ export default async function Settings({ searchParams }) {
         </div>
       )}
 
+      {searchParams?.testSent === "1" && (
+        <div
+          style={{
+            background: "#dcfce7",
+            color: "#166534",
+            padding: 12,
+            borderRadius: 8,
+            margin: "16px 0",
+            fontSize: 13,
+          }}
+        >
+          Test sent to {settings.contact_email || "your WhatsApp"} - check it arrived, and
+          that the review link is a real clickable link.
+        </div>
+      )}
+
+      {searchParams?.testSent === "0" && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 12,
+            borderRadius: 8,
+            margin: "16px 0",
+            fontSize: 13,
+          }}
+        >
+          Couldn't send a test email - check your contact email is set below,
+          and that RESEND_API_KEY is configured in Vercel.
+        </div>
+      )}
+
+      {searchParams?.testError === "nolink" && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 12,
+            borderRadius: 8,
+            margin: "16px 0",
+            fontSize: 13,
+          }}
+        >
+          Add a Google review link below first, then try the test again.
+        </div>
+      )}
+
+      {searchParams?.testError === "nocontact" && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 12,
+            borderRadius: 8,
+            margin: "16px 0",
+            fontSize: 13,
+          }}
+        >
+          Add a contact email or phone below first, so there's somewhere to
+          send the test to.
+        </div>
+      )}
+
       {uploadError && (
         <div
           style={{
@@ -211,6 +274,20 @@ export default async function Settings({ searchParams }) {
         </button>
       </form>
 
+      <form
+        action="/api/settings/test-review-request"
+        method="POST"
+        style={{ marginTop: 16 }}
+      >
+        <button type="submit" style={testButtonStyle}>
+          📨 Send a test review request to yourself
+        </button>
+        <p style={{ fontSize: 12, color: "#888", marginTop: 6 }}>
+          Uses whatever's currently saved above - handy for checking the
+          review link works before it goes out to real customers.
+        </p>
+      </form>
+
       <section
         style={{
           background: "white",
@@ -295,6 +372,17 @@ const submitButtonStyle = {
   border: "none",
   fontWeight: 600,
   fontSize: 15,
+};
+
+const testButtonStyle = {
+  width: "100%",
+  background: "white",
+  color: "#111",
+  padding: "12px",
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  fontWeight: 600,
+  fontSize: 14,
 };
 
 const uploadButtonStyle = {
