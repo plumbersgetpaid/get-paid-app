@@ -1,29 +1,63 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
-import ReloadOnBack from "../../../components/ReloadOnBack";
 
 export default function NewRecurringJob() {
+  const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+
+    const formData = new FormData(e.target);
+
+    try {
+      const res = await fetch("/api/jobs/recurring/create", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Something went wrong saving this.");
+        setSubmitting(false);
+        return;
+      }
+
+      // Replace this page in the browser's history with the destination,
+      // so pressing Back afterwards skips straight past this form to
+      // wherever the tradie actually came from - not back into a
+      // just-submitted form
+      router.replace("/jobs/recurring");
+    } catch (err) {
+      console.error("Recurring job save error:", err);
+      setError("Couldn't reach the server. Check your connection and try again.");
+      setSubmitting(false);
+    }
+  }
 
   return (
     <main>
-      <ReloadOnBack />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/jobs/recurring" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Recurring job</h1>
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
-        Set this up once and it'll automatically appear on the calendar (and
-        optionally invoice itself) on a repeating schedule - no need to
-        re-create it each time.
+        Set this up once and it'll automatically appear on the calendar on a
+        repeating schedule - no need to re-create it each time.
       </p>
 
-      <form
-        action="/api/jobs/recurring/create"
-        method="POST"
-        style={{ display: "grid", gap: 12, marginTop: 16 }}
-      >
+      {error && <div style={errorBoxStyle}>{error}</div>}
+
+      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, marginTop: 16 }}>
         <input name="name" placeholder="Customer name" required style={inputStyle} />
         <input name="phone" placeholder="Phone (optional)" style={inputStyle} />
         <input name="email" type="email" placeholder="Email (optional)" style={inputStyle} />
@@ -116,27 +150,12 @@ export default function NewRecurringJob() {
           </label>
         </div>
 
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            fontSize: 14,
-            background: "white",
-            padding: 12,
-            borderRadius: 8,
-          }}
-        >
-          <input type="checkbox" name="autoInvoice" value="1" />
-          Automatically send an invoice each time (not just book the job in)
-        </label>
-
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <Link href="/jobs/recurring" style={cancelButtonStyle}>
             Cancel
           </Link>
-          <button type="submit" style={submitButtonStyle}>
-            Save recurring job
+          <button type="submit" disabled={submitting} style={submitButtonStyle}>
+            {submitting ? "Saving..." : "Save recurring job"}
           </button>
         </div>
       </form>
@@ -151,20 +170,6 @@ const inputStyle = {
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
-};
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
 };
 
 const cancelButtonStyle = {
@@ -187,4 +192,13 @@ const submitButtonStyle = {
   border: "none",
   fontWeight: 600,
   flex: 2,
+};
+
+const errorBoxStyle = {
+  background: "#fee2e2",
+  color: "#991b1b",
+  padding: 12,
+  borderRadius: 8,
+  fontSize: 13,
+  marginTop: 12,
 };
