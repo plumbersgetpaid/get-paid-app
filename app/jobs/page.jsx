@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../lib/supabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import Link from "next/link";
+import BackButton from "../components/BackButton";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -74,9 +75,7 @@ export default async function AllJobs({ searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/work" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/work" />
         <h1 style={{ fontSize: 20, margin: 0 }}>
           {status === "unscheduled"
             ? "Jobs needing booked in"
