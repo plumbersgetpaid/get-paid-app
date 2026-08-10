@@ -213,27 +213,9 @@ export default async function Settings({ searchParams }) {
           />
           <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}>
             Find this in your Google Business Profile - once set, paid
-            customers get an automatic thank-you with this link.
+            customers automatically get a thank-you with this link. Leave
+            blank to turn this off.
           </span>
-        </label>
-
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            fontSize: 13,
-            color: "#666",
-            fontWeight: 600,
-          }}
-        >
-          <input
-            type="checkbox"
-            name="send_review_requests"
-            value="1"
-            defaultChecked={settings.send_review_requests}
-          />
-          Automatically ask paid customers for a review
         </label>
 
         <label style={labelStyle}>
