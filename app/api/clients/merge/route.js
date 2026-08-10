@@ -24,6 +24,17 @@ export async function POST(req) {
     return NextResponse.json({ error: reassignErr.message }, { status: 400 });
   }
 
+  // Also move any recurring job templates - these reference a customer too
+  const { error: recurringReassignErr } = await db
+    .from("recurring_jobs")
+    .update({ customer_id: keepId })
+    .eq("customer_id", mergeId);
+
+  if (recurringReassignErr) {
+    console.error("Merge recurring job reassign error:", recurringReassignErr);
+    return NextResponse.json({ error: recurringReassignErr.message }, { status: 400 });
+  }
+
   // Fill in any missing contact details on the kept record from the
   // duplicate, without overwriting anything already there
   const { data: keepCustomer } = await db
@@ -47,7 +58,7 @@ export async function POST(req) {
     }
   }
 
-  // Now safe to remove the duplicate - it has no jobs left pointing at it
+  // Now safe to remove the duplicate - nothing references it any more
   const { error: deleteErr } = await db.from("customers").delete().eq("id", mergeId);
 
   if (deleteErr) {
