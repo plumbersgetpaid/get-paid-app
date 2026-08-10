@@ -68,6 +68,15 @@ export default async function Dashboard() {
     }));
   }
 
+  const jobIds = jobs.map((j) => j.id);
+  const { data: photoRows } = jobIds.length
+    ? await db.from("job_photos").select("job_id").in("job_id", jobIds)
+    : { data: [] };
+  const photoCountByJob = {};
+  for (const p of photoRows || []) {
+    photoCountByJob[p.job_id] = (photoCountByJob[p.job_id] || 0) + 1;
+  }
+
   const { data: rawPaid, error: paidError } = await db
     .from("invoices")
     .select("*")
@@ -315,6 +324,24 @@ export default async function Dashboard() {
               Mark done
             </Link>
           </div>
+          <Link
+            href={`/jobs/photos/${job.id}`}
+            style={{
+              display: "block",
+              textAlign: "center",
+              marginTop: 8,
+              background: "white",
+              color: "#111",
+              border: "1px solid #ddd",
+              padding: "8px 12px",
+              borderRadius: 8,
+              fontWeight: 600,
+              textDecoration: "none",
+              fontSize: 14,
+            }}
+          >
+            📷 Photos{photoCountByJob[job.id] ? ` (${photoCountByJob[job.id]})` : ""}
+          </Link>
         </div>
       ))}
 
