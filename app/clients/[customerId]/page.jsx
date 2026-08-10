@@ -35,6 +35,14 @@ export default async function ClientDetail({ params }) {
     (invoices || []).map((inv) => [inv.job_id, inv])
   );
 
+  const { data: photoRows } = jobIds.length
+    ? await db.from("job_photos").select("job_id").in("job_id", jobIds)
+    : { data: [] };
+  const photoCountByJob = {};
+  for (const p of photoRows || []) {
+    photoCountByJob[p.job_id] = (photoCountByJob[p.job_id] || 0) + 1;
+  }
+
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -88,14 +96,22 @@ export default async function ClientDetail({ params }) {
             {job.location && (
               <div style={{ fontSize: 12, color: "#888" }}>📍 {job.location}</div>
             )}
-            {invoice && (
+            <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+              {invoice && (
+                <Link
+                  href={`/invoices/${invoice.id}`}
+                  style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
+                >
+                  View invoice →
+                </Link>
+              )}
               <Link
-                href={`/invoices/${invoice.id}`}
+                href={`/jobs/photos/${job.id}`}
                 style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
               >
-                View invoice →
+                📷 Photos{photoCountByJob[job.id] ? ` (${photoCountByJob[job.id]})` : ""}
               </Link>
-            )}
+            </div>
           </div>
         );
       })}
