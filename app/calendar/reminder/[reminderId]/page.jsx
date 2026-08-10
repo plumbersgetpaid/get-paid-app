@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import BackButton from "../../../components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +28,7 @@ export default async function ReminderDetail({ params }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/calendar" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/calendar" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Personal reminder</h1>
       </div>
 
