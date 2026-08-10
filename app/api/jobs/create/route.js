@@ -2,6 +2,8 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { computeScheduleEnd } from "../../../lib/duration";
+import { findExistingCustomer } from "../../../lib/findCustomer";
+import { textToEmailHtml } from "../../../lib/emailHtml";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -22,15 +24,33 @@ export async function POST(req) {
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
 
-  const { data: customer, error: custErr } = await db
-    .from("customers")
-    .insert({ name, phone, email })
-    .select()
-    .single();
+  // Reuse an existing customer if this email/phone (or name) already exists,
+  // rather than creating a duplicate contact every time
+  const existingCustomer = await findExistingCustomer(db, { name, email, phone });
 
-  if (custErr) {
-    console.error("Customer insert error:", custErr);
-    return NextResponse.json({ error: custErr.message }, { status: 400 });
+  let customer;
+  if (existingCustomer) {
+    customer = existingCustomer;
+    // Fill in any missing contact details, without overwriting what's there
+    const updates = {};
+    if (!existingCustomer.phone && phone) updates.phone = phone;
+    if (!existingCustomer.email && email) updates.email = email;
+    if (Object.keys(updates).length > 0) {
+      await db.from("customers").update(updates).eq("id", customer.id);
+      customer = { ...customer, ...updates };
+    }
+  } else {
+    const { data: newCustomer, error: custErr } = await db
+      .from("customers")
+      .insert({ name, phone, email })
+      .select()
+      .single();
+
+    if (custErr) {
+      console.error("Customer insert error:", custErr);
+      return NextResponse.json({ error: custErr.message }, { status: 400 });
+    }
+    customer = newCustomer;
   }
 
   // If a proposed date was given, pre-fill the scheduled time now - if the
@@ -85,9 +105,8 @@ export async function POST(req) {
       if (location) {
         bodyText += `\n\nJob location: ${location}`;
       }
-      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
-        /\n/g,
-        "<br/>"
+      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
+        bodyText
       )}</div>`;
 
       await resend.emails.send({
