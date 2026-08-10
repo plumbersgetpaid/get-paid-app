@@ -20,22 +20,48 @@ export default async function Clients({ searchParams }) {
   let customers = rawCustomers || [];
 
   // Flag possible duplicate contacts - same email or phone shared by more
-  // than one customer record
-  const emailCounts = {};
-  const phoneCounts = {};
+  // than one customer record, excluding pairs already dismissed as "not a
+  // duplicate" on the client detail page
+  const byEmail = {};
+  const byPhone = {};
   for (const c of rawCustomers || []) {
     if (c.email) {
       const key = c.email.trim().toLowerCase();
-      emailCounts[key] = (emailCounts[key] || 0) + 1;
+      (byEmail[key] ||= []).push(c.id);
     }
     if (c.phone) {
       const key = c.phone.trim();
-      phoneCounts[key] = (phoneCounts[key] || 0) + 1;
+      (byPhone[key] ||= []).push(c.id);
     }
   }
-  const isDuplicate = (c) =>
-    (c.email && emailCounts[c.email.trim().toLowerCase()] > 1) ||
-    (c.phone && phoneCounts[c.phone.trim()] > 1);
+
+  const { data: ignoredRows } = await db
+    .from("ignored_duplicates")
+    .select("customer_id_a, customer_id_b");
+  const ignoredPairs = new Set(
+    (ignoredRows || []).flatMap((r) => [
+      `${r.customer_id_a}|${r.customer_id_b}`,
+      `${r.customer_id_b}|${r.customer_id_a}`,
+    ])
+  );
+
+  const isDuplicate = (c) => {
+    const matchIds = new Set();
+    if (c.email) {
+      for (const id of byEmail[c.email.trim().toLowerCase()] || []) {
+        if (id !== c.id) matchIds.add(id);
+      }
+    }
+    if (c.phone) {
+      for (const id of byPhone[c.phone.trim()] || []) {
+        if (id !== c.id) matchIds.add(id);
+      }
+    }
+    for (const otherId of matchIds) {
+      if (!ignoredPairs.has(`${c.id}|${otherId}`)) return true;
+    }
+    return false;
+  };
 
   if (q) {
     customers = customers.filter((c) =>
