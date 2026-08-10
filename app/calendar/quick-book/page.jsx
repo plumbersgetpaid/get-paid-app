@@ -23,7 +23,7 @@ export default async function QuickBook({ searchParams }) {
   const initialIncludeWeekends =
     searchParams?.includeWeekends !== undefined
       ? searchParams.includeWeekends === "1"
-      : settings.include_weekends;
+      : true;
   const conflictMessage = searchParams?.conflict;
 
   return (
