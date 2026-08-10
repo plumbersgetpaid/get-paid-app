@@ -1,12 +1,11 @@
 import Link from "next/link";
+import BackButton from "../../components/BackButton";
 
 export default function NewClient() {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/clients" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/clients" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Add client</h1>
       </div>
 
