@@ -44,17 +44,30 @@ export default async function ClientDetail({ params }) {
   }
 
   // Look for other customer records that share this one's email or phone -
-  // likely duplicates worth merging, excluding any pair already dismissed
+  // likely duplicates worth merging, excluding any pair already dismissed.
+  // Uses separate lookups rather than a combined filter, since combined
+  // filters can misbehave on values containing dots (common in emails).
   let duplicates = [];
   if (customer.email || customer.phone) {
-    const orParts = [];
-    if (customer.email) orParts.push(`email.ilike.${customer.email}`);
-    if (customer.phone) orParts.push(`phone.eq.${customer.phone}`);
-    const { data: possibleDupes } = await db
-      .from("customers")
-      .select("*")
-      .or(orParts.join(","))
-      .neq("id", customer.id);
+    const dupeMap = {};
+
+    if (customer.email) {
+      const { data } = await db
+        .from("customers")
+        .select("*")
+        .ilike("email", customer.email)
+        .neq("id", customer.id);
+      for (const d of data || []) dupeMap[d.id] = d;
+    }
+    if (customer.phone) {
+      const { data } = await db
+        .from("customers")
+        .select("*")
+        .eq("phone", customer.phone)
+        .neq("id", customer.id);
+      for (const d of data || []) dupeMap[d.id] = d;
+    }
+    const possibleDupes = Object.values(dupeMap);
 
     const { data: ignoredRows } = await db
       .from("ignored_duplicates")
