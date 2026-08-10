@@ -96,12 +96,7 @@ export default async function Clients({ searchParams }) {
 
   return (
     <main>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
-        <h1 style={{ fontSize: 20, margin: 0 }}>Clients</h1>
-      </div>
+      <h1 style={{ fontSize: 20, margin: 0 }}>Clients</h1>
 
       <Link
         href="/clients/new"
