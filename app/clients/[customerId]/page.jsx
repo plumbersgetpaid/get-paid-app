@@ -44,7 +44,7 @@ export default async function ClientDetail({ params }) {
   }
 
   // Look for other customer records that share this one's email or phone -
-  // likely duplicates worth merging
+  // likely duplicates worth merging, excluding any pair already dismissed
   let duplicates = [];
   if (customer.email || customer.phone) {
     const orParts = [];
@@ -55,7 +55,19 @@ export default async function ClientDetail({ params }) {
       .select("*")
       .or(orParts.join(","))
       .neq("id", customer.id);
-    duplicates = possibleDupes || [];
+
+    const { data: ignoredRows } = await db
+      .from("ignored_duplicates")
+      .select("customer_id_a, customer_id_b")
+      .or(`customer_id_a.eq.${customer.id},customer_id_b.eq.${customer.id}`);
+
+    const ignoredIds = new Set(
+      (ignoredRows || []).map((r) =>
+        r.customer_id_a === customer.id ? r.customer_id_b : r.customer_id_a
+      )
+    );
+
+    duplicates = (possibleDupes || []).filter((d) => !ignoredIds.has(d.id));
   }
 
   return (
@@ -103,6 +115,13 @@ export default async function ClientDetail({ params }) {
                 <input type="hidden" name="mergeId" value={dupe.id} />
                 <button type="submit" style={mergeButtonStyle}>
                   Merge into {customer.name}
+                </button>
+              </form>
+              <form action="/api/clients/ignore-duplicate" method="POST" style={{ marginTop: 6 }}>
+                <input type="hidden" name="customerId" value={customer.id} />
+                <input type="hidden" name="dupeId" value={dupe.id} />
+                <button type="submit" style={ignoreButtonStyle}>
+                  Not a duplicate - ignore
                 </button>
               </form>
             </div>
@@ -213,4 +232,14 @@ const mergeButtonStyle = {
   borderRadius: 8,
   fontWeight: 600,
   fontSize: 13,
+};
+
+const ignoreButtonStyle = {
+  background: "none",
+  border: "none",
+  color: "#666",
+  fontSize: 12,
+  textDecoration: "underline",
+  cursor: "pointer",
+  padding: 0,
 };
