@@ -40,7 +40,7 @@ export async function POST(req) {
       )}</div>`;
       const result = await resend.emails.send({
         from: getEmailFrom(settings.business_name),
-        to: settings.contact_email,
+        to: settings.contact_email.trim().toLowerCase(),
         subject: `[TEST] ${subject}`,
         html,
       });
