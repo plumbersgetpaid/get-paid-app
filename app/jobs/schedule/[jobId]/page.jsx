@@ -73,6 +73,11 @@ export default async function ScheduleJob({ params, searchParams }) {
         <div style={{ fontSize: 13, color: "#888" }}>
           {job.job_type || "Job"} · {formatCurrency(job.amount, settings.currency)}
         </div>
+        {job.time_confirmed === false && (
+          <div style={{ fontSize: 12, color: "#b45309", marginTop: 6, fontWeight: 600 }}>
+            ⏰ Time not yet confirmed - set the real time below
+          </div>
+        )}
       </section>
 
       {conflictMessage && (
