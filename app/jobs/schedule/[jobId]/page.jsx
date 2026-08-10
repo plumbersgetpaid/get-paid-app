@@ -58,7 +58,7 @@ export default async function ScheduleJob({ params, searchParams }) {
   const initialIncludeWeekends =
     searchParams?.includeWeekends !== undefined
       ? searchParams.includeWeekends === "1"
-      : settings.include_weekends;
+      : true;
 
   return (
     <main>
