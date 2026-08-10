@@ -173,20 +173,21 @@ export default async function AllInvoices({ searchParams }) {
         </form>
 
         {(rangeStart || rangeEnd) && (
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
-            <a
-              href={`/api/invoices/bulk-pdf?start=${rangeStart}&end=${rangeEnd}`}
-              style={downloadRangeLinkStyle}
-            >
-              Download PDF for this period →
-            </a>
-            <a
-              href={`/api/invoices/export-csv?start=${rangeStart}&end=${rangeEnd}`}
-              style={downloadRangeLinkStyle}
-            >
-              Download CSV for this period (accountant/QuickBooks) →
-            </a>
-          </div>
+          <form
+            action="/api/invoices/export"
+            method="GET"
+            style={{ display: "flex", gap: 8, marginTop: 10 }}
+          >
+            <input type="hidden" name="start" value={rangeStart} />
+            <input type="hidden" name="end" value={rangeEnd} />
+            <select name="format" style={formatSelectStyle}>
+              <option value="pdf">PDF</option>
+              <option value="csv">CSV (accountant/QuickBooks)</option>
+            </select>
+            <button type="submit" style={applyRangeButtonStyle}>
+              Download
+            </button>
+          </form>
         )}
       </section>
 
@@ -237,9 +238,9 @@ export default async function AllInvoices({ searchParams }) {
 
       {invoices.length > 0 && (
         <form
-          action="/api/invoices/bulk-pdf"
+          action="/api/invoices/export"
           method="GET"
-          style={{ display: "flex", gap: 8, marginBottom: 8 }}
+          style={{ display: "flex", gap: 8, marginBottom: 20 }}
         >
           <select name="month" style={monthSelectStyle}>
             <option value="">All invoices</option>
@@ -249,16 +250,14 @@ export default async function AllInvoices({ searchParams }) {
               </option>
             ))}
           </select>
+          <select name="format" style={formatSelectStyle}>
+            <option value="pdf">PDF</option>
+            <option value="csv">CSV</option>
+          </select>
           <button type="submit" style={bulkDownloadButtonStyle}>
-            Download PDF
+            Download
           </button>
         </form>
-      )}
-
-      {invoices.length > 0 && (
-        <a href="/api/invoices/export-csv" style={csvAllLinkStyle}>
-          Download CSV of all invoices (accountant/QuickBooks) →
-        </a>
       )}
 
       {invoices.length === 0 && (
@@ -316,6 +315,14 @@ const monthSelectStyle = {
   background: "white",
 };
 
+const formatSelectStyle = {
+  padding: "12px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  fontSize: 14,
+  background: "white",
+};
+
 const bulkDownloadButtonStyle = {
   background: "#111",
   color: "white",
@@ -358,20 +365,4 @@ const clearRangeButtonStyle = {
   fontSize: 13,
   textDecoration: "none",
   textAlign: "center",
-};
-
-const downloadRangeLinkStyle = {
-  fontSize: 13,
-  color: "#111",
-  fontWeight: 600,
-  textDecoration: "underline",
-};
-
-const csvAllLinkStyle = {
-  display: "block",
-  fontSize: 13,
-  color: "#111",
-  fontWeight: 600,
-  textDecoration: "underline",
-  marginBottom: 20,
 };
