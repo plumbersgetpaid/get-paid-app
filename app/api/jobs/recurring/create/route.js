@@ -16,7 +16,6 @@ export async function POST(req) {
   const preferredTime = form.get("preferredTime") || "09:00";
   const frequencyValue = parseInt(form.get("frequencyValue") || "1", 10);
   const frequencyUnit = form.get("frequencyUnit") || "months";
-  const autoInvoice = form.get("autoInvoice") === "1";
   const confirmTimeLater = form.get("confirmTimeLater") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
   const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
@@ -63,7 +62,6 @@ export async function POST(req) {
       preferred_time: preferredTime,
       frequency_value: frequencyValue,
       frequency_unit: frequencyUnit,
-      auto_invoice: autoInvoice,
       confirm_time_later: confirmTimeLater,
       notify_email: notifyEmail,
       notify_whatsapp: notifyWhatsapp,
