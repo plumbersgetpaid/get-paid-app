@@ -20,6 +20,7 @@ export default async function AllJobs({ searchParams }) {
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
   const q = (searchParams?.q || "").trim().toLowerCase();
+  const status = searchParams?.status; // optional: filter to one status, or "unscheduled"
 
   const { data: rawJobs } = await db
     .from("jobs")
@@ -49,6 +50,14 @@ export default async function AllJobs({ searchParams }) {
     invoice_id: invoiceIdByJobId[j.id],
   }));
 
+  if (status === "unscheduled") {
+    jobs = jobs.filter((j) => j.status === "in_progress" && !j.scheduled_start);
+  } else if (status === "done") {
+    jobs = jobs.filter((j) => ["complete", "invoiced", "paid"].includes(j.status));
+  } else if (status) {
+    jobs = jobs.filter((j) => j.status === status);
+  }
+
   if (q) {
     jobs = jobs.filter((j) =>
       [j.customer_name, j.job_type, j.location].some((field) =>
@@ -60,10 +69,18 @@ export default async function AllJobs({ searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/" aria-label="Back" style={backButtonStyle}>
+        <Link href="/work" aria-label="Back" style={backButtonStyle}>
           ←
         </Link>
-        <h1 style={{ fontSize: 20, margin: 0 }}>All jobs</h1>
+        <h1 style={{ fontSize: 20, margin: 0 }}>
+          {status === "unscheduled"
+            ? "Jobs needing booked in"
+            : status === "done"
+            ? "Completed jobs"
+            : status
+            ? `Jobs · ${status.replace("_", " ")}`
+            : "All jobs"}
+        </h1>
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
@@ -71,6 +88,7 @@ export default async function AllJobs({ searchParams }) {
       </p>
 
       <form action="/jobs" method="GET" style={{ display: "flex", gap: 8, margin: "16px 0" }}>
+        {status && <input type="hidden" name="status" value={status} />}
         <input
           type="search"
           name="q"
@@ -83,7 +101,13 @@ export default async function AllJobs({ searchParams }) {
         </button>
       </form>
 
-      {jobs.length === 0 && <p style={{ color: "#888" }}>No jobs found.</p>}
+      {status && (
+        <Link href="/jobs" style={{ fontSize: 12, color: "#666", textDecoration: "underline" }}>
+          Clear filter, show all jobs
+        </Link>
+      )}
+
+      {jobs.length === 0 && <p style={{ color: "#888", marginTop: 12 }}>No jobs found.</p>}
 
       {jobs.map((job) => (
         <div key={job.id} style={cardStyle(STATUS_COLORS[job.status] || "#ccc")}>
