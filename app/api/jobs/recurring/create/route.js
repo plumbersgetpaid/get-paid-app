@@ -11,9 +11,13 @@ export async function POST(req) {
   const location = (form.get("location") || "").toString().trim();
   const amount = form.get("amount");
   const startDate = form.get("startDate");
+  const preferredTime = form.get("preferredTime") || "09:00";
   const frequencyValue = parseInt(form.get("frequencyValue") || "1", 10);
   const frequencyUnit = form.get("frequencyUnit") || "months";
   const autoInvoice = form.get("autoInvoice") === "1";
+  const confirmTimeLater = form.get("confirmTimeLater") === "1";
+  const notifyEmail = form.get("notifyEmail") === "1";
+  const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
 
   if (!name || !startDate) {
     return NextResponse.json({ error: "Missing customer name or start date" }, { status: 400 });
@@ -52,9 +56,13 @@ export async function POST(req) {
     location: location || null,
     amount: amount ? parseFloat(amount) : 0,
     next_occurrence: startDate,
+    preferred_time: preferredTime,
     frequency_value: frequencyValue,
     frequency_unit: frequencyUnit,
     auto_invoice: autoInvoice,
+    confirm_time_later: confirmTimeLater,
+    notify_email: notifyEmail,
+    notify_whatsapp: notifyWhatsapp,
   });
 
   if (error) {
