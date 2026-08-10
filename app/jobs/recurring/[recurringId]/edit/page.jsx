@@ -143,26 +143,6 @@ export default async function EditRecurringJob({ params }) {
           </label>
         </div>
 
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            fontSize: 14,
-            background: "white",
-            padding: 12,
-            borderRadius: 8,
-          }}
-        >
-          <input
-            type="checkbox"
-            name="autoInvoice"
-            value="1"
-            defaultChecked={recurring.auto_invoice}
-          />
-          Automatically send an invoice each time
-        </label>
-
         <label style={oneOffCardStyle}>
           <div style={{ fontWeight: 700, fontSize: 13, color: "#92400e" }}>
             📌 One-off: I already know the time for the very next occurrence
