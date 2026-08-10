@@ -1,3 +1,5 @@
+import BottomNav from "./components/BottomNav";
+
 export const metadata = {
   title: "Get Paid",
   description: "Never chase an invoice by hand again",
@@ -14,9 +16,10 @@ export default function RootLayout({ children }) {
           color: "#111",
         }}
       >
-        <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px" }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px", paddingBottom: 110 }}>
           {children}
         </div>
+        <BottomNav />
       </body>
     </html>
   );
