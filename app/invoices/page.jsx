@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../lib/supabaseClient";
 import { formatCurrency, formatInvoiceNumber } from "../lib/formatCurrency";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
+import BackButton from "../components/BackButton";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -97,9 +98,7 @@ export default async function AllInvoices({ searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/work?tab=invoices" />
         <h1 style={{ fontSize: 20, margin: 0 }}>All invoices</h1>
       </div>
 
