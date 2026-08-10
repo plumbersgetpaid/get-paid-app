@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency } from "../../lib/formatCurrency";
 import Link from "next/link";
+import BackButton from "../../components/BackButton";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -27,9 +28,7 @@ export default async function RecurringJobs() {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/work?tab=jobs" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/work?tab=jobs" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Recurring jobs</h1>
       </div>
 
