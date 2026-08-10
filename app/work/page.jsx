@@ -247,7 +247,7 @@ async function JobsTab({ db, settings }) {
               <Link href={`/jobs/schedule/${job.id}`} style={secondaryLinkButtonStyle}>
                 {job.scheduled_start ? "Reschedule" : "Book in"}
               </Link>
-              <Link href={`/jobs/complete/${job.id}`} style={primaryLinkButtonStyle}>
+              <Link href={`/jobs/complete/${job.id}?from=work`} style={primaryLinkButtonStyle}>
                 Mark done
               </Link>
             </div>
