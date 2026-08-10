@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,32 +13,52 @@ const TABS = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // The nav lives in the shared layout, which doesn't unmount between page
+  // navigations - so close the menu explicitly whenever the route changes,
+  // as a safety net alongside the explicit close-on-click handlers below.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   return (
     <>
-      {/* Hides the default disclosure-triangle marker on the "+" button */}
-      <style>{`
-        summary.gp-fab { list-style: none; }
-        summary.gp-fab::-webkit-details-marker { display: none; }
-        summary.gp-fab::marker { content: ""; }
-      `}</style>
+      {menuOpen && (
+        <div onClick={() => setMenuOpen(false)} style={backdropStyle} aria-hidden="true" />
+      )}
 
-      <details style={fabWrapperStyle}>
-        <summary className="gp-fab" style={fabButtonStyle}>
+      <div style={fabWrapperStyle}>
+        <button
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          style={fabButtonStyle}
+          aria-label="Create new"
+        >
           +
-        </summary>
-        <div style={fabMenuStyle}>
-          <Link href="/jobs/new" style={fabMenuItemStyle}>
-            📝 New quote
-          </Link>
-          <Link href="/calendar/quick-book" style={fabMenuItemStyle}>
-            🔧 Quick book a job
-          </Link>
-          <Link href="/calendar/reminder/new" style={fabMenuItemStyle}>
-            📌 Personal reminder
-          </Link>
-        </div>
-      </details>
+        </button>
+        {menuOpen && (
+          <div style={fabMenuStyle}>
+            <Link href="/jobs/new" style={fabMenuItemStyle} onClick={() => setMenuOpen(false)}>
+              📝 New quote
+            </Link>
+            <Link
+              href="/calendar/quick-book"
+              style={fabMenuItemStyle}
+              onClick={() => setMenuOpen(false)}
+            >
+              🔧 Quick book a job
+            </Link>
+            <Link
+              href="/calendar/reminder/new"
+              style={fabMenuItemStyle}
+              onClick={() => setMenuOpen(false)}
+            >
+              📌 Personal reminder
+            </Link>
+          </div>
+        )}
+      </div>
 
       <nav style={navStyle}>
         {TABS.map((tab) => {
@@ -61,6 +82,13 @@ export default function BottomNav() {
     </>
   );
 }
+
+const backdropStyle = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.15)",
+  zIndex: 15,
+};
 
 const navStyle = {
   position: "fixed",
@@ -100,10 +128,13 @@ const fabButtonStyle = {
   background: "#111",
   color: "white",
   fontSize: 30,
-  lineHeight: "56px",
-  textAlign: "center",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
   border: "3px solid #f6f7f9",
+  boxSizing: "border-box",
+  padding: 0,
 };
 
 const fabMenuStyle = {
