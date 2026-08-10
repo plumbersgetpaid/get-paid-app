@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BackButton from "../components/BackButton";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import VoiceQuoteAssist from "./VoiceQuoteAssist";
 
@@ -7,9 +8,7 @@ export default async function NewQuote() {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/" />
         <h1 style={{ fontSize: 20, margin: 0 }}>New quote</h1>
       </div>
 
