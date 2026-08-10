@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BackButton from "../../../components/BackButton";
 
 export default function NewRecurringJob() {
   const today = new Date().toISOString().slice(0, 10);
@@ -6,9 +7,7 @@ export default function NewRecurringJob() {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/jobs/recurring" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/jobs/recurring" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Recurring job</h1>
       </div>
 
