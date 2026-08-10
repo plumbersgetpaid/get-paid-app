@@ -3,6 +3,7 @@ import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
+import { textToEmailHtml } from "../../../lib/emailHtml";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -68,9 +69,8 @@ export async function POST(req) {
       };
       const subject = renderTemplate(template.subject, vars) || "Payment reminder";
       const bodyText = renderTemplate(template.body, vars);
-      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
-        /\n/g,
-        "<br/>"
+      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
+        bodyText
       )}</div>`;
 
       await resend.emails.send({
