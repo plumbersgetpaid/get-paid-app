@@ -140,6 +140,40 @@ export default async function Settings({ searchParams }) {
         </label>
 
         <label style={labelStyle}>
+          Google review link (optional)
+          <input
+            name="google_review_link"
+            type="url"
+            placeholder="https://g.page/r/your-business/review"
+            defaultValue={settings.google_review_link || ""}
+            style={inputStyle}
+          />
+          <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}>
+            Find this in your Google Business Profile - once set, paid
+            customers get an automatic thank-you with this link.
+          </span>
+        </label>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 13,
+            color: "#666",
+            fontWeight: 600,
+          }}
+        >
+          <input
+            type="checkbox"
+            name="send_review_requests"
+            value="1"
+            defaultChecked={settings.send_review_requests}
+          />
+          Automatically ask paid customers for a review
+        </label>
+
+        <label style={labelStyle}>
           Payment terms (optional, shown on every invoice)
           <textarea
             name="payment_terms"
