@@ -1,6 +1,8 @@
 import { supabaseAdmin } from "./lib/supabaseClient";
 import { getBusinessSettings } from "./lib/getBusinessSettings";
 import { formatCurrency } from "./lib/formatCurrency";
+import { getTodayInLondon } from "./lib/today";
+import Greeting from "./components/Greeting";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -11,15 +13,7 @@ export default async function Today() {
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
 
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const hour = now.getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const dateLabel = now.toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  const todayStr = getTodayInLondon();
 
   const { data: outstanding } = await db.from("outstanding_invoices").select("*");
   const totalOwed = (outstanding || []).reduce((sum, i) => sum + Number(i.amount), 0);
@@ -73,10 +67,7 @@ export default async function Today() {
   return (
     <main>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{greeting} 👋</div>
-          <div style={{ fontSize: 14, color: "#888" }}>{dateLabel}</div>
-        </div>
+        <Greeting />
         <Link href="/settings" aria-label="Settings" style={settingsIconStyle}>
           ⚙️
         </Link>
