@@ -62,6 +62,12 @@ const TEMPLATE_INFO = [
       "business_name",
     ],
   },
+  {
+    key: "review_request",
+    label: "Review request",
+    description: "Sent automatically once an invoice is marked as paid.",
+    placeholders: ["customer_name", "business_name", "review_link"],
+  },
 ];
 
 export default async function TemplatesSettings({ searchParams }) {
