@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
+import BackButton from "../../../components/BackButton";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -36,9 +37,7 @@ export default async function JobPhotos({ params, searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href="/" aria-label="Back" style={backButtonStyle}>
-          ←
-        </Link>
+        <BackButton fallbackHref="/work?tab=jobs" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Job photos</h1>
       </div>
 
