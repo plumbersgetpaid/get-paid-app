@@ -214,6 +214,10 @@ async function JobsTab({ db, settings }) {
         </button>
       </form>
 
+      <Link href="/jobs/recurring" style={viewAllLinkStyle}>
+        🔁 Manage recurring jobs →
+      </Link>
+
       {jobs.length === 0 && <p style={{ color: "#888" }}>No jobs in progress.</p>}
 
       {displayJobs.map((job) => {
