@@ -139,28 +139,6 @@ export default async function Settings({ searchParams }) {
           </select>
         </label>
 
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            fontSize: 13,
-            color: "#666",
-            fontWeight: 600,
-          }}
-        >
-          <input
-            type="checkbox"
-            name="include_weekends"
-            value="1"
-            defaultChecked={settings.include_weekends}
-          />
-          Include weekends when booking multi-day jobs
-          <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}>
-            (off = a "week" means 5 working days)
-          </span>
-        </label>
-
         <label style={labelStyle}>
           Payment terms (optional, shown on every invoice)
           <textarea
