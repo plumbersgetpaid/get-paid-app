@@ -102,7 +102,7 @@ export default async function Today() {
       </div>
 
       <section style={cardStyle}>
-        <div style={sectionTitleStyle}>🔧 Your day</div>
+        <div style={sectionTitleStyle}>Today's schedule</div>
         {agenda.length === 0 && (
           <p style={{ color: "#888", fontSize: 14, margin: "10px 0 0" }}>
             Nothing booked in for today.
@@ -134,7 +134,7 @@ export default async function Today() {
         </section>
       ) : (
         <section style={cardStyle}>
-          <div style={sectionTitleStyle}>⚡ Needs attention</div>
+          <div style={sectionTitleStyle}>Action needed</div>
           {quotesCount > 0 && (
             <Link href="/work?tab=quotes" style={attentionRowStyle}>
               🟠 {quotesCount} quote{quotesCount === 1 ? "" : "s"} need
@@ -167,7 +167,7 @@ export default async function Today() {
       )}
 
       <section style={cardStyle}>
-        <div style={sectionTitleStyle}>💰 Money</div>
+        <div style={sectionTitleStyle}>Outstanding payments</div>
         <div style={{ fontSize: 26, fontWeight: 700, marginTop: 6 }}>
           {formatCurrency(totalOwed, settings.currency)}{" "}
           <span style={{ fontSize: 14, fontWeight: 400, color: "#888" }}>awaiting</span>
