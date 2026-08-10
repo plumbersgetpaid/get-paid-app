@@ -173,12 +173,18 @@ export default async function AllInvoices({ searchParams }) {
         </form>
 
         {(rangeStart || rangeEnd) && (
-          <div style={{ marginTop: 10 }}>
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
             <a
               href={`/api/invoices/bulk-pdf?start=${rangeStart}&end=${rangeEnd}`}
               style={downloadRangeLinkStyle}
             >
               Download PDF for this period →
+            </a>
+            <a
+              href={`/api/invoices/export-csv?start=${rangeStart}&end=${rangeEnd}`}
+              style={downloadRangeLinkStyle}
+            >
+              Download CSV for this period (accountant/QuickBooks) →
             </a>
           </div>
         )}
@@ -233,7 +239,7 @@ export default async function AllInvoices({ searchParams }) {
         <form
           action="/api/invoices/bulk-pdf"
           method="GET"
-          style={{ display: "flex", gap: 8, marginBottom: 20 }}
+          style={{ display: "flex", gap: 8, marginBottom: 8 }}
         >
           <select name="month" style={monthSelectStyle}>
             <option value="">All invoices</option>
@@ -247,6 +253,12 @@ export default async function AllInvoices({ searchParams }) {
             Download PDF
           </button>
         </form>
+      )}
+
+      {invoices.length > 0 && (
+        <a href="/api/invoices/export-csv" style={csvAllLinkStyle}>
+          Download CSV of all invoices (accountant/QuickBooks) →
+        </a>
       )}
 
       {invoices.length === 0 && (
@@ -353,4 +365,13 @@ const downloadRangeLinkStyle = {
   color: "#111",
   fontWeight: 600,
   textDecoration: "underline",
+};
+
+const csvAllLinkStyle = {
+  display: "block",
+  fontSize: 13,
+  color: "#111",
+  fontWeight: 600,
+  textDecoration: "underline",
+  marginBottom: 20,
 };
