@@ -34,6 +34,13 @@ export default async function Today() {
   const lateJobs = (activeJobs || []).filter(
     (j) => j.time_confirmed !== false && j.scheduled_end && new Date(j.scheduled_end) < now
   );
+  // Jobs whose date has arrived (today or already passed) but the actual
+  // time was never confirmed - these need an active nudge, not just a
+  // passive "TBC" sitting quietly on the calendar
+  const needsTimeJobs = (activeJobs || []).filter(
+    (j) =>
+      j.time_confirmed === false && j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr
+  );
 
   const jobCustomerIds = [...new Set(jobsToday.map((j) => j.customer_id))];
   const { data: jobCustomers } = jobCustomerIds.length
@@ -70,8 +77,13 @@ export default async function Today() {
   const needsBookingCount = needsBooking.length;
   const overdueCount = dueOrOverdueInvoices.length;
   const lateCount = lateJobs.length;
+  const needsTimeCount = needsTimeJobs.length;
   const allClear =
-    quotesCount === 0 && needsBookingCount === 0 && overdueCount === 0 && lateCount === 0;
+    quotesCount === 0 &&
+    needsBookingCount === 0 &&
+    overdueCount === 0 &&
+    lateCount === 0 &&
+    needsTimeCount === 0;
 
   return (
     <main>
@@ -125,6 +137,12 @@ export default async function Today() {
           {lateCount > 0 && (
             <Link href="/jobs?status=late" style={attentionRowStyle}>
               🔴 {lateCount} job{lateCount === 1 ? "" : "s"} running late
+            </Link>
+          )}
+          {needsTimeCount > 0 && (
+            <Link href="/jobs?status=needs-time" style={attentionRowStyle}>
+              🟡 {needsTimeCount} job{needsTimeCount === 1 ? "" : "s"} still need
+              {needsTimeCount === 1 ? "s" : ""} a time set
             </Link>
           )}
           {needsBookingCount > 0 && (
