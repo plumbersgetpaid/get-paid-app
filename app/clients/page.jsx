@@ -18,6 +18,25 @@ export default async function Clients({ searchParams }) {
     .order("name", { ascending: true });
 
   let customers = rawCustomers || [];
+
+  // Flag possible duplicate contacts - same email or phone shared by more
+  // than one customer record
+  const emailCounts = {};
+  const phoneCounts = {};
+  for (const c of rawCustomers || []) {
+    if (c.email) {
+      const key = c.email.trim().toLowerCase();
+      emailCounts[key] = (emailCounts[key] || 0) + 1;
+    }
+    if (c.phone) {
+      const key = c.phone.trim();
+      phoneCounts[key] = (phoneCounts[key] || 0) + 1;
+    }
+  }
+  const isDuplicate = (c) =>
+    (c.email && emailCounts[c.email.trim().toLowerCase()] > 1) ||
+    (c.phone && phoneCounts[c.phone.trim()] > 1);
+
   if (q) {
     customers = customers.filter((c) =>
       [c.name, c.phone, c.email].some((field) =>
@@ -113,6 +132,11 @@ export default async function Clients({ searchParams }) {
           <div style={{ fontSize: 13, color: "#888" }}>
             {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact details on file"}
           </div>
+          {isDuplicate(c) && (
+            <div style={{ fontSize: 12, color: "#b91c1c", marginTop: 4, fontWeight: 600 }}>
+              ⚠️ Possible duplicate - tap to review
+            </div>
+          )}
           {owedByCustomer[c.id] > 0 && (
             <div style={{ fontSize: 12, color: "#b45309", marginTop: 4 }}>
               {formatCurrency(owedByCustomer[c.id], settings.currency)} outstanding
