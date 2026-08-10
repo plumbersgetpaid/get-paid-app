@@ -39,11 +39,18 @@ export async function GET(req) {
       .single();
 
     const preferredTime = r.preferred_time || "09:00";
-    const confirmLater = !!r.confirm_time_later;
+    // A one-off time set specifically for the next occurrence overrides
+    // everything else, and always counts as a real, confirmed time
+    const hasOneOffTime = !!r.next_occurrence_time;
+    const confirmLater = !hasOneOffTime && !!r.confirm_time_later;
     // If the time isn't being fixed yet, use a neutral placeholder just so
     // the job has a real timestamp - it's flagged as unconfirmed below, so
     // the UI shows "time to be confirmed" instead of this placeholder
-    const timeToUse = confirmLater ? "12:00" : preferredTime;
+    const timeToUse = hasOneOffTime
+      ? r.next_occurrence_time
+      : confirmLater
+      ? "12:00"
+      : preferredTime;
     const start = new Date(`${r.next_occurrence}T${timeToUse}:00`);
     const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
 
@@ -242,7 +249,10 @@ export async function GET(req) {
     }
 
     const nextOccurrence = advanceDate(r.next_occurrence, r.frequency_value, r.frequency_unit);
-    await db.from("recurring_jobs").update({ next_occurrence: nextOccurrence }).eq("id", r.id);
+    await db
+      .from("recurring_jobs")
+      .update({ next_occurrence: nextOccurrence, next_occurrence_time: null })
+      .eq("id", r.id);
   }
 
   return NextResponse.json({ ok: true, created });
