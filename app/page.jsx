@@ -57,13 +57,20 @@ export default async function Today() {
     .lte("scheduled_start", `${todayStr}T23:59:59`);
 
   const agenda = [
-    ...jobsToday.map((j) => ({
-      time: j.scheduled_start,
-      timeConfirmed: j.time_confirmed !== false,
-      icon: "🔧",
-      label: `${jobCustomerNameById[j.customer_id] || "Customer"} · ${j.job_type || "Job"}`,
-      href: `/jobs/complete/${j.id}?from=today`,
-    })),
+    ...jobsToday.map((j) => {
+      const timeConfirmed = j.time_confirmed !== false;
+      return {
+        time: j.scheduled_start,
+        timeConfirmed,
+        icon: "🔧",
+        label: `${jobCustomerNameById[j.customer_id] || "Customer"} · ${j.job_type || "Job"}`,
+        // If the time still needs setting, take them to set it - only once
+        // it's confirmed does tapping the job mean "mark it done"
+        href: timeConfirmed
+          ? `/jobs/complete/${j.id}?from=today`
+          : `/jobs/schedule/${j.id}`,
+      };
+    }),
     ...(remindersToday || []).map((r) => ({
       time: r.scheduled_start,
       timeConfirmed: true,
