@@ -3,6 +3,7 @@ import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatCurrency, formatInvoiceNumber } from "../../../lib/formatCurrency";
+import { textToEmailHtml } from "../../../lib/emailHtml";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -50,10 +51,16 @@ export async function POST(req) {
 
   const db = supabaseAdmin();
 
-  // 1. Mark the job complete
+  // 1. Mark the job complete - the note is always saved to the job record
+  // (for internal reference/dispute protection), regardless of whether the
+  // price changed, even though it's only shown to the customer if it did
   const { data: job, error: jobErr } = await db
     .from("jobs")
-    .update({ status: "complete", completed_at: new Date().toISOString() })
+    .update({
+      status: "complete",
+      completed_at: new Date().toISOString(),
+      completion_note: noteInput || null,
+    })
     .eq("id", jobId)
     .select("*")
     .single();
@@ -170,9 +177,8 @@ export async function POST(req) {
         }
       }
 
-      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${bodyText.replace(
-        /\n/g,
-        "<br/>"
+      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
+        bodyText
       )}${await buildPhotosHtml(db, job.id, attachPhotos)}</div>`;
 
       const result = await resend.emails.send({
