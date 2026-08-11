@@ -102,6 +102,23 @@ async function finishInvoice({
       afterPhotos,
     };
 
+    const invoiceTemplate = await getTemplate("invoice");
+    const invoiceVars = {
+      customer_name: customer.name,
+      job_type: job.job_type || "Plumbing work",
+      amount: formatCurrency(finalAmount, settings.currency).replace(/^[^\d-]*/, ""),
+      due_date: dueDate.toDateString(),
+      business_name: settings.business_name,
+    };
+
+    // Resolved once, used on both the PDF's small print and in the email
+    // body below, so they always say the same thing
+    let paymentNote = "";
+    if (paymentLinkInput) {
+      const paymentNoteTemplate = await getTemplate("payment_note");
+      paymentNote = renderTemplate(paymentNoteTemplate.body, invoiceVars);
+    }
+
     const pdfBytes = await generateInvoicePdfBytes({
       invoiceNumber: formatInvoiceNumber(invoice.invoice_number),
       customerName: customer.name,
@@ -116,17 +133,10 @@ async function finishInvoice({
       quotedAmount: priceChanged ? quotedAmount : undefined,
       priceChangeNote: priceChanged ? noteInput : undefined,
       paymentLink: paymentLinkInput || undefined,
+      paymentNote: paymentNote || undefined,
       business,
     });
 
-    const invoiceTemplate = await getTemplate("invoice");
-    const invoiceVars = {
-      customer_name: customer.name,
-      job_type: job.job_type || "Plumbing work",
-      amount: formatCurrency(finalAmount, settings.currency).replace(/^[^\d-]*/, ""),
-      due_date: dueDate.toDateString(),
-      business_name: settings.business_name,
-    };
     const subject =
       renderTemplate(invoiceTemplate.subject, invoiceVars) ||
       `Invoice for ${job.job_type || "your recent job"}`;
@@ -146,6 +156,9 @@ async function finishInvoice({
     }
     if (paymentLinkInput) {
       bodyText += `\n\nPay now: ${paymentLinkInput}`;
+      if (paymentNote) {
+        bodyText += `\n${paymentNote}`;
+      }
     }
 
     const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
