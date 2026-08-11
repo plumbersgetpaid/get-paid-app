@@ -4,41 +4,43 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatCurrency, formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { textToEmailHtml } from "../../../lib/emailHtml";
+import { getEmailFrom } from "../../../lib/emailFrom";
+import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
-// Builds a simple before/after photo gallery as inline HTML for the
-// invoice email, if the tradie opted in and photos exist for this job.
-async function buildPhotosHtml(db, jobId, attachPhotos) {
-  if (!attachPhotos) return "";
+// Uploads any selected before/after photos to storage and records them
+// against the job. These are purely for the invoice PDF now - there's no
+// separate gallery to view them in - so if none were selected, this is a
+// no-op.
+async function uploadJobPhotos(db, jobId, files, label) {
+  for (const file of files) {
+    if (!file || typeof file === "string" || file.size === 0) continue;
 
-  const { data: photos } = await db
-    .from("job_photos")
-    .select("*")
-    .eq("job_id", jobId)
-    .order("created_at", { ascending: true });
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${jobId}/${label}-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.${ext}`;
 
-  if (!photos || photos.length === 0) return "";
+    const { error: uploadError } = await db.storage
+      .from("job-photos")
+      .upload(path, bytes, { contentType: file.type || "image/jpeg", upsert: true });
 
-  const imgTag = (p) =>
-    `<img src="${p.url}" alt="${p.label}" style="width:150px;height:110px;object-fit:cover;border-radius:6px;margin:4px;" />`;
+    if (uploadError) {
+      console.error(`Job photo upload error (${label}):`, uploadError);
+      continue;
+    }
 
-  const before = photos.filter((p) => p.label === "before");
-  const after = photos.filter((p) => p.label === "after");
+    const { data: publicUrlData } = db.storage.from("job-photos").getPublicUrl(path);
 
-  let html = `<div style="margin-top:20px;">`;
-  if (before.length > 0) {
-    html += `<div style="font-weight:600;margin-bottom:4px;">Before</div><div>${before
-      .map(imgTag)
-      .join("")}</div>`;
+    await db.from("job_photos").insert({
+      job_id: jobId,
+      url: publicUrlData.publicUrl,
+      storage_path: path,
+      label,
+    });
   }
-  if (after.length > 0) {
-    html += `<div style="font-weight:600;margin:10px 0 4px;">After</div><div>${after
-      .map(imgTag)
-      .join("")}</div>`;
-  }
-  html += `</div>`;
-  return html;
 }
 
 export async function POST(req) {
@@ -47,8 +49,9 @@ export async function POST(req) {
   const dueDateInput = form.get("dueDate"); // yyyy-mm-dd from the form, optional
   const amountInput = form.get("amount"); // optional - lets the price be adjusted from the original quote
   const noteInput = (form.get("note") || "").toString().trim(); // optional explanation for a price change
-  const attachPhotos = form.get("attachPhotos") === "1";
   const from = (form.get("from") || "").toString();
+  const beforeFiles = form.getAll("beforePhotos");
+  const afterFiles = form.getAll("afterPhotos");
 
   const db = supabaseAdmin();
 
@@ -70,6 +73,10 @@ export async function POST(req) {
     console.error("Job update error:", jobErr);
     return NextResponse.json({ error: "Job not found" }, { status: 400 });
   }
+
+  // Save any new before/after photos now, so they're included below
+  await uploadJobPhotos(db, job.id, beforeFiles, "before");
+  await uploadJobPhotos(db, job.id, afterFiles, "after");
 
   // Fetch the customer separately (avoids relying on Supabase auto-detecting
   // the foreign key relationship, which can silently fail on new projects)
@@ -120,6 +127,7 @@ export async function POST(req) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       const settings = await getBusinessSettings();
+      const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, job.id);
       const business = {
         businessName: settings.business_name,
         accentColor: settings.accent_color,
@@ -131,6 +139,8 @@ export async function POST(req) {
         paymentTerms: settings.payment_terms,
         bankDetails: settings.bank_details,
         currency: settings.currency,
+        beforePhotos,
+        afterPhotos,
       };
 
       const pdfBytes = await generateInvoicePdfBytes({
@@ -180,12 +190,12 @@ export async function POST(req) {
 
       const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
         bodyText
-      )}${await buildPhotosHtml(db, job.id, attachPhotos)}</div>`;
+      )}</div>`;
 
       const result = await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
-        from: `${settings.business_name} <onboarding@resend.dev>`,
+        from: getEmailFrom(settings.business_name),
         to: customer.email,
         subject,
         html,
@@ -209,12 +219,8 @@ export async function POST(req) {
     });
   }
 
-  // 4. Also send an SMS confirmation (optional - requires Twilio setup)
-  // See README for enabling this.
-
   // Take the tradie back to wherever they came from, rather than always
   // dumping them on the Today screen
   const returnPath = from === "work" ? "/work?tab=jobs" : "/";
   return NextResponse.redirect(new URL(returnPath, req.url));
 }
-
