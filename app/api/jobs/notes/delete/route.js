@@ -4,13 +4,23 @@ import { NextResponse } from "next/server";
 export async function POST(req) {
   const form = await req.formData();
   const noteId = form.get("noteId");
-  const jobId = form.get("jobId");
 
   if (!noteId) {
     return NextResponse.json({ error: "Missing noteId" }, { status: 400 });
   }
 
   const db = supabaseAdmin();
+
+  const { data: existingNote } = await db
+    .from("job_notes")
+    .select("image_storage_path")
+    .eq("id", noteId)
+    .single();
+
+  if (existingNote?.image_storage_path) {
+    await db.storage.from("job-note-images").remove([existingNote.image_storage_path]);
+  }
+
   const { error } = await db.from("job_notes").delete().eq("id", noteId);
 
   if (error) {
@@ -18,5 +28,5 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.redirect(new URL(`/jobs/notes/${jobId}`, req.url));
+  return NextResponse.json({ ok: true });
 }
