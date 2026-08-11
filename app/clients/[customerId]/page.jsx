@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
+import DuplicateRow from "./DuplicateRow";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
@@ -117,26 +118,12 @@ export default async function ClientDetail({ params }) {
             ⚠️ Possible duplicate{duplicates.length > 1 ? "s" : ""}
           </div>
           {duplicates.map((dupe) => (
-            <div key={dupe.id} style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{dupe.name}</div>
-              <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>
-                {[dupe.phone, dupe.email].filter(Boolean).join(" · ")}
-              </div>
-              <form action="/api/clients/merge" method="POST" style={{ display: "flex", gap: 8 }}>
-                <input type="hidden" name="keepId" value={customer.id} />
-                <input type="hidden" name="mergeId" value={dupe.id} />
-                <button type="submit" style={mergeButtonStyle}>
-                  Merge into {customer.name}
-                </button>
-              </form>
-              <form action="/api/clients/ignore-duplicate" method="POST" style={{ marginTop: 6 }}>
-                <input type="hidden" name="customerId" value={customer.id} />
-                <input type="hidden" name="dupeId" value={dupe.id} />
-                <button type="submit" style={ignoreButtonStyle}>
-                  Not a duplicate - ignore
-                </button>
-              </form>
-            </div>
+            <DuplicateRow
+              key={dupe.id}
+              customerId={customer.id}
+              customerName={customer.name}
+              dupe={dupe}
+            />
           ))}
         </section>
       )}
