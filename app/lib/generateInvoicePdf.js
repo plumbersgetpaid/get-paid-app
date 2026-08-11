@@ -1,5 +1,29 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, PDFName, PDFString } from "pdf-lib";
 import { formatCurrency } from "./formatCurrency";
+
+// Adds a real clickable link annotation over a rectangle on the page -
+// pdf-lib has no high-level helper for this, so it's built directly from
+// the PDF spec's link annotation dictionary.
+function addLinkAnnotation(pdfDoc, page, url, x, y, width, height) {
+  const annotation = pdfDoc.context.obj({
+    Type: "Annot",
+    Subtype: "Link",
+    Rect: [x, y, x + width, y + height],
+    Border: [0, 0, 0],
+    A: {
+      Type: "Action",
+      S: "URI",
+      URI: PDFString.of(url),
+    },
+  });
+  const annotationRef = pdfDoc.context.register(annotation);
+  const existingAnnots = page.node.lookup(PDFName.of("Annots"));
+  if (existingAnnots) {
+    existingAnnots.push(annotationRef);
+  } else {
+    page.node.set(PDFName.of("Annots"), pdfDoc.context.obj([annotationRef]));
+  }
+}
 
 // Converts a hex colour like "#111111" into pdf-lib's 0-1 rgb() format.
 // Falls back to near-black if the value is missing or malformed.
@@ -36,6 +60,7 @@ export async function generateInvoicePdfBytes({
   createdAt,
   quotedAmount,
   priceChangeNote,
+  paymentLink,
   business = {},
 }) {
   const {
@@ -203,6 +228,36 @@ export async function generateInvoicePdfBytes({
     color: rgb(0.85, 0.85, 0.85),
   });
   y -= 26;
+
+  // A real, tappable "Pay now" button, if the tradie added a payment link
+  // for this invoice - sits alongside the bank details below, never
+  // replacing them, so the customer can use whichever they prefer
+  if (paymentLink) {
+    const buttonWidth = 160;
+    const buttonHeight = 30;
+    const buttonX = left;
+    const buttonY = y - buttonHeight + 8;
+
+    page.drawRectangle({
+      x: buttonX,
+      y: buttonY,
+      width: buttonWidth,
+      height: buttonHeight,
+      color: accent,
+    });
+    const buttonLabel = "Pay now";
+    const labelWidth = bold.widthOfTextAtSize(buttonLabel, 12);
+    page.drawText(buttonLabel, {
+      x: buttonX + (buttonWidth - labelWidth) / 2,
+      y: buttonY + 10,
+      size: 12,
+      font: bold,
+      color: rgb(1, 1, 1),
+    });
+    addLinkAnnotation(pdfDoc, page, paymentLink, buttonX, buttonY, buttonWidth, buttonHeight);
+
+    y = buttonY - 16;
+  }
 
   const row = (label, value) => {
     page.drawText(label, { x: left, y, size: 10, font, color: grey });
