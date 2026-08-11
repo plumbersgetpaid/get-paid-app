@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 
-export default function DuplicateRow({ customerId, customerName, dupe }) {
+export default function DuplicateRow({ customerId, customerName, dupe, onResolved }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [handled, setHandled] = useState(false);
   const [mergedOk, setMergedOk] = useState(false);
 
   async function handleMerge() {
@@ -30,12 +29,11 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
         return;
       }
 
-      // Show a clear success state, then remove this row entirely - no
-      // page reload involved at all, so there's nothing that can fail to
-      // "take effect". The rest of the page (customer name, job history)
-      // doesn't need refreshing anyway - only this notice needs to go.
+      // Show a clear success state, then tell the parent this one's
+      // resolved - the parent (not this row) owns whether the surrounding
+      // "Possible duplicate" box itself should still be showing at all
       setMergedOk(true);
-      setTimeout(() => setHandled(true), 900);
+      setTimeout(() => onResolved(), 900);
     } catch (err) {
       console.error("Merge error:", err);
       if (err.name === "TimeoutError" || err.name === "AbortError") {
@@ -67,7 +65,7 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
         setBusy(false);
         return;
       }
-      setHandled(true);
+      onResolved();
     } catch (err) {
       console.error("Ignore duplicate error:", err);
       if (err.name === "TimeoutError" || err.name === "AbortError") {
@@ -78,8 +76,6 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
       setBusy(false);
     }
   }
-
-  if (handled) return null;
 
   return (
     <div style={{ marginBottom: 10 }}>

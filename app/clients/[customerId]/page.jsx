@@ -1,6 +1,6 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
-import DuplicateRow from "./DuplicateRow";
+import DuplicatesSection from "./DuplicatesSection";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
@@ -112,21 +112,11 @@ export default async function ClientDetail({ params }) {
         </div>
       </section>
 
-      {duplicates.length > 0 && (
-        <section style={duplicateCardStyle}>
-          <div style={{ fontWeight: 700, color: "#b91c1c", marginBottom: 8 }}>
-            ⚠️ Possible duplicate{duplicates.length > 1 ? "s" : ""}
-          </div>
-          {duplicates.map((dupe) => (
-            <DuplicateRow
-              key={dupe.id}
-              customerId={customer.id}
-              customerName={customer.name}
-              dupe={dupe}
-            />
-          ))}
-        </section>
-      )}
+      <DuplicatesSection
+        customerId={customer.id}
+        customerName={customer.name}
+        initialDuplicates={duplicates}
+      />
 
       <h2 style={{ fontSize: 16, marginTop: 24 }}>Job history</h2>
       {(!jobs || jobs.length === 0) && (
