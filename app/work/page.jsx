@@ -216,9 +216,19 @@ async function JobsTab({ db, settings, sub }) {
     const completedNameById = Object.fromEntries(
       (completedCustomers || []).map((c) => [c.id, c.name])
     );
+
+    const completedJobIds = (rawCompleted || []).map((j) => j.id);
+    const { data: completedInvoices } = completedJobIds.length
+      ? await db.from("invoices").select("id, job_id").in("job_id", completedJobIds)
+      : { data: [] };
+    const invoiceIdByJob = Object.fromEntries(
+      (completedInvoices || []).map((inv) => [inv.job_id, inv.id])
+    );
+
     completedJobs = (rawCompleted || []).map((j) => ({
       ...j,
       customer_name: completedNameById[j.customer_id] || "Unknown customer",
+      invoice_id: invoiceIdByJob[j.id] || null,
     }));
   }
 
@@ -287,13 +297,20 @@ async function JobsTab({ db, settings, sub }) {
                 {job.job_type} · {formatCurrency(job.amount, settings.currency)} ·{" "}
                 <span style={{ textTransform: "capitalize" }}>{job.status}</span>
               </div>
-              <Link
-                href={`/jobs/notes/${job.id}`}
-                style={hasImportantNoteByJob[job.id] ? importantNoteLinkStyle : jobLinkStyle}
-              >
-                {hasImportantNoteByJob[job.id] ? "⚠️ " : "📝 "}Notes
-                {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
-              </Link>
+              <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                {job.invoice_id && (
+                  <Link href={`/invoices/${job.invoice_id}`} style={jobLinkStyle}>
+                    View invoice →
+                  </Link>
+                )}
+                <Link
+                  href={`/jobs/notes/${job.id}`}
+                  style={hasImportantNoteByJob[job.id] ? importantNoteLinkStyle : jobLinkStyle}
+                >
+                  {hasImportantNoteByJob[job.id] ? "⚠️ " : "📝 "}Notes
+                  {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
+                </Link>
+              </div>
             </div>
           );
         }
