@@ -6,6 +6,7 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [handled, setHandled] = useState(false);
+  const [mergedOk, setMergedOk] = useState(false);
 
   async function handleMerge() {
     setError(null);
@@ -14,17 +15,36 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
       const formData = new FormData();
       formData.append("keepId", customerId);
       formData.append("mergeId", dupe.id);
-      const res = await fetch("/api/clients/merge", { method: "POST", body: formData });
+      const res = await fetch("/api/clients/merge", {
+        method: "POST",
+        body: formData,
+        // If this hangs, say so clearly instead of leaving "Working..."
+        // showing forever with no way to tell stuck apart from just slow
+        signal: AbortSignal.timeout(15000),
+      });
+
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Couldn't merge these.");
         setBusy(false);
         return;
       }
-      window.location.reload();
+
+      // Show a clear, unmistakable success state before reloading, so it's
+      // never ambiguous whether it actually worked - especially important
+      // if another duplicate is waiting behind this one with an
+      // identical-looking button
+      setMergedOk(true);
+      setTimeout(() => window.location.reload(), 700);
     } catch (err) {
       console.error("Merge error:", err);
-      setError("Couldn't reach the server. Check your connection and try again.");
+      if (err.name === "TimeoutError" || err.name === "AbortError") {
+        setError(
+          "This is taking much longer than it should (over 15s) - your connection may be slow right now, or something's genuinely stuck. Try again in a moment."
+        );
+      } else {
+        setError("Couldn't reach the server. Check your connection and try again.");
+      }
       setBusy(false);
     }
   }
@@ -36,7 +56,11 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
       const formData = new FormData();
       formData.append("customerId", customerId);
       formData.append("dupeId", dupe.id);
-      const res = await fetch("/api/clients/ignore-duplicate", { method: "POST", body: formData });
+      const res = await fetch("/api/clients/ignore-duplicate", {
+        method: "POST",
+        body: formData,
+        signal: AbortSignal.timeout(15000),
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Couldn't save that.");
@@ -46,7 +70,11 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
       setHandled(true);
     } catch (err) {
       console.error("Ignore duplicate error:", err);
-      setError("Couldn't reach the server. Check your connection and try again.");
+      if (err.name === "TimeoutError" || err.name === "AbortError") {
+        setError("This is taking much longer than it should - try again in a moment.");
+      } else {
+        setError("Couldn't reach the server. Check your connection and try again.");
+      }
       setBusy(false);
     }
   }
@@ -59,13 +87,28 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
       <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>
         {[dupe.phone, dupe.email].filter(Boolean).join(" · ")}
       </div>
+      {mergedOk && (
+        <div style={{ fontSize: 12, color: "#166534", marginBottom: 6, fontWeight: 700 }}>
+          ✓ Merged - refreshing...
+        </div>
+      )}
       {error && (
         <div style={{ fontSize: 12, color: "#b91c1c", marginBottom: 6 }}>{error}</div>
       )}
-      <button type="button" onClick={handleMerge} disabled={busy} style={mergeButtonStyle}>
-        {busy ? "Working..." : `Merge into ${customerName}`}
+      <button
+        type="button"
+        onClick={handleMerge}
+        disabled={busy || mergedOk}
+        style={mergeButtonStyle}
+      >
+        {mergedOk ? "✓ Merged" : busy ? "Working..." : `Merge into ${customerName}`}
       </button>
-      <button type="button" onClick={handleIgnore} disabled={busy} style={ignoreButtonStyle}>
+      <button
+        type="button"
+        onClick={handleIgnore}
+        disabled={busy || mergedOk}
+        style={ignoreButtonStyle}
+      >
         Not a duplicate - ignore
       </button>
     </div>
