@@ -60,6 +60,7 @@ export async function GET(req, { params }) {
     status: invoice.status,
     paidAt: invoice.paid_at,
     createdAt: invoice.created_at,
+    paymentLink: invoice.payment_link || undefined,
     business,
   });
 
