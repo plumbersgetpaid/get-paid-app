@@ -6,7 +6,7 @@ import { formatCurrency, formatInvoiceNumber } from "../../../lib/formatCurrency
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
-import { waitUntil } from "@vercel/functions";
+import { unstable_after as after } from "next/server";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -241,7 +241,7 @@ export async function POST(req) {
   // 3. Everything else - uploading photos, building the PDF, sending the
   // email - happens in the background, so the tradie isn't stuck staring
   // at a spinner waiting on it
-  waitUntil(
+  after(() =>
     finishInvoiceInBackground({
       db,
       job,
