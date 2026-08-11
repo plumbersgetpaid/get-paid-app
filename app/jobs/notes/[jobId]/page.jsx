@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import BackButton from "../../../components/BackButton";
+import AddNoteForm from "./AddNoteForm";
 
 export const dynamic = "force-dynamic";
 
@@ -53,27 +54,7 @@ export default async function JobNotes({ params }) {
         🔒 Internal only - these notes are never shown or sent to the client.
       </div>
 
-      <form
-        action="/api/jobs/notes/create"
-        method="POST"
-        style={{ display: "grid", gap: 10, marginTop: 16 }}
-      >
-        <input type="hidden" name="jobId" value={job.id} />
-        <textarea
-          name="note"
-          placeholder="e.g. Don't forget to cap off pipes left in the wall before it's tiled"
-          rows={3}
-          required
-          style={textareaStyle}
-        />
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-          <input type="checkbox" name="important" value="1" />
-          ⚠️ Flag as important
-        </label>
-        <button type="submit" style={submitButtonStyle}>
-          Add note
-        </button>
-      </form>
+      <AddNoteForm jobId={job.id} />
 
       <h2 style={{ fontSize: 16, marginTop: 24 }}>Notes ({notes.length})</h2>
       {notes.length === 0 && <p style={{ color: "#888", fontSize: 13 }}>No notes yet.</p>}
@@ -86,6 +67,10 @@ export default async function JobNotes({ params }) {
             </div>
           )}
           <div style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{n.note}</div>
+          {n.image_url && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={n.image_url} alt="" style={noteImageStyle} />
+          )}
           <div style={{ fontSize: 11, color: "#888", marginTop: 6 }}>
             {new Date(n.created_at).toLocaleString("en-GB", {
               day: "numeric",
@@ -157,6 +142,14 @@ const importantNoteCardStyle = {
   ...noteCardStyle,
   background: "#fef3c7",
   border: "1px solid #fde68a",
+};
+
+const noteImageStyle = {
+  width: "100%",
+  maxWidth: 240,
+  borderRadius: 8,
+  marginTop: 8,
+  display: "block",
 };
 
 const deleteNoteButtonStyle = {
