@@ -58,7 +58,7 @@ export async function GET(req) {
     if (templateKey && inv.email && resend) {
       const { data: invoiceRow } = await db
         .from("invoices")
-        .select("job_id")
+        .select("job_id, payment_link")
         .eq("id", inv.invoice_id)
         .single();
       const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, invoiceRow?.job_id);
@@ -73,6 +73,7 @@ export async function GET(req) {
         amount: inv.amount,
         dueDate: inv.due_date,
         status: "unpaid",
+        paymentLink: invoiceRow?.payment_link || undefined,
         business: { ...business, beforePhotos, afterPhotos },
       });
 
@@ -84,7 +85,10 @@ export async function GET(req) {
         business_name: settings.business_name,
       };
       const subject = renderTemplate(template.subject, vars) || "Payment reminder";
-      const bodyText = renderTemplate(template.body, vars);
+      let bodyText = renderTemplate(template.body, vars);
+      if (invoiceRow?.payment_link) {
+        bodyText += `\n\nPay now: ${invoiceRow.payment_link}`;
+      }
       const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
         bodyText
       )}</div>`;
