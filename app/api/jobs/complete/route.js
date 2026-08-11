@@ -49,6 +49,7 @@ export async function POST(req) {
   const dueDateInput = form.get("dueDate"); // yyyy-mm-dd from the form, optional
   const amountInput = form.get("amount"); // optional - lets the price be adjusted from the original quote
   const noteInput = (form.get("note") || "").toString().trim(); // optional explanation for a price change
+  const paymentLinkInput = (form.get("paymentLink") || "").toString().trim();
   const from = (form.get("from") || "").toString();
   const beforeFiles = form.getAll("beforePhotos");
   const afterFiles = form.getAll("afterPhotos");
@@ -111,6 +112,7 @@ export async function POST(req) {
       amount: finalAmount,
       due_date: dueDate.toISOString().slice(0, 10),
       status: "unpaid",
+      payment_link: paymentLinkInput || null,
     })
     .select()
     .single();
@@ -156,6 +158,7 @@ export async function POST(req) {
         createdAt: invoice.created_at,
         quotedAmount: priceChanged ? quotedAmount : undefined,
         priceChangeNote: priceChanged ? noteInput : undefined,
+        paymentLink: paymentLinkInput || undefined,
         business,
       });
 
@@ -186,6 +189,10 @@ export async function POST(req) {
         if (noteInput) {
           bodyText += `\n${noteInput}`;
         }
+      }
+
+      if (paymentLinkInput) {
+        bodyText += `\n\nPay now: ${paymentLinkInput}`;
       }
 
       const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
