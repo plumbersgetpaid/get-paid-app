@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
+import { getTemplate, renderTemplate } from "../../../../lib/getTemplate";
 import { formatInvoiceNumber } from "../../../../lib/formatCurrency";
 import { getJobPhotosForPdf } from "../../../../lib/getJobPhotosForPdf";
 
@@ -48,6 +49,15 @@ export async function GET(req, { params }) {
     afterPhotos,
   };
 
+  let paymentNote = "";
+  if (invoice.payment_link) {
+    const paymentNoteTemplate = await getTemplate("payment_note");
+    paymentNote = renderTemplate(paymentNoteTemplate.body, {
+      customer_name: customer?.name,
+      business_name: settings.business_name,
+    });
+  }
+
   const pdfBytes = await generateInvoicePdfBytes({
     invoiceNumber: formatInvoiceNumber(invoice.invoice_number),
     customerName: customer?.name,
@@ -61,6 +71,7 @@ export async function GET(req, { params }) {
     paidAt: invoice.paid_at,
     createdAt: invoice.created_at,
     paymentLink: invoice.payment_link || undefined,
+    paymentNote: paymentNote || undefined,
     business,
   });
 
