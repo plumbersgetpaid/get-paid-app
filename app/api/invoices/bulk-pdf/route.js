@@ -2,6 +2,7 @@ import { PDFDocument } from "pdf-lib";
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 
@@ -83,10 +84,19 @@ export async function GET(req) {
     currency: settings.currency,
   };
 
+  const paymentNoteTemplate = await getTemplate("payment_note");
+
   for (const inv of invoices) {
     const job = jobById[inv.job_id];
     const customer = job ? customerById[job.customer_id] : null;
     const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, job?.id);
+
+    const paymentNote = inv.payment_link
+      ? renderTemplate(paymentNoteTemplate.body, {
+          customer_name: customer?.name,
+          business_name: settings.business_name,
+        })
+      : "";
 
     const singleBytes = await generateInvoicePdfBytes({
       invoiceNumber: formatInvoiceNumber(inv.invoice_number),
@@ -101,6 +111,7 @@ export async function GET(req) {
       paidAt: inv.paid_at,
       createdAt: inv.created_at,
       paymentLink: inv.payment_link || undefined,
+      paymentNote: paymentNote || undefined,
       business: { ...business, beforePhotos, afterPhotos },
     });
 
