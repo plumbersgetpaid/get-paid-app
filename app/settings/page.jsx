@@ -140,6 +140,8 @@ export default async function Settings({ searchParams }) {
         method="POST"
         style={{ display: "grid", gap: 14, marginTop: 16 }}
       >
+        <input type="hidden" name="logo_url" value={settings.logo_url || ""} />
+
         <label style={labelStyle}>
           Business name
           <input
