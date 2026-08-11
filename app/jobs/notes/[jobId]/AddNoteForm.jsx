@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { compressImage } from "../../../lib/compressImage";
 
 export default function AddNoteForm({ jobId }) {
-  const router = useRouter();
   const [note, setNote] = useState("");
   const [important, setImportant] = useState(false);
   const [file, setFile] = useState(null);
@@ -48,8 +46,10 @@ export default function AddNoteForm({ jobId }) {
       setImportant(false);
       setFile(null);
       setFileInputKey((k) => k + 1);
-      setBusy(false);
-      router.refresh();
+      // A full reload here, rather than router.refresh() - this has been
+      // unreliable at showing the newly-added note without it, so this
+      // trades a touch of speed for being unambiguously correct
+      window.location.reload();
     } catch (err) {
       console.error("Add note error:", err);
       setError("Couldn't reach the server. Check your connection and try again.");
