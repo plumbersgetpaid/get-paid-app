@@ -146,6 +146,7 @@ export default async function Calendar({ searchParams }) {
   // Combine job bookings, payment due dates, and reminders into one
   // date-grouped timeline
   const entriesByDate = {};
+  const now = new Date();
 
   for (const job of jobs) {
     const dateKey = job.scheduled_start.slice(0, 10);
@@ -154,6 +155,7 @@ export default async function Calendar({ searchParams }) {
     const startDateObj = new Date(job.scheduled_start);
     const endDateObj = new Date(job.scheduled_end);
     const timeUnconfirmed = job.time_confirmed === false;
+    const isLate = !timeUnconfirmed && endDateObj < now;
     const sameDay = startDateObj.toDateString() === endDateObj.toDateString();
     const completionLabel = sameDay
       ? `finishes ~${endDateObj.toLocaleTimeString("en-GB", {
@@ -167,7 +169,7 @@ export default async function Calendar({ searchParams }) {
         })}`;
 
     entriesByDate[dateKey].push({
-      type: "job",
+      type: isLate ? "job-late" : "job",
       time: timeUnconfirmed
         ? null
         : startDateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
@@ -175,10 +177,14 @@ export default async function Calendar({ searchParams }) {
         ? `${jobCustomerName[job.customer_id] || "Customer"} - ${
             job.job_type || "Job"
           } (⏰ time to be confirmed)`
+        : isLate
+        ? `${jobCustomerName[job.customer_id] || "Customer"} - ${
+            job.job_type || "Job"
+          } (⚠️ running late - tap to mark done)`
         : `${jobCustomerName[job.customer_id] || "Customer"} - ${
             job.job_type || "Job"
           } (${completionLabel})`,
-      href: `/jobs/schedule/${job.id}`,
+      href: isLate ? `/jobs/complete/${job.id}` : `/jobs/schedule/${job.id}`,
     });
   }
 
@@ -271,8 +277,8 @@ export default async function Calendar({ searchParams }) {
       )}
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 12 }}>
-        🔧 booked jobs, 💰 payment due dates, 📌 personal reminders, and 🔁
-        upcoming recurring jobs.
+        🔧 booked jobs (red if overdue to be marked done), 💰 payment due
+        dates, 📌 personal reminders, and 🔁 upcoming recurring jobs.
       </p>
 
       {sortedDates.length === 0 && (
@@ -299,7 +305,7 @@ export default async function Calendar({ searchParams }) {
                 .map((entry, i) => (
                   <Link key={i} href={entry.href} style={entryRowStyle(entry.type)}>
                     <span style={{ marginRight: 8 }}>
-                      {entry.type === "job"
+                      {entry.type === "job" || entry.type === "job-late"
                         ? "🔧"
                         : entry.type === "payment"
                         ? "💰"
@@ -435,11 +441,13 @@ const todayBadgeStyle = {
 
 const entryRowStyle = (type) => ({
   display: "block",
-  background: "white",
+  background: type === "job-late" ? "#fef2f2" : "white",
   border: "1px solid #eee",
   borderLeft: `4px solid ${
     type === "job"
       ? "#2563eb"
+      : type === "job-late"
+      ? "#dc2626"
       : type === "payment"
       ? "#dc2626"
       : type === "recurring"
