@@ -233,11 +233,13 @@ async function JobsTab({ db, settings, sub }) {
 
   const noteJobIds = [...jobs.map((j) => j.id), ...completedJobs.map((j) => j.id)];
   const { data: noteRows } = noteJobIds.length
-    ? await db.from("job_notes").select("job_id").in("job_id", noteJobIds)
+    ? await db.from("job_notes").select("job_id, important").in("job_id", noteJobIds)
     : { data: [] };
   const noteCountByJob = {};
+  const hasImportantNoteByJob = {};
   for (const n of noteRows || []) {
     noteCountByJob[n.job_id] = (noteCountByJob[n.job_id] || 0) + 1;
+    if (n.important) hasImportantNoteByJob[n.job_id] = true;
   }
 
   const subTabs = [
@@ -285,8 +287,12 @@ async function JobsTab({ db, settings, sub }) {
                 {job.job_type} · {formatCurrency(job.amount, settings.currency)} ·{" "}
                 <span style={{ textTransform: "capitalize" }}>{job.status}</span>
               </div>
-              <Link href={`/jobs/notes/${job.id}`} style={jobLinkStyle}>
-                📝 Notes{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
+              <Link
+                href={`/jobs/notes/${job.id}`}
+                style={hasImportantNoteByJob[job.id] ? importantNoteLinkStyle : jobLinkStyle}
+              >
+                {hasImportantNoteByJob[job.id] ? "⚠️ " : "📝 "}Notes
+                {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
               </Link>
             </div>
           );
@@ -340,8 +346,12 @@ async function JobsTab({ db, settings, sub }) {
                 Mark done
               </Link>
             </div>
-            <Link href={`/jobs/notes/${job.id}`} style={photosLinkButtonStyle}>
-              📝 Notes{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
+            <Link
+              href={`/jobs/notes/${job.id}`}
+              style={hasImportantNoteByJob[job.id] ? importantPhotosLinkButtonStyle : photosLinkButtonStyle}
+            >
+              {hasImportantNoteByJob[job.id] ? "⚠️ " : "📝 "}Notes
+              {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
             </Link>
           </div>
         );
@@ -541,6 +551,12 @@ const jobLinkStyle = {
   textDecoration: "underline",
 };
 
+const importantNoteLinkStyle = {
+  ...jobLinkStyle,
+  color: "#92400e",
+  fontWeight: 700,
+};
+
 const searchFormStyle = { display: "flex", gap: 8, marginBottom: 16 };
 
 const searchInputStyle = {
@@ -639,6 +655,13 @@ const photosLinkButtonStyle = {
   fontWeight: 600,
   textDecoration: "none",
   fontSize: 14,
+};
+
+const importantPhotosLinkButtonStyle = {
+  ...photosLinkButtonStyle,
+  background: "#fef3c7",
+  border: "1px solid #fde68a",
+  color: "#92400e",
 };
 
 const viewAllLinkStyle = {
