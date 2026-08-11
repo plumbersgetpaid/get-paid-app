@@ -69,6 +69,14 @@ const TEMPLATE_INFO = [
     description: "Sent automatically once an invoice is marked as paid.",
     placeholders: ["customer_name", "business_name", "review_link"],
   },
+  {
+    key: "payment_note",
+    label: "Payment link note",
+    description:
+      "Small print shown alongside \"Pay now\" on the invoice PDF and in emails, whenever an invoice has a payment link attached.",
+    placeholders: [],
+    noSubject: true,
+  },
 ];
 
 export default async function TemplatesSettings({ searchParams }) {
@@ -111,30 +119,34 @@ export default async function TemplatesSettings({ searchParams }) {
             <form action="/api/settings/templates" method="POST" style={{ display: "grid", gap: 10 }}>
               <input type="hidden" name="key" value={info.key} />
 
-              <label style={labelStyle}>
-                Subject
-                <input
-                  name="subject"
-                  defaultValue={subjectValue}
-                  style={inputStyle}
-                />
-              </label>
+              {!info.noSubject && (
+                <label style={labelStyle}>
+                  Subject
+                  <input
+                    name="subject"
+                    defaultValue={subjectValue}
+                    style={inputStyle}
+                  />
+                </label>
+              )}
 
               <label style={labelStyle}>
                 Message
                 <textarea
                   name="body"
                   defaultValue={bodyValue}
-                  rows={6}
+                  rows={info.noSubject ? 3 : 6}
                   required
                   style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
                 />
               </label>
 
-              <div style={{ fontSize: 11, color: "#888" }}>
-                Placeholders:{" "}
-                {info.placeholders.map((p) => `{{${p}}}`).join("  ")}
-              </div>
+              {info.placeholders.length > 0 && (
+                <div style={{ fontSize: 11, color: "#888" }}>
+                  Placeholders:{" "}
+                  {info.placeholders.map((p) => `{{${p}}}`).join("  ")}
+                </div>
+              )}
 
               <button type="submit" style={saveButtonStyle}>
                 Save
