@@ -324,6 +324,34 @@ async function drawPhotoSections(pdfDoc, font, bold, grey, left, right, sections
   const topMargin = 800;
   const bottomMargin = 60;
 
+  const embedImage = async (url) => {
+    const res = await fetch(url);
+    const contentType = res.headers.get("content-type") || "";
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    return contentType.includes("png") ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+  };
+
+  // Fetch and embed every photo at once, in parallel - this is the slow,
+  // network-bound part. Laying them out on the page afterwards is fast and
+  // has to happen in order regardless.
+  const sectionsWithImages = await Promise.all(
+    sections
+      .filter((s) => s.urls.length > 0)
+      .map(async (s) => ({
+        label: s.label,
+        images: await Promise.all(
+          s.urls.map(async (url) => {
+            try {
+              return await embedImage(url);
+            } catch (e) {
+              console.error("Could not embed a job photo in PDF:", e);
+              return null;
+            }
+          })
+        ),
+      }))
+  );
+
   let page = pdfDoc.addPage([595.28, 841.89]);
   let y = topMargin;
   let col = 0;
@@ -336,38 +364,27 @@ async function drawPhotoSections(pdfDoc, font, bold, grey, left, right, sections
     }
   };
 
-  for (const section of sections) {
-    if (section.urls.length === 0) continue;
-
+  for (const section of sectionsWithImages) {
     ensureRoom(30);
     page.drawText(section.label, { x: left, y, size: 14, font: bold });
     y -= 26;
     col = 0;
 
-    for (const url of section.urls) {
-      try {
-        const res = await fetch(url);
-        const contentType = res.headers.get("content-type") || "";
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        const image = contentType.includes("png")
-          ? await pdfDoc.embedPng(bytes)
-          : await pdfDoc.embedJpg(bytes);
+    for (const image of section.images) {
+      if (!image) continue;
 
-        ensureRoom(thumbHeight + gap);
+      ensureRoom(thumbHeight + gap);
 
-        const scale = Math.min(thumbWidth / image.width, thumbHeight / image.height, 1);
-        const w = image.width * scale;
-        const h = image.height * scale;
-        const x = left + col * (thumbWidth + gap);
-        page.drawImage(image, { x, y: y - h, width: w, height: h });
+      const scale = Math.min(thumbWidth / image.width, thumbHeight / image.height, 1);
+      const w = image.width * scale;
+      const h = image.height * scale;
+      const x = left + col * (thumbWidth + gap);
+      page.drawImage(image, { x, y: y - h, width: w, height: h });
 
-        col += 1;
-        if (col >= 2) {
-          col = 0;
-          y -= thumbHeight + gap;
-        }
-      } catch (e) {
-        console.error("Could not embed a job photo in PDF:", e);
+      col += 1;
+      if (col >= 2) {
+        col = 0;
+        y -= thumbHeight + gap;
       }
     }
 
