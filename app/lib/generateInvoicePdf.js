@@ -234,5 +234,81 @@ export async function generateInvoicePdfBytes({
     page.drawText(contactLine, { x: left, y: footerY, size: 9, font, color: grey });
   }
 
+  // Before/after photos, if the tradie chose to include them - added as
+  // extra pages so the invoice stays permanently viewable with its photo
+  // record, however many photos there are
+  const beforePhotos = business.beforePhotos || [];
+  const afterPhotos = business.afterPhotos || [];
+
+  if (beforePhotos.length > 0 || afterPhotos.length > 0) {
+    await drawPhotoSections(pdfDoc, font, bold, grey, left, right, [
+      { label: "Before", urls: beforePhotos },
+      { label: "After", urls: afterPhotos },
+    ]);
+  }
+
   return await pdfDoc.save();
+}
+
+// Lays out one or more labelled photo sections (e.g. "Before" / "After")
+// across as many extra A4 pages as needed, in a simple 2-column grid.
+async function drawPhotoSections(pdfDoc, font, bold, grey, left, right, sections) {
+  const thumbWidth = 220;
+  const thumbHeight = 160;
+  const gap = 15;
+  const topMargin = 800;
+  const bottomMargin = 60;
+
+  let page = pdfDoc.addPage([595.28, 841.89]);
+  let y = topMargin;
+  let col = 0;
+
+  const ensureRoom = (neededHeight) => {
+    if (y - neededHeight < bottomMargin) {
+      page = pdfDoc.addPage([595.28, 841.89]);
+      y = topMargin;
+      col = 0;
+    }
+  };
+
+  for (const section of sections) {
+    if (section.urls.length === 0) continue;
+
+    ensureRoom(30);
+    page.drawText(section.label, { x: left, y, size: 14, font: bold });
+    y -= 26;
+    col = 0;
+
+    for (const url of section.urls) {
+      try {
+        const res = await fetch(url);
+        const contentType = res.headers.get("content-type") || "";
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        const image = contentType.includes("png")
+          ? await pdfDoc.embedPng(bytes)
+          : await pdfDoc.embedJpg(bytes);
+
+        ensureRoom(thumbHeight + gap);
+
+        const scale = Math.min(thumbWidth / image.width, thumbHeight / image.height, 1);
+        const w = image.width * scale;
+        const h = image.height * scale;
+        const x = left + col * (thumbWidth + gap);
+        page.drawImage(image, { x, y: y - h, width: w, height: h });
+
+        col += 1;
+        if (col >= 2) {
+          col = 0;
+          y -= thumbHeight + gap;
+        }
+      } catch (e) {
+        console.error("Could not embed a job photo in PDF:", e);
+      }
+    }
+
+    if (col !== 0) {
+      y -= thumbHeight + gap;
+    }
+    y -= 10;
+  }
 }
