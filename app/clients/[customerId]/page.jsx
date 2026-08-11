@@ -36,14 +36,6 @@ export default async function ClientDetail({ params }) {
     (invoices || []).map((inv) => [inv.job_id, inv])
   );
 
-  const { data: photoRows } = jobIds.length
-    ? await db.from("job_photos").select("job_id").in("job_id", jobIds)
-    : { data: [] };
-  const photoCountByJob = {};
-  for (const p of photoRows || []) {
-    photoCountByJob[p.job_id] = (photoCountByJob[p.job_id] || 0) + 1;
-  }
-
   const { data: noteRows } = jobIds.length
     ? await db.from("job_notes").select("job_id").in("job_id", jobIds)
     : { data: [] };
@@ -187,12 +179,6 @@ export default async function ClientDetail({ params }) {
                   View invoice →
                 </Link>
               )}
-              <Link
-                href={`/jobs/photos/${job.id}`}
-                style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
-              >
-                📷 Photos{photoCountByJob[job.id] ? ` (${photoCountByJob[job.id]})` : ""}
-              </Link>
               <Link
                 href={`/jobs/notes/${job.id}`}
                 style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
