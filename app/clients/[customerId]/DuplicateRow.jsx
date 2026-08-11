@@ -30,12 +30,12 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
         return;
       }
 
-      // Show a clear, unmistakable success state before reloading, so it's
-      // never ambiguous whether it actually worked - especially important
-      // if another duplicate is waiting behind this one with an
-      // identical-looking button
+      // Show a clear success state, then remove this row entirely - no
+      // page reload involved at all, so there's nothing that can fail to
+      // "take effect". The rest of the page (customer name, job history)
+      // doesn't need refreshing anyway - only this notice needs to go.
       setMergedOk(true);
-      setTimeout(() => window.location.reload(), 700);
+      setTimeout(() => setHandled(true), 900);
     } catch (err) {
       console.error("Merge error:", err);
       if (err.name === "TimeoutError" || err.name === "AbortError") {
@@ -89,7 +89,7 @@ export default function DuplicateRow({ customerId, customerName, dupe }) {
       </div>
       {mergedOk && (
         <div style={{ fontSize: 12, color: "#166534", marginBottom: 6, fontWeight: 700 }}>
-          ✓ Merged - refreshing...
+          ✓ Merged
         </div>
       )}
       {error && (
