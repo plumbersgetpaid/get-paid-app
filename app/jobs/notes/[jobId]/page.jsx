@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import BackButton from "../../../components/BackButton";
-import AddNoteForm from "./AddNoteForm";
+import NotesSection from "./NotesSection";
 
 export const dynamic = "force-dynamic";
 
@@ -25,19 +25,6 @@ export default async function JobNotes({ params }) {
     .eq("id", job.customer_id)
     .single();
 
-  const { data: rawNotes } = await db
-    .from("job_notes")
-    .select("*")
-    .eq("job_id", jobId)
-    .order("created_at", { ascending: false });
-
-  // Important notes always float to the top, regardless of when they were
-  // added, so nothing crucial gets buried under routine ones
-  const notes = (rawNotes || []).sort((a, b) => {
-    if (a.important !== b.important) return a.important ? -1 : 1;
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
-
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -54,40 +41,7 @@ export default async function JobNotes({ params }) {
         🔒 Internal only - these notes are never shown or sent to the client.
       </div>
 
-      <AddNoteForm jobId={job.id} />
-
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>Notes ({notes.length})</h2>
-      {notes.length === 0 && <p style={{ color: "#888", fontSize: 13 }}>No notes yet.</p>}
-
-      {notes.map((n) => (
-        <div key={n.id} style={n.important ? importantNoteCardStyle : noteCardStyle}>
-          {n.important && (
-            <div style={{ fontWeight: 700, color: "#92400e", fontSize: 12, marginBottom: 4 }}>
-              ⚠️ Important
-            </div>
-          )}
-          <div style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{n.note}</div>
-          {n.image_url && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={n.image_url} alt="" style={noteImageStyle} />
-          )}
-          <div style={{ fontSize: 11, color: "#888", marginTop: 6 }}>
-            {new Date(n.created_at).toLocaleString("en-GB", {
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </div>
-          <form action="/api/jobs/notes/delete" method="POST" style={{ marginTop: 6 }}>
-            <input type="hidden" name="noteId" value={n.id} />
-            <input type="hidden" name="jobId" value={job.id} />
-            <button type="submit" style={deleteNoteButtonStyle}>
-              Delete
-            </button>
-          </form>
-        </div>
-      ))}
+      <NotesSection jobId={job.id} />
     </main>
   );
 }
@@ -107,57 +61,4 @@ const internalBannerStyle = {
   borderRadius: 8,
   fontSize: 12,
   fontWeight: 600,
-};
-
-const textareaStyle = {
-  padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
-  fontSize: 15,
-  width: "100%",
-  boxSizing: "border-box",
-  resize: "vertical",
-  fontFamily: "inherit",
-};
-
-const submitButtonStyle = {
-  background: "#111",
-  color: "white",
-  padding: "14px",
-  borderRadius: 10,
-  border: "none",
-  fontWeight: 600,
-  fontSize: 15,
-};
-
-const noteCardStyle = {
-  background: "white",
-  borderRadius: 10,
-  padding: 14,
-  marginBottom: 8,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-};
-
-const importantNoteCardStyle = {
-  ...noteCardStyle,
-  background: "#fef3c7",
-  border: "1px solid #fde68a",
-};
-
-const noteImageStyle = {
-  width: "100%",
-  maxWidth: 240,
-  borderRadius: 8,
-  marginTop: 8,
-  display: "block",
-};
-
-const deleteNoteButtonStyle = {
-  background: "none",
-  border: "none",
-  color: "#b91c1c",
-  fontSize: 12,
-  textDecoration: "underline",
-  cursor: "pointer",
-  padding: 0,
 };
