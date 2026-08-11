@@ -6,7 +6,6 @@ import { formatCurrency, formatInvoiceNumber } from "../../../lib/formatCurrency
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
-import { unstable_after as after } from "next/server";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -46,11 +45,13 @@ async function uploadJobPhotos(db, jobId, files, label) {
   );
 }
 
-// Everything that doesn't need to block the tradie - uploading photos,
-// building the PDF, sending the invoice email. Runs after the response has
-// already gone back to the browser, via waitUntil, which is what makes
-// "Mark done" feel instant instead of a long wait.
-async function finishInvoiceInBackground({
+// Everything after the job/invoice are created: uploading photos, building
+// the PDF, sending the email. Photo work is parallelized internally (see
+// uploadJobPhotos and generateInvoicePdf's photo section), which is the
+// real, verifiable speed win here - the response only returns once this is
+// genuinely done, since there's no reliably-available way in this
+// environment to hand it off to run after the response instead.
+async function finishInvoice({
   db,
   job,
   invoice,
@@ -169,7 +170,7 @@ async function finishInvoiceInBackground({
 
     await db.from("invoices").update({ sent_at: new Date().toISOString() }).eq("id", invoice.id);
   } catch (e) {
-    console.error("Background invoice finish error:", e);
+    console.error("Finish invoice error:", e);
   }
 }
 
@@ -238,24 +239,21 @@ export async function POST(req) {
 
   await db.from("jobs").update({ status: "invoiced" }).eq("id", job.id);
 
-  // 3. Everything else - uploading photos, building the PDF, sending the
-  // email - happens in the background, so the tradie isn't stuck staring
-  // at a spinner waiting on it
-  after(() =>
-    finishInvoiceInBackground({
-      db,
-      job,
-      invoice,
-      beforeFiles,
-      afterFiles,
-      noteInput,
-      paymentLinkInput,
-      priceChanged,
-      quotedAmount,
-      finalAmount,
-      dueDate,
-    })
-  );
+  // 3. Upload photos, build the PDF, and send the email - photo work runs
+  // in parallel internally, which is the real speed improvement here
+  await finishInvoice({
+    db,
+    job,
+    invoice,
+    beforeFiles,
+    afterFiles,
+    noteInput,
+    paymentLinkInput,
+    priceChanged,
+    quotedAmount,
+    finalAmount,
+    dueDate,
+  });
 
   // Take the tradie back to wherever they came from, rather than always
   // dumping them on the Today screen
