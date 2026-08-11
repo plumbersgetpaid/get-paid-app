@@ -186,8 +186,12 @@ async function JobsTab({ db, settings, sub }) {
   }));
 
   const todayStr = getTodayInLondon();
+  // "Today" includes anything overdue too - a job scheduled for a day that's
+  // already passed and still not marked done was previously falling through
+  // every bucket (not today, not upcoming, not unscheduled) and vanishing
+  // from this screen entirely, even though it was still fully active
   const todayJobs = jobs.filter(
-    (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) === todayStr
+    (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr
   );
   const upcomingJobs = jobs.filter(
     (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) > todayStr
@@ -253,7 +257,7 @@ async function JobsTab({ db, settings, sub }) {
   }
 
   const subTabs = [
-    { key: "today", label: "Today", count: todayJobs.length },
+    { key: "today", label: "Today & overdue", count: todayJobs.length },
     { key: "upcoming", label: "Upcoming", count: upcomingJobs.length },
     { key: "unscheduled", label: "Unscheduled", count: unscheduledJobs.length },
     { key: "completed", label: "Completed", count: completedCount || 0 },
