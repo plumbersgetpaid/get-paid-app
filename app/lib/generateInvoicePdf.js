@@ -61,6 +61,7 @@ export async function generateInvoicePdfBytes({
   quotedAmount,
   priceChangeNote,
   paymentLink,
+  paymentNote,
   business = {},
 }) {
   const {
@@ -257,6 +258,11 @@ export async function generateInvoicePdfBytes({
     addLinkAnnotation(pdfDoc, page, paymentLink, buttonX, buttonY, buttonWidth, buttonHeight);
 
     y = buttonY - 16;
+
+    if (paymentNote) {
+      page.drawText(paymentNote, { x: left, y, size: 8, font, color: grey });
+      y -= 16;
+    }
   }
 
   const row = (label, value) => {

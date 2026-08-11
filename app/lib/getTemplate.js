@@ -35,6 +35,10 @@ const DEFAULTS = {
     subject: "Thanks for your payment!",
     body: "Hi {{customer_name}},\n\nThanks for your payment - really appreciate it.\n\nIf you were happy with the work, would you mind leaving us a quick Google review? It genuinely helps a small business like ours.\n\n{{review_link}}\n\nThanks again,\n{{business_name}}",
   },
+  payment_note: {
+    subject: "",
+    body: "Or alternatively, pay via bank transfer using the details below.",
+  },
 };
 
 export async function getTemplate(key) {
