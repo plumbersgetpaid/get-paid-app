@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
 import { formatInvoiceNumber } from "../../../../lib/formatCurrency";
+import { getJobPhotosForPdf } from "../../../../lib/getJobPhotosForPdf";
 
 export async function GET(req, { params }) {
   const { invoiceId } = params;
@@ -31,6 +32,7 @@ export async function GET(req, { params }) {
     : { data: null };
 
   const settings = await getBusinessSettings();
+  const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, job?.id);
   const business = {
     businessName: settings.business_name,
     accentColor: settings.accent_color,
@@ -42,6 +44,8 @@ export async function GET(req, { params }) {
     paymentTerms: settings.payment_terms,
     bankDetails: settings.bank_details,
     currency: settings.currency,
+    beforePhotos,
+    afterPhotos,
   };
 
   const pdfBytes = await generateInvoicePdfBytes({
