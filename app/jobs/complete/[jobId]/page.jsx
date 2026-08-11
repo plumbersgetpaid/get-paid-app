@@ -25,11 +25,12 @@ export default async function CompleteJob({ params, searchParams }) {
     .eq("id", job.customer_id)
     .single();
 
-  const { data: photos } = await db
-    .from("job_photos")
-    .select("id")
-    .eq("job_id", jobId);
-  const hasPhotos = (photos || []).length > 0;
+  const { data: importantNotes } = await db
+    .from("job_notes")
+    .select("*")
+    .eq("job_id", jobId)
+    .eq("important", true)
+    .order("created_at", { ascending: false });
 
   // Default due date: 14 days from today, in yyyy-mm-dd for the date input
   const defaultDueDate = new Date();
@@ -70,42 +71,31 @@ export default async function CompleteJob({ params, searchParams }) {
         )}
       </section>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <Link
-          href={`/jobs/photos/${job.id}`}
-          style={{
-            flex: 1,
-            textAlign: "center",
-            background: "white",
-            color: "#111",
-            border: "1px solid #ddd",
-            padding: "10px",
-            borderRadius: 10,
-            fontWeight: 600,
-            textDecoration: "none",
-            fontSize: 14,
-          }}
-        >
-          📷 Photos
-        </Link>
-        <Link
-          href={`/jobs/notes/${job.id}`}
-          style={{
-            flex: 1,
-            textAlign: "center",
-            background: "white",
-            color: "#111",
-            border: "1px solid #ddd",
-            padding: "10px",
-            borderRadius: 10,
-            fontWeight: 600,
-            textDecoration: "none",
-            fontSize: 14,
-          }}
-        >
-          📝 Notes
-        </Link>
-      </div>
+      {(importantNotes || []).length > 0 && (
+        <section style={importantNotesBannerStyle}>
+          <div style={{ fontWeight: 700, color: "#92400e", fontSize: 13, marginBottom: 8 }}>
+            ⚠️ Important notes for this job
+          </div>
+          {importantNotes.map((n) => (
+            <div key={n.id} style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 14, color: "#92400e", whiteSpace: "pre-wrap" }}>
+                {n.note}
+              </div>
+              {n.image_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={n.image_url} alt="" style={importantNoteImageStyle} />
+              )}
+            </div>
+          ))}
+          <Link href={`/jobs/notes/${job.id}`} style={importantNotesLinkStyle}>
+            View all notes →
+          </Link>
+        </section>
+      )}
+
+      <Link href={`/jobs/notes/${job.id}`} style={notesButtonStyle}>
+        📝 Job notes (team only)
+      </Link>
 
       {aiError && (
         <div
@@ -126,6 +116,7 @@ export default async function CompleteJob({ params, searchParams }) {
       <form
         action="/api/jobs/complete"
         method="POST"
+        encType="multipart/form-data"
         style={{ display: "grid", gap: 12 }}
       >
         <input type="hidden" name="jobId" value={job.id} />
@@ -184,22 +175,36 @@ export default async function CompleteJob({ params, searchParams }) {
           ✨ Enhance note with AI
         </button>
 
-        {hasPhotos && (
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              fontSize: 14,
-              background: "white",
-              padding: 12,
-              borderRadius: 8,
-            }}
-          >
-            <input type="checkbox" name="attachPhotos" value="1" defaultChecked />
-            Include before/after photos in the invoice email
+        <div style={photosCardStyle}>
+          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+            Before / after photos (optional)
+          </div>
+          <label style={{ fontSize: 12, color: "#666" }}>
+            Before
+            <input
+              type="file"
+              name="beforePhotos"
+              accept="image/*"
+              multiple
+              style={{ display: "block", fontSize: 13, marginTop: 4, marginBottom: 10 }}
+            />
           </label>
-        )}
+          <label style={{ fontSize: 12, color: "#666" }}>
+            After
+            <input
+              type="file"
+              name="afterPhotos"
+              accept="image/*"
+              multiple
+              style={{ display: "block", fontSize: 13, marginTop: 4 }}
+            />
+          </label>
+          <span style={{ fontSize: 11, color: "#888", display: "block", marginTop: 10 }}>
+            Anything selected here becomes a permanent part of this invoice's
+            PDF - you'll be able to find them again anytime you reopen or
+            redownload it, not just in this one email.
+          </span>
+        </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <BackButton fallbackHref="/work?tab=jobs" style={cancelButtonStyle}>
@@ -221,20 +226,6 @@ const inputStyle = {
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
-};
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
 };
 
 const cancelButtonStyle = {
@@ -267,4 +258,50 @@ const enhanceButtonStyle = {
   border: "1px solid #ddd",
   fontWeight: 600,
   fontSize: 14,
+};
+
+const importantNotesBannerStyle = {
+  background: "#fef3c7",
+  border: "1px solid #fde68a",
+  borderRadius: 12,
+  padding: 16,
+  marginBottom: 16,
+};
+
+const importantNoteImageStyle = {
+  width: "100%",
+  maxWidth: 200,
+  borderRadius: 8,
+  marginTop: 6,
+  display: "block",
+};
+
+const importantNotesLinkStyle = {
+  display: "block",
+  fontSize: 12,
+  color: "#92400e",
+  fontWeight: 600,
+  textDecoration: "underline",
+  marginTop: 4,
+};
+
+const notesButtonStyle = {
+  display: "block",
+  textAlign: "center",
+  marginBottom: 16,
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "10px",
+  borderRadius: 10,
+  fontWeight: 600,
+  textDecoration: "none",
+  fontSize: 14,
+};
+
+const photosCardStyle = {
+  background: "white",
+  border: "1px solid #ddd",
+  borderRadius: 10,
+  padding: 14,
 };
