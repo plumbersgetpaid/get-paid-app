@@ -163,9 +163,6 @@ export default async function AllJobs({ searchParams }) {
                 View invoice →
               </Link>
             )}
-            <Link href={`/jobs/photos/${job.id}`} style={jobLinkStyle}>
-              📷 Photos →
-            </Link>
             <Link href={`/jobs/notes/${job.id}`} style={jobLinkStyle}>
               📝 Notes →
             </Link>
