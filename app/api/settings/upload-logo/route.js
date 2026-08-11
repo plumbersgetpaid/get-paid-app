@@ -6,7 +6,7 @@ export async function POST(req) {
   const file = form.get("logo");
 
   if (!file || typeof file === "string" || file.size === 0) {
-    return NextResponse.redirect(new URL("/settings?error=nologo", req.url));
+    return NextResponse.json({ error: "No logo file received" }, { status: 400 });
   }
 
   const db = supabaseAdmin();
@@ -20,7 +20,7 @@ export async function POST(req) {
 
   if (uploadError) {
     console.error("Logo upload error:", uploadError);
-    return NextResponse.redirect(new URL("/settings?error=upload", req.url));
+    return NextResponse.json({ error: `Couldn't upload the logo: ${uploadError.message}` }, { status: 400 });
   }
 
   const { data: publicUrlData } = db.storage.from("logos").getPublicUrl(path);
@@ -34,8 +34,8 @@ export async function POST(req) {
 
   if (updateError) {
     console.error("Save logo url error:", updateError);
-    return NextResponse.redirect(new URL("/settings?error=save", req.url));
+    return NextResponse.json({ error: updateError.message }, { status: 400 });
   }
 
-  return NextResponse.redirect(new URL("/settings?saved=1", req.url));
+  return NextResponse.json({ ok: true, logoUrl });
 }
