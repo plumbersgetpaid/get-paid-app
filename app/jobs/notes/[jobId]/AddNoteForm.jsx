@@ -9,6 +9,7 @@ export default function AddNoteForm({ jobId }) {
   const [note, setNote] = useState("");
   const [important, setImportant] = useState(false);
   const [file, setFile] = useState(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -46,6 +47,7 @@ export default function AddNoteForm({ jobId }) {
       setNote("");
       setImportant(false);
       setFile(null);
+      setFileInputKey((k) => k + 1);
       setBusy(false);
       router.refresh();
     } catch (err) {
@@ -77,6 +79,7 @@ export default function AddNoteForm({ jobId }) {
       <label style={{ fontSize: 13, color: "#666" }}>
         Photo (optional) - for the team, never sent to the client
         <input
+          key={fileInputKey}
           type="file"
           accept="image/*"
           capture="environment"
