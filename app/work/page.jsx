@@ -231,17 +231,9 @@ async function JobsTab({ db, settings, sub }) {
       ? unscheduledJobs
       : completedJobs;
 
-  const photoJobIds = [...jobs.map((j) => j.id), ...completedJobs.map((j) => j.id)];
-  const { data: photoRows } = photoJobIds.length
-    ? await db.from("job_photos").select("job_id").in("job_id", photoJobIds)
-    : { data: [] };
-  const photoCountByJob = {};
-  for (const p of photoRows || []) {
-    photoCountByJob[p.job_id] = (photoCountByJob[p.job_id] || 0) + 1;
-  }
-
-  const { data: noteRows } = photoJobIds.length
-    ? await db.from("job_notes").select("job_id").in("job_id", photoJobIds)
+  const noteJobIds = [...jobs.map((j) => j.id), ...completedJobs.map((j) => j.id)];
+  const { data: noteRows } = noteJobIds.length
+    ? await db.from("job_notes").select("job_id").in("job_id", noteJobIds)
     : { data: [] };
   const noteCountByJob = {};
   for (const n of noteRows || []) {
@@ -293,14 +285,9 @@ async function JobsTab({ db, settings, sub }) {
                 {job.job_type} · {formatCurrency(job.amount, settings.currency)} ·{" "}
                 <span style={{ textTransform: "capitalize" }}>{job.status}</span>
               </div>
-              <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                <Link href={`/jobs/photos/${job.id}`} style={jobLinkStyle}>
-                  📷 Photos{photoCountByJob[job.id] ? ` (${photoCountByJob[job.id]})` : ""}
-                </Link>
-                <Link href={`/jobs/notes/${job.id}`} style={jobLinkStyle}>
-                  📝 Notes{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
-                </Link>
-              </div>
+              <Link href={`/jobs/notes/${job.id}`} style={jobLinkStyle}>
+                📝 Notes{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
+              </Link>
             </div>
           );
         }
@@ -353,14 +340,9 @@ async function JobsTab({ db, settings, sub }) {
                 Mark done
               </Link>
             </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <Link href={`/jobs/photos/${job.id}`} style={photosLinkButtonStyle}>
-                📷 Photos{photoCountByJob[job.id] ? ` (${photoCountByJob[job.id]})` : ""}
-              </Link>
-              <Link href={`/jobs/notes/${job.id}`} style={photosLinkButtonStyle}>
-                📝 Notes{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
-              </Link>
-            </div>
+            <Link href={`/jobs/notes/${job.id}`} style={photosLinkButtonStyle}>
+              📝 Notes{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
+            </Link>
           </div>
         );
       })}
@@ -646,8 +628,9 @@ const primaryLinkButtonStyle = {
 };
 
 const photosLinkButtonStyle = {
-  flex: 1,
+  display: "block",
   textAlign: "center",
+  marginTop: 8,
   background: "white",
   color: "#111",
   border: "1px solid #ddd",
