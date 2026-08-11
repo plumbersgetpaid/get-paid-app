@@ -132,8 +132,18 @@ export async function generateInvoicePdfBytes({
   }
   y -= 16;
 
+  // Right-aligns text so it lines up on a clean edge regardless of how
+  // many digits/characters it has - the actual bug behind the "Amount"
+  // and "Due date" values not lining up was that they were each nudged in
+  // from the right by a different arbitrary amount
+  const drawRightAligned = (text, yPos, size, useFont, color) => {
+    const str = String(text ?? "");
+    const textWidth = useFont.widthOfTextAtSize(str, size);
+    page.drawText(str, { x: right - textWidth, y: yPos, size, font: useFont, color });
+  };
+
   page.drawText("Description", { x: left, y, size: 10, font: bold, color: grey });
-  page.drawText("Amount", { x: right - 60, y, size: 10, font: bold, color: grey });
+  drawRightAligned("Amount", y, 10, bold, grey);
   y -= 8;
   page.drawLine({
     start: { x: left, y },
@@ -144,7 +154,7 @@ export async function generateInvoicePdfBytes({
   y -= 22;
 
   page.drawText(jobType || "Plumbing work", { x: left, y, size: 12, font });
-  page.drawText(formatCurrency(amount, currency), { x: right - 90, y, size: 12, font });
+  drawRightAligned(formatCurrency(amount, currency), y, 12, font);
   y -= 20;
 
   // If the final price differs from the original quote, make that clear on
@@ -196,7 +206,7 @@ export async function generateInvoicePdfBytes({
 
   const row = (label, value) => {
     page.drawText(label, { x: left, y, size: 10, font, color: grey });
-    page.drawText(String(value ?? ""), { x: right - 120, y, size: 10, font });
+    drawRightAligned(value, y, 10, font);
     y -= 16;
   };
 
