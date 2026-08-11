@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
+import TemplateForm from "./TemplateForm";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { TEMPLATE_DEFAULTS } from "../../lib/getTemplate";
 
@@ -79,11 +80,10 @@ const TEMPLATE_INFO = [
   },
 ];
 
-export default async function TemplatesSettings({ searchParams }) {
+export default async function TemplatesSettings() {
   const db = supabaseAdmin();
   const { data: rows } = await db.from("message_templates").select("*");
   const rowByKey = Object.fromEntries((rows || []).map((r) => [r.key, r]));
-  const savedKey = searchParams?.saved;
 
   return (
     <main>
@@ -103,7 +103,6 @@ export default async function TemplatesSettings({ searchParams }) {
         const defaults = TEMPLATE_DEFAULTS[info.key] || {};
         const subjectValue = saved?.subject ?? defaults.subject ?? "";
         const bodyValue = saved?.body ?? defaults.body ?? "";
-        const justSaved = savedKey === info.key;
 
         return (
           <section key={info.key} style={cardStyle}>
@@ -112,46 +111,20 @@ export default async function TemplatesSettings({ searchParams }) {
               {info.description}
             </div>
 
-            {justSaved && (
-              <div style={savedBannerStyle}>Saved.</div>
+            <TemplateForm
+              templateKey={info.key}
+              subjectValue={subjectValue}
+              bodyValue={bodyValue}
+              noSubject={!!info.noSubject}
+              rows={info.noSubject ? 3 : 6}
+            />
+
+            {info.placeholders.length > 0 && (
+              <div style={{ fontSize: 11, color: "#888", marginTop: 8 }}>
+                Placeholders:{" "}
+                {info.placeholders.map((p) => `{{${p}}}`).join("  ")}
+              </div>
             )}
-
-            <form action="/api/settings/templates" method="POST" style={{ display: "grid", gap: 10 }}>
-              <input type="hidden" name="key" value={info.key} />
-
-              {!info.noSubject && (
-                <label style={labelStyle}>
-                  Subject
-                  <input
-                    name="subject"
-                    defaultValue={subjectValue}
-                    style={inputStyle}
-                  />
-                </label>
-              )}
-
-              <label style={labelStyle}>
-                Message
-                <textarea
-                  name="body"
-                  defaultValue={bodyValue}
-                  rows={info.noSubject ? 3 : 6}
-                  required
-                  style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
-                />
-              </label>
-
-              {info.placeholders.length > 0 && (
-                <div style={{ fontSize: 11, color: "#888" }}>
-                  Placeholders:{" "}
-                  {info.placeholders.map((p) => `{{${p}}}`).join("  ")}
-                </div>
-              )}
-
-              <button type="submit" style={saveButtonStyle}>
-                Save
-              </button>
-            </form>
           </section>
         );
       })}
