@@ -4,6 +4,8 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { textToEmailHtml } from "../../../lib/emailHtml";
+import { getEmailFrom } from "../../../lib/emailFrom";
+import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -54,6 +56,13 @@ export async function GET(req) {
     }
 
     if (templateKey && inv.email && resend) {
+      const { data: invoiceRow } = await db
+        .from("invoices")
+        .select("job_id")
+        .eq("id", inv.invoice_id)
+        .single();
+      const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, invoiceRow?.job_id);
+
       const pdfBytes = await generateInvoicePdfBytes({
         invoiceNumber: formatInvoiceNumber(inv.invoice_number),
         customerName: inv.customer_name,
@@ -64,7 +73,7 @@ export async function GET(req) {
         amount: inv.amount,
         dueDate: inv.due_date,
         status: "unpaid",
-        business,
+        business: { ...business, beforePhotos, afterPhotos },
       });
 
       const template = await getTemplate(templateKey);
@@ -83,7 +92,7 @@ export async function GET(req) {
       await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
-        from: `${settings.business_name} <onboarding@resend.dev>`,
+        from: getEmailFrom(settings.business_name),
         to: inv.email,
         subject,
         html,
