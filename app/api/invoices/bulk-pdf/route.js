@@ -100,6 +100,7 @@ export async function GET(req) {
       status: inv.status,
       paidAt: inv.paid_at,
       createdAt: inv.created_at,
+      paymentLink: inv.payment_link || undefined,
       business: { ...business, beforePhotos, afterPhotos },
     });
 
