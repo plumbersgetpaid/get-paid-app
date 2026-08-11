@@ -18,6 +18,7 @@ export default function CompleteJobForm({
   const [amount, setAmount] = useState(amountValue);
   const [dueDate, setDueDate] = useState(dueDateValue);
   const [note, setNote] = useState(noteValue);
+  const [paymentLink, setPaymentLink] = useState("");
   const [beforeFiles, setBeforeFiles] = useState([]);
   const [afterFiles, setAfterFiles] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -56,6 +57,7 @@ export default function CompleteJobForm({
       formData.append("amount", amount);
       formData.append("dueDate", dueDate);
       formData.append("note", note);
+      formData.append("paymentLink", paymentLink);
       formData.append("from", from || "");
       for (const f of compressedBefore) formData.append("beforePhotos", f);
       for (const f of compressedAfter) formData.append("afterPhotos", f);
@@ -192,6 +194,22 @@ export default function CompleteJobForm({
             required
             style={{ ...inputStyle, marginTop: 6 }}
           />
+        </label>
+
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Payment link (optional)
+          <input
+            type="url"
+            placeholder="https://... - e.g. a Stripe or GoCardless link for this amount"
+            value={paymentLink}
+            onChange={(e) => setPaymentLink(e.target.value)}
+            style={{ ...inputStyle, marginTop: 6 }}
+          />
+          <span style={{ fontSize: 12, color: "#888" }}>
+            Adds a "Pay now" button to the invoice, alongside your bank
+            details - the customer can use either. Leave blank for bank
+            details only, same as always.
+          </span>
         </label>
 
         <label style={{ fontSize: 13, color: "#666" }}>
