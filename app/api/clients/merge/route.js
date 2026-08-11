@@ -66,5 +66,5 @@ export async function POST(req) {
     return NextResponse.json({ error: deleteErr.message }, { status: 400 });
   }
 
-  return NextResponse.redirect(new URL(`/clients/${keepId}`, req.url));
+  return NextResponse.json({ ok: true });
 }
