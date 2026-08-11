@@ -126,17 +126,6 @@ export default function NotesSection({ jobId }) {
             />
             ⚠️ Important
           </label>
-          <label style={{ fontSize: 12, color: "#666", display: "flex", alignItems: "center", gap: 6 }}>
-            📷 Photo
-            <input
-              key={fileInputKey}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              style={{ fontSize: 12, maxWidth: 140 }}
-            />
-          </label>
           <button
             type="submit"
             disabled={busy || !note.trim()}
@@ -145,6 +134,17 @@ export default function NotesSection({ jobId }) {
             {busy ? "Saving..." : "Add"}
           </button>
         </div>
+        <label style={{ fontSize: 12, color: "#666", display: "flex", alignItems: "center", gap: 8 }}>
+          📷 Photo
+          <input
+            key={fileInputKey}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            style={{ fontSize: 12, flex: 1 }}
+          />
+        </label>
       </form>
 
       <h2 style={{ fontSize: 16, marginTop: 24 }}>Notes ({notes.length})</h2>
