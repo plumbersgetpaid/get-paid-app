@@ -142,6 +142,41 @@ export default async function InvoiceDetail({ params }) {
             </div>
           )}
         </div>
+
+        <section style={paymentLinkCardStyle}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+            💳 Payment link
+          </div>
+          {invoice.payment_link && (
+            <div style={{ marginBottom: 10 }}>
+              <a
+                href={invoice.payment_link}
+                target="_blank"
+                rel="noreferrer"
+                style={{ fontSize: 13, color: "#2563eb", wordBreak: "break-all" }}
+              >
+                {invoice.payment_link}
+              </a>
+            </div>
+          )}
+          <form action="/api/invoices/set-payment-link" method="POST" style={{ display: "flex", gap: 8 }}>
+            <input type="hidden" name="invoiceId" value={invoice.id} />
+            <input
+              type="url"
+              name="paymentLink"
+              placeholder="https://... - Stripe or GoCardless link"
+              defaultValue={invoice.payment_link || ""}
+              style={paymentLinkInputStyle}
+            />
+            <button type="submit" style={paymentLinkSaveButtonStyle}>
+              Save
+            </button>
+          </form>
+          <span style={{ fontSize: 11, color: "#888", display: "block", marginTop: 6 }}>
+            Adds a "Pay now" button to the invoice PDF and any future emails
+            about it - bank details still show either way.
+          </span>
+        </section>
       </section>
 
       <div style={{ marginTop: 20 }}>
@@ -156,6 +191,30 @@ export default async function InvoiceDetail({ params }) {
     </main>
   );
 }
+
+const paymentLinkCardStyle = {
+  borderTop: "1px solid #eee",
+  marginTop: 20,
+  paddingTop: 16,
+};
+
+const paymentLinkInputStyle = {
+  flex: 1,
+  padding: "10px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  fontSize: 13,
+};
+
+const paymentLinkSaveButtonStyle = {
+  background: "#111",
+  color: "white",
+  border: "none",
+  padding: "10px 16px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 13,
+};
 
 const downloadButtonStyle = {
   display: "block",
