@@ -50,7 +50,7 @@ export default function CompleteJobForm({
       const compressedBefore = await compressAll(beforeFiles);
       const compressedAfter = await compressAll(afterFiles);
 
-      setBusyLabel("Saving...");
+      setBusyLabel("Sending invoice...");
 
       const formData = new FormData();
       formData.append("jobId", job.id);
