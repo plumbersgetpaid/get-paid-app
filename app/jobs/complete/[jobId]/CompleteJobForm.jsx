@@ -87,17 +87,19 @@ export default function CompleteJobForm({
 
     try {
       const formData = new FormData();
-      formData.append("jobId", job.id);
-      formData.append("amount", amount);
-      formData.append("dueDate", dueDate);
       formData.append("note", note);
 
       const res = await fetch("/api/jobs/complete/enhance-note", {
         method: "POST",
         body: formData,
       });
+      const data = await res.json().catch(() => ({}));
 
-      window.location.href = res.url;
+      // Update the note text in place - no navigation, no reload, so any
+      // photos already selected stay exactly where they are
+      if (data.note) setNote(data.note);
+      if (data.error) setError(data.error + " - your note's been kept as you wrote it.");
+      setBusy(false);
     } catch (err) {
       console.error("Enhance note error:", err);
       setError("Couldn't reach the AI just now - your note's been kept as you wrote it.");
