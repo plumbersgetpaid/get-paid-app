@@ -2,25 +2,15 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
   const form = await req.formData();
-  const jobId = form.get("jobId");
-  const dueDate = (form.get("dueDate") || "").toString();
-  const amount = (form.get("amount") || "").toString();
   const note = (form.get("note") || "").toString().trim();
-  const from = (form.get("from") || "").toString();
 
-  const redirectUrl = new URL(`/jobs/complete/${jobId}`, req.url);
-  if (dueDate) redirectUrl.searchParams.set("dueDate", dueDate);
-  if (amount) redirectUrl.searchParams.set("amount", amount);
-  if (from) redirectUrl.searchParams.set("from", from);
-
-  // Nothing to enhance, or no API key set up yet - just bounce back with
-  // whatever was typed, unchanged
-  if (!note || !process.env.ANTHROPIC_API_KEY) {
-    if (note) redirectUrl.searchParams.set("note", note);
-    if (!process.env.ANTHROPIC_API_KEY) {
-      redirectUrl.searchParams.set("aiError", "1");
-    }
-    return NextResponse.redirect(redirectUrl);
+  // Nothing to enhance, or no API key set up yet - just hand back whatever
+  // was typed, unchanged
+  if (!note) {
+    return NextResponse.json({ note: "" });
+  }
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json({ note, error: "AI isn't set up yet" }, { status: 200 });
   }
 
   try {
@@ -46,12 +36,9 @@ export async function POST(req) {
     const data = await response.json();
     const enhanced = data?.content?.[0]?.text?.trim();
 
-    redirectUrl.searchParams.set("note", enhanced || note);
+    return NextResponse.json({ note: enhanced || note });
   } catch (e) {
     console.error("AI enhance-note error:", e);
-    redirectUrl.searchParams.set("note", note);
-    redirectUrl.searchParams.set("aiError", "1");
+    return NextResponse.json({ note, error: "Couldn't reach the AI just now" });
   }
-
-  return NextResponse.redirect(redirectUrl);
 }
