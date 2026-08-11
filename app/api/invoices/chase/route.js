@@ -4,6 +4,8 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { textToEmailHtml } from "../../../lib/emailHtml";
+import { getEmailFrom } from "../../../lib/emailFrom";
+import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -34,6 +36,12 @@ export async function POST(req) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       const settings = await getBusinessSettings();
+      const { data: invoiceRow } = await db
+        .from("invoices")
+        .select("job_id")
+        .eq("id", invoiceId)
+        .single();
+      const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, invoiceRow?.job_id);
       const business = {
         businessName: settings.business_name,
         accentColor: settings.accent_color,
@@ -45,6 +53,8 @@ export async function POST(req) {
         paymentTerms: settings.payment_terms,
         bankDetails: settings.bank_details,
         currency: settings.currency,
+        beforePhotos,
+        afterPhotos,
       };
 
       const pdfBytes = await generateInvoicePdfBytes({
@@ -76,7 +86,7 @@ export async function POST(req) {
       await resend.emails.send({
         // Using Resend's test sending address for now - swap this for your
         // own verified domain once you're ready to send to real customers.
-        from: `${settings.business_name} <onboarding@resend.dev>`,
+        from: getEmailFrom(settings.business_name),
         to: inv.email,
         subject,
         html,
