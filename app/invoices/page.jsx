@@ -1,6 +1,9 @@
 import { supabaseAdmin } from "../lib/supabaseClient";
 import { formatCurrency, formatInvoiceNumber } from "../lib/formatCurrency";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
+import { getCurrentTeamMember } from "../lib/auth";
+import { canSeeEverything } from "../lib/permissions";
+import { notFound } from "next/navigation";
 import BackButton from "../components/BackButton";
 import Link from "next/link";
 
@@ -11,6 +14,12 @@ export const revalidate = 0;
 export default async function AllInvoices({ searchParams }) {
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
+
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
+
   const rangeStart = searchParams?.start || "";
   const rangeEnd = searchParams?.end || "";
   const q = (searchParams?.q || "").trim().toLowerCase();
@@ -76,9 +85,6 @@ export default async function AllInvoices({ searchParams }) {
     .reduce((sum, i) => sum + Number(i.amount), 0);
   const totalOutstanding = totalInvoiced - totalPaid;
 
-  // Build a list of months that actually have invoices, for the bulk
-  // download filter - based on the FULL history, not the current filter,
-  // so the dropdown doesn't shrink when a custom range is applied
   const { data: allDates } = await db.from("invoices").select("created_at");
   const monthsSet = new Set(
     (allDates || []).map((inv) => inv.created_at.slice(0, 7))
