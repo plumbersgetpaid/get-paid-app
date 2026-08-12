@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
-import { hashPassword, buildSessionToken, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "../../../lib/auth";
+import { hashPassword } from "../../../lib/password";
+import { buildSessionToken, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "../../../lib/auth";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
