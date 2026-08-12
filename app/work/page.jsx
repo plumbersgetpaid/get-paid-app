@@ -72,9 +72,17 @@ async function QuotesTab({ db, settings, sub }) {
     ? await db.from("customers").select("id, name").in("id", customerIds)
     : { data: [] };
   const nameById = Object.fromEntries((customers || []).map((c) => [c.id, c.name]));
+
+  const creatorIds = [...new Set(quotes.map((q) => q.created_by).filter(Boolean))];
+  const { data: creators } = creatorIds.length
+    ? await db.from("team_members").select("id, name").in("id", creatorIds)
+    : { data: [] };
+  const creatorNameById = Object.fromEntries((creators || []).map((c) => [c.id, c.name]));
+
   quotes = quotes.map((q) => ({
     ...q,
     customer_name: nameById[q.customer_id] || "Unknown customer",
+    creator_name: creatorNameById[q.created_by] || null,
   }));
 
   const waitingQuotes = quotes.filter((q) => !q.quote_chased_at);
@@ -134,6 +142,7 @@ async function QuotesTab({ db, settings, sub }) {
             <div style={{ fontWeight: 600 }}>{q.customer_name}</div>
             <div style={{ fontSize: 13, color: "#888", marginBottom: 4 }}>
               {q.job_type || "Job"} · {formatCurrency(q.amount, settings.currency)}
+              {q.creator_name && <> · quoted by {q.creator_name}</>}
             </div>
             {sentLabel && (
               <div
@@ -212,20 +221,20 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     ? await db.from("customers").select("id, name").in("id", customerIds)
     : { data: [] };
   const nameById = Object.fromEntries((customers || []).map((c) => [c.id, c.name]));
+
+  const { data: teamMembersData } = await db
+    .from("team_members")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name");
+  const teamMembers = teamMembersData || [];
+  const teamMemberNameById = Object.fromEntries(teamMembers.map((m) => [m.id, m.name]));
+
   jobs = jobs.map((j) => ({
     ...j,
     customer_name: nameById[j.customer_id] || "Unknown customer",
+    creator_name: teamMemberNameById[j.created_by] || null,
   }));
-
-  let teamMembers = [];
-  if (showEverything) {
-    const { data } = await db
-      .from("team_members")
-      .select("id, name")
-      .eq("is_active", true)
-      .order("name");
-    teamMembers = data || [];
-  }
 
   const todayStr = getTodayInLondon();
   const todayJobs = jobs
@@ -269,6 +278,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
       ...j,
       customer_name: completedNameById[j.customer_id] || "Unknown customer",
       invoice_id: invoiceIdByJob[j.id] || null,
+      creator_name: teamMemberNameById[j.created_by] || null,
     }));
   }
 
@@ -337,6 +347,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
                 {job.job_type}
                 {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>} ·{" "}
                 <span style={{ textTransform: "capitalize" }}>{job.status}</span>
+                {job.creator_name && <> · booked by {job.creator_name}</>}
               </div>
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
                 {showEverything && job.invoice_id && (
@@ -368,6 +379,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
             <div style={{ fontSize: 13, color: "#888" }}>
               {job.job_type}
               {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>}
+              {job.creator_name && <> · booked by {job.creator_name}</>}
             </div>
             {isLate ? (
               <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 2 }}>
