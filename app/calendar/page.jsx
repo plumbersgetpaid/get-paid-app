@@ -148,6 +148,19 @@ export default async function Calendar({ searchParams }) {
   const entriesByDate = {};
   const now = new Date();
 
+  // Same "how overdue" formatting used on Work → Jobs, so the two screens
+  // describe lateness consistently
+  const formatLateness = (scheduledEnd) => {
+    const diffHours = (now - new Date(scheduledEnd)) / (1000 * 60 * 60);
+    if (diffHours < 1) return "under an hour late";
+    if (diffHours < 24) {
+      const hours = Math.floor(diffHours);
+      return `${hours} hour${hours === 1 ? "" : "s"} late`;
+    }
+    const days = Math.floor(diffHours / 24);
+    return `${days} day${days === 1 ? "" : "s"} late`;
+  };
+
   for (const job of jobs) {
     const dateKey = job.scheduled_start.slice(0, 10);
     if (!entriesByDate[dateKey]) entriesByDate[dateKey] = [];
@@ -180,7 +193,7 @@ export default async function Calendar({ searchParams }) {
         : isLate
         ? `${jobCustomerName[job.customer_id] || "Customer"} - ${
             job.job_type || "Job"
-          } (⚠️ running late - tap to mark done)`
+          } (⚠️ ${formatLateness(job.scheduled_end)} - tap to mark done)`
         : `${jobCustomerName[job.customer_id] || "Customer"} - ${
             job.job_type || "Job"
           } (${completionLabel})`,
