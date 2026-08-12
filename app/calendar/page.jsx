@@ -131,6 +131,7 @@ export default async function Calendar({ searchParams }) {
   const { data: reminders } = await db
     .from("personal_events")
     .select("*")
+    .eq("created_by", currentMember?.id || "__none__")
     .gte("scheduled_start", `${rangeStartStr}T00:00:00`)
     .lte("scheduled_start", `${rangeEndStr}T23:59:59`)
     .order("scheduled_start", { ascending: true });
