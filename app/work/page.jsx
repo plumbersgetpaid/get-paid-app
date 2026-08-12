@@ -168,6 +168,21 @@ async function QuotesTab({ db, settings, sub }) {
   );
 }
 
+// Formats how overdue a job is in plain language, e.g. "2 hours late" or
+// "3 days late" - a bare "Running late" didn't give any sense of scale
+function formatLateness(scheduledEnd) {
+  const diffMs = new Date() - new Date(scheduledEnd);
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  if (diffHours < 1) return "under an hour late";
+  if (diffHours < 24) {
+    const hours = Math.floor(diffHours);
+    return `${hours} hour${hours === 1 ? "" : "s"} late`;
+  }
+  const days = Math.floor(diffHours / 24);
+  return `${days} day${days === 1 ? "" : "s"} late`;
+}
+
 async function JobsTab({ db, settings, sub }) {
   const activeSub = ["today", "upcoming", "unscheduled", "completed"].includes(sub)
     ? sub
@@ -190,12 +205,12 @@ async function JobsTab({ db, settings, sub }) {
   // already passed and still not marked done was previously falling through
   // every bucket (not today, not upcoming, not unscheduled) and vanishing
   // from this screen entirely, even though it was still fully active
-  const todayJobs = jobs.filter(
-    (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr
-  );
-  const upcomingJobs = jobs.filter(
-    (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) > todayStr
-  );
+  const todayJobs = jobs
+    .filter((j) => j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr)
+    .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start));
+  const upcomingJobs = jobs
+    .filter((j) => j.scheduled_start && j.scheduled_start.slice(0, 10) > todayStr)
+    .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start));
   const unscheduledJobs = jobs.filter((j) => !j.scheduled_start);
 
   const { count: completedCount } = await db
@@ -333,7 +348,7 @@ async function JobsTab({ db, settings, sub }) {
             </div>
             {isLate ? (
               <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 2 }}>
-                ⚠️ Running late
+                ⚠️ Running {formatLateness(job.scheduled_end)}
               </div>
             ) : job.time_confirmed === false ? (
               <div style={{ fontSize: 12, color: "#b45309", fontWeight: 700, marginTop: 2 }}>
@@ -348,7 +363,7 @@ async function JobsTab({ db, settings, sub }) {
             ) : (
               job.scheduled_start && (
                 <div style={{ fontSize: 12, color: "#16a34a", marginTop: 2 }}>
-                  📅{" "}
+                  📅 Due{" "}
                   {new Date(job.scheduled_start).toLocaleString("en-GB", {
                     weekday: "short",
                     day: "numeric",
