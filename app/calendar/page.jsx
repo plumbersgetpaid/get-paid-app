@@ -5,6 +5,7 @@ import { getTodayInLondon } from "../lib/today";
 import { advanceDate } from "../lib/duration";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
+import DateJump from "./DateJump";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -285,11 +286,14 @@ export default async function Calendar({ searchParams }) {
           ›
         </Link>
       </div>
-      {offset !== 0 && (
-        <Link href={`/calendar?range=${range}&offset=0`} style={jumpToTodayStyle}>
-          Jump to today
-        </Link>
-      )}
+      <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 10 }}>
+        {offset !== 0 && (
+          <Link href={`/calendar?range=${range}&offset=0`} style={jumpToTodayStyle}>
+            Jump to today
+          </Link>
+        )}
+        <DateJump range={range} todayStr={todayStr} />
+      </div>
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 12 }}>
         🔧 booked jobs (red if overdue to be marked done), 💰 payment due
@@ -416,12 +420,11 @@ const stepButtonStyle = {
 };
 
 const jumpToTodayStyle = {
-  display: "block",
-  textAlign: "center",
+  display: "flex",
+  alignItems: "center",
   fontSize: 12,
   color: "#666",
   textDecoration: "underline",
-  marginTop: 6,
 };
 
 const dayCardStyle = (isToday) => ({
