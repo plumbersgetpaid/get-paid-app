@@ -16,25 +16,29 @@ export default async function Work({ searchParams }) {
   const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
-  const tab = searchParams?.tab || "quotes";
+  const tab = searchParams?.tab || (showEverything ? "quotes" : "jobs");
 
   return (
     <main>
       <h1 style={{ fontSize: 20, margin: "0 0 16px" }}>Work</h1>
 
       <div style={tabRowStyle}>
-        <Link href="/work?tab=quotes" style={tabStyle(tab === "quotes")}>
-          Quotes
-        </Link>
+        {showEverything && (
+          <Link href="/work?tab=quotes" style={tabStyle(tab === "quotes")}>
+            Quotes
+          </Link>
+        )}
         <Link href="/work?tab=jobs" style={tabStyle(tab === "jobs")}>
           Jobs
         </Link>
-        <Link href="/work?tab=invoices" style={tabStyle(tab === "invoices")}>
-          Invoices
-        </Link>
+        {showEverything && (
+          <Link href="/work?tab=invoices" style={tabStyle(tab === "invoices")}>
+            Invoices
+          </Link>
+        )}
       </div>
 
-      {tab === "quotes" && (
+      {tab === "quotes" && showEverything && (
         <QuotesTab db={db} settings={settings} sub={searchParams?.sub || "waiting"} />
       )}
       {tab === "jobs" && (
@@ -46,7 +50,7 @@ export default async function Work({ searchParams }) {
           showEverything={showEverything}
         />
       )}
-      {tab === "invoices" && (
+      {tab === "invoices" && showEverything && (
         <InvoicesTab db={db} settings={settings} sub={searchParams?.sub || "overdue"} />
       )}
     </main>
@@ -179,8 +183,6 @@ async function QuotesTab({ db, settings, sub }) {
   );
 }
 
-// Formats how overdue a job is in plain language, e.g. "2 hours late" or
-// "3 days late" - a bare "Running late" didn't give any sense of scale
 function formatLateness(scheduledEnd) {
   const diffMs = new Date() - new Date(scheduledEnd);
   const diffHours = diffMs / (1000 * 60 * 60);
@@ -200,10 +202,6 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     : "today";
 
   let jobsQuery = db.from("jobs").select("*").eq("status", "in_progress");
-  // A subcontractor only ever sees jobs specifically assigned to them -
-  // this filter runs on the server, in the query itself, not as a UI
-  // hide - so there's no version of this page that ever sends jobs
-  // belonging to someone else down to their browser in the first place
   if (!showEverything) {
     jobsQuery = jobsQuery.eq("assigned_to", currentMember?.id || "__none__");
   }
@@ -219,8 +217,6 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     customer_name: nameById[j.customer_id] || "Unknown customer",
   }));
 
-  // Only owner/manager can reassign jobs, so only they need the list of
-  // team members to populate that dropdown
   let teamMembers = [];
   if (showEverything) {
     const { data } = await db
@@ -232,10 +228,6 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   }
 
   const todayStr = getTodayInLondon();
-  // "Today" includes anything overdue too - a job scheduled for a day that's
-  // already passed and still not marked done was previously falling through
-  // every bucket (not today, not upcoming, not unscheduled) and vanishing
-  // from this screen entirely, even though it was still fully active
   const todayJobs = jobs
     .filter((j) => j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr)
     .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start));
@@ -249,8 +241,6 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     .select("id", { count: "exact", head: true })
     .in("status", ["complete", "invoiced", "paid"]);
 
-  // Only fetch the completed preview list when that sub-tab is actually
-  // being viewed - no point loading it every time
   let completedJobs = [];
   if (activeSub === "completed") {
     const { data: rawCompleted } = await db
@@ -464,8 +454,6 @@ async function InvoicesTab({ db, settings, sub }) {
   const paidInvoices = paidInvoicesRaw || [];
   const paidTotal = paidInvoices.reduce((s, i) => s + Number(i.amount), 0);
 
-  // Only fetch customer/job details for paid invoices when that sub-tab is
-  // actually being viewed - no point loading it every time
   let paidPreview = [];
   if (activeSub === "paid") {
     const jobIds = [...new Set(paidInvoices.map((i) => i.job_id))];
