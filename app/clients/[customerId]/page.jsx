@@ -88,7 +88,7 @@ export default async function ClientDetail({ params }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <BackButton fallbackHref="/clients" />
+        <BackButton fallbackHref="/clients" forceFresh />
         <h1 style={{ fontSize: 20, margin: 0 }}>{customer.name}</h1>
       </div>
 
