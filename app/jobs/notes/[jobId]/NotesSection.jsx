@@ -89,14 +89,14 @@ export default function NotesSection({ jobId }) {
 
   async function handleDelete(noteId) {
     const previous = notes;
-    setNotes((prev) => prev.filter((n) => n.id !== noteId)); // instant, don't wait on the server
+    setNotes((prev) => prev.filter((n) => n.id !== noteId));
 
     try {
       const formData = new FormData();
       formData.append("noteId", noteId);
       const res = await fetch("/api/jobs/notes/delete", { method: "POST", body: formData });
       if (!res.ok) {
-        setNotes(previous); // put it back if the delete actually failed
+        setNotes(previous);
       }
     } catch (e) {
       console.error("Delete note error:", e);
@@ -176,6 +176,7 @@ export default function NotesSection({ jobId }) {
             }}
           >
             <span style={{ fontSize: 11, color: "#888" }}>
+              {n.creator_name && <>{n.creator_name} · </>}
               {new Date(n.created_at).toLocaleString("en-GB", {
                 day: "numeric",
                 month: "short",
