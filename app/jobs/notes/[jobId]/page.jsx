@@ -28,7 +28,7 @@ export default async function JobNotes({ params }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <BackButton fallbackHref="/work?tab=jobs" />
+        <BackButton fallbackHref="/work?tab=jobs" forceFresh />
         <h1 style={{ fontSize: 20, margin: 0 }}>Job notes</h1>
       </div>
 
