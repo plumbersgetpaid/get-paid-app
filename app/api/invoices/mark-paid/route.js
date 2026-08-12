@@ -3,10 +3,18 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
 import { textToEmailHtml } from "../../../lib/emailHtml";
+import { getEmailFrom } from "../../../lib/emailFrom";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const form = await req.formData();
   const invoiceId = form.get("invoiceId");
 
@@ -28,14 +36,10 @@ export async function POST(req) {
     return NextResponse.json({ error: invErr.message }, { status: 400 });
   }
 
-  // Keep the job status in sync with the invoice
   if (invoice?.job_id) {
     await db.from("jobs").update({ status: "paid" }).eq("id", invoice.job_id);
   }
 
-  // Automatic thank-you + Google review request - fully hands-off, only
-  // sends if a review link has been set up in Settings. A failure here
-  // should never block the payment itself being recorded.
   if (invoice?.job_id) {
     try {
       const settings = await getBusinessSettings();
@@ -66,7 +70,7 @@ export async function POST(req) {
               bodyText
             )}</div>`;
             await resend.emails.send({
-              from: `${settings.business_name} <onboarding@resend.dev>`,
+              from: getEmailFrom(settings.business_name),
               to: customer.email,
               subject,
               html,
