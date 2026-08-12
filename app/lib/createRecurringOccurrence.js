@@ -5,12 +5,6 @@ import { sendWhatsAppMessage } from "./sendWhatsApp";
 import { advanceDate } from "./duration";
 import { Resend } from "resend";
 
-// Creates one real job from a recurring job template's current due
-// occurrence: books it in, warns about any genuine scheduling clash,
-// notifies the client if the time is real and that's turned on, then
-// advances the template to its next occurrence. Never invoices
-// automatically - that always happens the normal way, when the tradie
-// marks the job done.
 export async function createRecurringOccurrence(db, settings, r) {
   const { data: customer } = await db
     .from("customers")
@@ -19,21 +13,13 @@ export async function createRecurringOccurrence(db, settings, r) {
     .single();
 
   const preferredTime = r.preferred_time || "09:00";
-  // A one-off time set specifically for the next occurrence overrides
-  // everything else, and always counts as a real, confirmed time
   const hasOneOffTime = !!r.next_occurrence_time;
   const confirmLater = !hasOneOffTime && !!r.confirm_time_later;
   const timeIsConfirmed = !confirmLater;
-  // If the time isn't being fixed yet, use a neutral placeholder just so
-  // the job has a real timestamp - it's flagged as unconfirmed below, so
-  // the UI shows "time to be confirmed" instead of this placeholder
   const timeToUse = hasOneOffTime ? r.next_occurrence_time : confirmLater ? "12:00" : preferredTime;
   const start = new Date(`${r.next_occurrence}T${timeToUse}:00`);
   const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
 
-  // Only check for a scheduling clash when the time is real - checking a
-  // placeholder time against other bookings would just produce false
-  // warnings about a time nobody actually committed to
   let conflict = null;
   if (timeIsConfirmed) {
     const { data: sameDay } = await db
@@ -63,6 +49,7 @@ export async function createRecurringOccurrence(db, settings, r) {
       scheduled_start: start.toISOString(),
       scheduled_end: end.toISOString(),
       time_confirmed: timeIsConfirmed,
+      created_by: r.created_by || null,
     })
     .select()
     .single();
@@ -72,7 +59,6 @@ export async function createRecurringOccurrence(db, settings, r) {
     return { created: false };
   }
 
-  // Warn the tradie if this landed on top of another booking
   if (conflict && settings.contact_email && process.env.RESEND_API_KEY) {
     try {
       const { data: conflictCustomer } = await db
@@ -99,8 +85,6 @@ export async function createRecurringOccurrence(db, settings, r) {
     }
   }
 
-  // Let the client know, if this recurring job has that turned on - only
-  // once there's a real time to actually tell them
   if (timeIsConfirmed && (r.notify_email || r.notify_whatsapp) && customer) {
     try {
       const template = await getTemplate("booking_confirmation");
