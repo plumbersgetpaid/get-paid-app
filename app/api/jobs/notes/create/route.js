@@ -1,7 +1,9 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
+import { getCurrentTeamMember } from "../../../../lib/auth";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
   const form = await req.formData();
   const jobId = form.get("jobId");
   const note = (form.get("note") || "").toString().trim();
@@ -14,9 +16,6 @@ export async function POST(req) {
 
   const db = supabaseAdmin();
 
-  // Images for notes live in a completely separate storage bucket from
-  // job photos - keeps this structurally impossible to ever end up in an
-  // invoice email, not just hidden by convention
   let imageUrl = null;
   let imageStoragePath = null;
 
@@ -48,6 +47,7 @@ export async function POST(req) {
     important,
     image_url: imageUrl,
     image_storage_path: imageStoragePath,
+    created_by: currentMember?.id || null,
   });
 
   if (error) {
