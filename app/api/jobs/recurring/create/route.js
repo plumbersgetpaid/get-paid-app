@@ -2,9 +2,11 @@ import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { findExistingCustomer } from "../../../../lib/findCustomer";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
 import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurrence";
+import { getCurrentTeamMember } from "../../../../lib/auth";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
   const form = await req.formData();
   const name = (form.get("name") || "").toString().trim();
   const phone = (form.get("phone") || "").toString().trim();
@@ -65,6 +67,7 @@ export async function POST(req) {
       confirm_time_later: confirmTimeLater,
       notify_email: notifyEmail,
       notify_whatsapp: notifyWhatsapp,
+      created_by: currentMember?.id || null,
     })
     .select()
     .single();
@@ -74,8 +77,6 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // If the first occurrence is today or already in the past, don't make
-  // them wait for tomorrow's daily check - create it right now
   const todayStr = new Date().toISOString().slice(0, 10);
   if (startDate <= todayStr) {
     const settings = await getBusinessSettings();
