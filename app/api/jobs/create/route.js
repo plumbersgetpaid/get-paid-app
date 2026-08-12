@@ -4,10 +4,13 @@ import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { findExistingCustomer } from "../../../lib/findCustomer";
 import { textToEmailHtml } from "../../../lib/emailHtml";
+import { getEmailFrom } from "../../../lib/emailFrom";
+import { getCurrentTeamMember } from "../../../lib/auth";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
   const form = await req.formData();
   const name = form.get("name");
   const phone = form.get("phone");
@@ -24,14 +27,11 @@ export async function POST(req) {
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
 
-  // Reuse an existing customer if this email/phone (or name) already exists,
-  // rather than creating a duplicate contact every time
   const existingCustomer = await findExistingCustomer(db, { name, email, phone });
 
   let customer;
   if (existingCustomer) {
     customer = existingCustomer;
-    // Fill in any missing contact details, without overwriting what's there
     const updates = {};
     if (!existingCustomer.phone && phone) updates.phone = phone;
     if (!existingCustomer.email && email) updates.email = email;
@@ -53,8 +53,6 @@ export async function POST(req) {
     customer = newCustomer;
   }
 
-  // If a proposed date was given, pre-fill the scheduled time now - if the
-  // quote is accepted, the job's already booked in (still adjustable later)
   let scheduledStart = null;
   let scheduledEnd = null;
   if (proposedDate && durationValue) {
@@ -79,6 +77,7 @@ export async function POST(req) {
       quote_sent_at: new Date().toISOString(),
       scheduled_start: scheduledStart,
       scheduled_end: scheduledEnd,
+      created_by: currentMember?.id || null,
     })
     .select()
     .single();
@@ -88,7 +87,6 @@ export async function POST(req) {
     return NextResponse.json({ error: jobErr.message }, { status: 400 });
   }
 
-  // Send the quote email
   if (email && process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
@@ -110,9 +108,7 @@ export async function POST(req) {
       )}</div>`;
 
       await resend.emails.send({
-        // Using Resend's test sending address for now - swap this for your
-        // own verified domain once you're ready to send to real customers.
-        from: `${settings.business_name} <onboarding@resend.dev>`,
+        from: getEmailFrom(settings.business_name),
         to: email,
         subject,
         html,
