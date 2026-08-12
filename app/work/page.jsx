@@ -2,6 +2,9 @@ import { supabaseAdmin } from "../lib/supabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getTodayInLondon } from "../lib/today";
+import { getCurrentTeamMember } from "../lib/auth";
+import { canSeeEverything } from "../lib/permissions";
+import AssignJobDropdown from "../components/AssignJobDropdown";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +14,8 @@ export const revalidate = 0;
 export default async function Work({ searchParams }) {
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
+  const currentMember = await getCurrentTeamMember();
+  const showEverything = canSeeEverything(currentMember);
   const tab = searchParams?.tab || "quotes";
 
   return (
@@ -33,7 +38,13 @@ export default async function Work({ searchParams }) {
         <QuotesTab db={db} settings={settings} sub={searchParams?.sub || "waiting"} />
       )}
       {tab === "jobs" && (
-        <JobsTab db={db} settings={settings} sub={searchParams?.sub || "today"} />
+        <JobsTab
+          db={db}
+          settings={settings}
+          sub={searchParams?.sub || "today"}
+          currentMember={currentMember}
+          showEverything={showEverything}
+        />
       )}
       {tab === "invoices" && (
         <InvoicesTab db={db} settings={settings} sub={searchParams?.sub || "overdue"} />
@@ -183,12 +194,20 @@ function formatLateness(scheduledEnd) {
   return `${days} day${days === 1 ? "" : "s"} late`;
 }
 
-async function JobsTab({ db, settings, sub }) {
+async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   const activeSub = ["today", "upcoming", "unscheduled", "completed"].includes(sub)
     ? sub
     : "today";
 
-  const { data: rawJobs } = await db.from("jobs").select("*").eq("status", "in_progress");
+  let jobsQuery = db.from("jobs").select("*").eq("status", "in_progress");
+  // A subcontractor only ever sees jobs specifically assigned to them -
+  // this filter runs on the server, in the query itself, not as a UI
+  // hide - so there's no version of this page that ever sends jobs
+  // belonging to someone else down to their browser in the first place
+  if (!showEverything) {
+    jobsQuery = jobsQuery.eq("assigned_to", currentMember?.id || "__none__");
+  }
+  const { data: rawJobs } = await jobsQuery;
   let jobs = rawJobs || [];
   const customerIds = [...new Set(jobs.map((j) => j.customer_id))];
   const { data: customers } = customerIds.length
@@ -199,6 +218,18 @@ async function JobsTab({ db, settings, sub }) {
     ...j,
     customer_name: nameById[j.customer_id] || "Unknown customer",
   }));
+
+  // Only owner/manager can reassign jobs, so only they need the list of
+  // team members to populate that dropdown
+  let teamMembers = [];
+  if (showEverything) {
+    const { data } = await db
+      .from("team_members")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("name");
+    teamMembers = data || [];
+  }
 
   const todayStr = getTodayInLondon();
   // "Today" includes anything overdue too - a job scheduled for a day that's
@@ -313,11 +344,12 @@ async function JobsTab({ db, settings, sub }) {
             <div key={job.id} style={cardStyle("#16a34a")}>
               <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
               <div style={{ fontSize: 13, color: "#888" }}>
-                {job.job_type} · {formatCurrency(job.amount, settings.currency)} ·{" "}
+                {job.job_type}
+                {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>} ·{" "}
                 <span style={{ textTransform: "capitalize" }}>{job.status}</span>
               </div>
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                {job.invoice_id && (
+                {showEverything && job.invoice_id && (
                   <Link href={`/invoices/${job.invoice_id}`} style={jobLinkStyle}>
                     View invoice →
                   </Link>
@@ -344,7 +376,8 @@ async function JobsTab({ db, settings, sub }) {
           <div key={job.id} style={cardStyle(isLate ? "#dc2626" : "#2563eb")}>
             <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
             <div style={{ fontSize: 13, color: "#888" }}>
-              {job.job_type} · {formatCurrency(job.amount, settings.currency)}
+              {job.job_type}
+              {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>}
             </div>
             {isLate ? (
               <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 2 }}>
@@ -389,6 +422,13 @@ async function JobsTab({ db, settings, sub }) {
               {hasImportantNoteByJob[job.id] ? "⚠️ " : "📝 "}Notes
               {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
             </Link>
+            {showEverything && (
+              <AssignJobDropdown
+                jobId={job.id}
+                assignedTo={job.assigned_to}
+                teamMembers={teamMembers}
+              />
+            )}
           </div>
         );
       })}
