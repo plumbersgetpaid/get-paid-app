@@ -2,6 +2,8 @@ import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency, formatInvoiceNumber } from "../../lib/formatCurrency";
 import { notFound } from "next/navigation";
+import { getCurrentTeamMember } from "../../lib/auth";
+import { canSeeEverything } from "../../lib/permissions";
 import BackButton from "../../components/BackButton";
 import Link from "next/link";
 
@@ -11,6 +13,11 @@ export default async function InvoiceDetail({ params }) {
   const { invoiceId } = params;
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
+
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
 
   const { data: invoice, error } = await db
     .from("invoices")
