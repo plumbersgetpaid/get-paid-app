@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency } from "../../lib/formatCurrency";
+import { getCurrentTeamMember } from "../../lib/auth";
+import { canSeeEverything } from "../../lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,8 @@ export default async function ClientDetail({ params }) {
   const { customerId } = params;
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
+  const currentMember = await getCurrentTeamMember();
+  const showEverything = canSeeEverything(currentMember);
 
   const { data: customer, error } = await db
     .from("customers")
@@ -23,11 +27,19 @@ export default async function ClientDetail({ params }) {
     notFound();
   }
 
-  const { data: jobs } = await db
+  let jobsQuery = db
     .from("jobs")
     .select("*")
     .eq("customer_id", customerId)
     .order("created_at", { ascending: false });
+  if (!showEverything) {
+    jobsQuery = jobsQuery.eq("assigned_to", currentMember?.id || "__none__");
+  }
+  const { data: jobs } = await jobsQuery;
+
+  if (!showEverything && (!jobs || jobs.length === 0)) {
+    notFound();
+  }
 
   const jobIds = (jobs || []).map((j) => j.id);
   const { data: invoices } = jobIds.length
@@ -45,12 +57,8 @@ export default async function ClientDetail({ params }) {
     noteCountByJob[n.job_id] = (noteCountByJob[n.job_id] || 0) + 1;
   }
 
-  // Look for other customer records that share this one's email or phone -
-  // likely duplicates worth merging, excluding any pair already dismissed.
-  // Uses separate lookups rather than a combined filter, since combined
-  // filters can misbehave on values containing dots (common in emails).
   let duplicates = [];
-  if (customer.email || customer.phone) {
+  if (showEverything && (customer.email || customer.phone)) {
     const dupeMap = {};
 
     if (customer.email) {
@@ -112,11 +120,13 @@ export default async function ClientDetail({ params }) {
         </div>
       </section>
 
-      <DuplicatesSection
-        customerId={customer.id}
-        customerName={customer.name}
-        initialDuplicates={duplicates}
-      />
+      {showEverything && (
+        <DuplicatesSection
+          customerId={customer.id}
+          customerName={customer.name}
+          initialDuplicates={duplicates}
+        />
+      )}
 
       <h2 style={{ fontSize: 16, marginTop: 24 }}>Job history</h2>
       {(!jobs || jobs.length === 0) && (
@@ -128,11 +138,11 @@ export default async function ClientDetail({ params }) {
           <div key={job.id} style={jobCardStyle}>
             <div style={{ fontWeight: 600 }}>{job.job_type || "Job"}</div>
             <div style={{ fontSize: 13, color: "#888" }}>
-              {formatCurrency(job.amount, settings.currency)} ·{" "}
+              {showEverything && <>{formatCurrency(job.amount, settings.currency)} · </>}
               <span style={{ textTransform: "capitalize" }}>
                 {job.status.replace("_", " ")}
               </span>
-              {invoice && (
+              {showEverything && invoice && (
                 <>
                   {" · invoice "}
                   <span style={{ textTransform: "capitalize" }}>{invoice.status}</span>
@@ -148,7 +158,7 @@ export default async function ClientDetail({ params }) {
               </div>
             )}
             <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-              {invoice && (
+              {showEverything && invoice && (
                 <Link
                   href={`/invoices/${invoice.id}`}
                   style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
