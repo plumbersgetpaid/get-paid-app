@@ -146,7 +146,7 @@ export default async function AllInvoices({ searchParams }) {
         >
           {searchParams?.q && <input type="hidden" name="q" value={searchParams.q} />}
           <div style={{ display: "flex", gap: 10 }}>
-            <label style={{ flex: 1, fontSize: 12, color: "#666" }}>
+            <label style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#666" }}>
               From
               <input
                 type="date"
@@ -155,7 +155,7 @@ export default async function AllInvoices({ searchParams }) {
                 style={dateInputStyle}
               />
             </label>
-            <label style={{ flex: 1, fontSize: 12, color: "#666" }}>
+            <label style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#666" }}>
               To
               <input
                 type="date"
@@ -210,26 +210,26 @@ export default async function AllInvoices({ searchParams }) {
           margin: "16px 0",
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 12,
+          gap: 8,
           textAlign: "center",
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
         }}
       >
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12, color: "#888" }}>Total invoiced</div>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>
+          <div style={{ fontSize: 17, fontWeight: 700, overflowWrap: "break-word" }}>
             {formatCurrency(totalInvoiced, settings.currency)}
           </div>
         </div>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12, color: "#888" }}>Total paid</div>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>
+          <div style={{ fontSize: 17, fontWeight: 700, overflowWrap: "break-word" }}>
             {formatCurrency(totalPaid, settings.currency)}
           </div>
         </div>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12, color: "#888" }}>Outstanding</div>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>
+          <div style={{ fontSize: 17, fontWeight: 700, overflowWrap: "break-word" }}>
             {formatCurrency(totalOutstanding, settings.currency)}
           </div>
         </div>
@@ -341,6 +341,7 @@ const bulkDownloadButtonStyle = {
 const dateInputStyle = {
   display: "block",
   width: "100%",
+  minWidth: 0,
   boxSizing: "border-box",
   padding: "10px",
   borderRadius: 8,
