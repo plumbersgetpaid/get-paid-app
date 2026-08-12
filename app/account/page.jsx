@@ -1,0 +1,39 @@
+import { getCurrentTeamMember } from "../lib/auth";
+import { redirect } from "next/navigation";
+import BackButton from "../components/BackButton";
+import AccountForm from "./AccountForm";
+
+export const dynamic = "force-dynamic";
+
+export default async function Account() {
+  const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    redirect("/login");
+  }
+
+  return (
+    <main>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <BackButton fallbackHref="/" />
+        <h1 style={{ fontSize: 20, margin: 0 }}>My account</h1>
+      </div>
+
+      <section style={cardStyle}>
+        <div style={{ fontSize: 13, color: "#888" }}>Email</div>
+        <div style={{ fontSize: 15, marginBottom: 4 }}>{currentMember.email}</div>
+        <div style={{ fontSize: 13, color: "#888", marginTop: 10 }}>Role</div>
+        <div style={{ fontSize: 15, textTransform: "capitalize" }}>{currentMember.role}</div>
+      </section>
+
+      <AccountForm currentName={currentMember.name} />
+    </main>
+  );
+}
+
+const cardStyle = {
+  background: "white",
+  borderRadius: 12,
+  padding: 16,
+  margin: "16px 0",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+};
