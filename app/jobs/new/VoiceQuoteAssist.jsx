@@ -160,12 +160,13 @@ export default function VoiceQuoteAssist({
         required
         style={inputStyle}
       />
-      <input
+      <textarea
         name="location"
         placeholder="Job location / address (optional)"
         value={location}
         onChange={(e) => setLocation(e.target.value)}
-        style={inputStyle}
+        rows={2}
+        style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
       />
     </div>
   );
