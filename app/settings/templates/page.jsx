@@ -3,6 +3,9 @@ import BackButton from "../../components/BackButton";
 import TemplateForm from "./TemplateForm";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { TEMPLATE_DEFAULTS } from "../../lib/getTemplate";
+import { getCurrentTeamMember } from "../../lib/auth";
+import { canSeeEverything } from "../../lib/permissions";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -81,6 +84,11 @@ const TEMPLATE_INFO = [
 ];
 
 export default async function TemplatesSettings() {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
+
   const db = supabaseAdmin();
   const { data: rows } = await db.from("message_templates").select("*");
   const rowByKey = Object.fromEntries((rows || []).map((r) => [r.key, r]));
