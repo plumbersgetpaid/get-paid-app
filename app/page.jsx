@@ -103,9 +103,16 @@ export default async function Today() {
     <main>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <Greeting />
-        <Link href="/settings" aria-label="Settings" style={settingsIconStyle}>
-          ⚙️
-        </Link>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link href="/account" aria-label="My account" style={settingsIconStyle}>
+            👤
+          </Link>
+          {showEverything && (
+            <Link href="/settings" aria-label="Settings" style={settingsIconStyle}>
+              ⚙️
+            </Link>
+          )}
+        </div>
       </div>
 
       <section style={cardStyle}>
