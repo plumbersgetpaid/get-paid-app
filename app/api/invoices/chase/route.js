@@ -6,12 +6,17 @@ import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
-// Lets the plumber chase a specific invoice on demand, on top of the
-// automatic daily chase cron job.
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const form = await req.formData();
   const invoiceId = form.get("invoiceId");
 
@@ -99,8 +104,6 @@ export async function POST(req) {
       )}</div>`;
 
       await resend.emails.send({
-        // Using Resend's test sending address for now - swap this for your
-        // own verified domain once you're ready to send to real customers.
         from: getEmailFrom(settings.business_name),
         to: inv.email,
         subject,
