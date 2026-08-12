@@ -2,6 +2,8 @@ import { supabaseAdmin } from "./lib/supabaseClient";
 import { getBusinessSettings } from "./lib/getBusinessSettings";
 import { formatCurrency } from "./lib/formatCurrency";
 import { getTodayInLondon } from "./lib/today";
+import { getCurrentTeamMember } from "./lib/auth";
+import { canSeeEverything } from "./lib/permissions";
 import Greeting from "./components/Greeting";
 import Link from "next/link";
 
@@ -12,19 +14,27 @@ export const revalidate = 0;
 export default async function Today() {
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
+  const currentMember = await getCurrentTeamMember();
+  const showEverything = canSeeEverything(currentMember);
 
   const todayStr = getTodayInLondon();
 
-  const { data: outstanding } = await db.from("outstanding_invoices").select("*");
+  const { data: outstanding } = showEverything
+    ? await db.from("outstanding_invoices").select("*")
+    : { data: [] };
   const totalOwed = (outstanding || []).reduce((sum, i) => sum + Number(i.amount), 0);
-  // "Needs attention" for invoices due today or already overdue - not just
-  // strictly overdue, so a payment due today doesn't get missed
   const dueOrOverdueInvoices = (outstanding || []).filter((i) => i.days_overdue >= 0);
   const overdueAmount = dueOrOverdueInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
 
-  const { data: quotes } = await db.from("jobs").select("id").eq("status", "quote_sent");
+  const { data: quotes } = showEverything
+    ? await db.from("jobs").select("id").eq("status", "quote_sent")
+    : { data: [] };
 
-  const { data: activeJobs } = await db.from("jobs").select("*").eq("status", "in_progress");
+  let activeJobsQuery = db.from("jobs").select("*").eq("status", "in_progress");
+  if (!showEverything) {
+    activeJobsQuery = activeJobsQuery.eq("assigned_to", currentMember?.id || "__none__");
+  }
+  const { data: activeJobs } = await activeJobsQuery;
 
   const jobsToday = (activeJobs || []).filter(
     (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) === todayStr
@@ -34,9 +44,6 @@ export default async function Today() {
   const lateJobs = (activeJobs || []).filter(
     (j) => j.time_confirmed !== false && j.scheduled_end && new Date(j.scheduled_end) < now
   );
-  // Jobs whose date has arrived (today or already passed) but the actual
-  // time was never confirmed - these need an active nudge, not just a
-  // passive "TBC" sitting quietly on the calendar
   const needsTimeJobs = (activeJobs || []).filter(
     (j) =>
       j.time_confirmed === false && j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr
@@ -53,6 +60,7 @@ export default async function Today() {
   const { data: remindersToday } = await db
     .from("personal_events")
     .select("*")
+    .eq("created_by", currentMember?.id || "__none__")
     .gte("scheduled_start", `${todayStr}T00:00:00`)
     .lte("scheduled_start", `${todayStr}T23:59:59`);
 
@@ -64,8 +72,6 @@ export default async function Today() {
         timeConfirmed,
         icon: "🔧",
         label: `${jobCustomerNameById[j.customer_id] || "Customer"} · ${j.job_type || "Job"}`,
-        // If the time still needs setting, take them to set it - only once
-        // it's confirmed does tapping the job mean "mark it done"
         href: timeConfirmed
           ? `/jobs/complete/${j.id}?from=today`
           : `/jobs/schedule/${j.id}`,
@@ -85,12 +91,13 @@ export default async function Today() {
   const overdueCount = dueOrOverdueInvoices.length;
   const lateCount = lateJobs.length;
   const needsTimeCount = needsTimeJobs.length;
-  const allClear =
-    quotesCount === 0 &&
-    needsBookingCount === 0 &&
-    overdueCount === 0 &&
-    lateCount === 0 &&
-    needsTimeCount === 0;
+  const allClear = showEverything
+    ? quotesCount === 0 &&
+      needsBookingCount === 0 &&
+      overdueCount === 0 &&
+      lateCount === 0 &&
+      needsTimeCount === 0
+    : needsBookingCount === 0 && lateCount === 0 && needsTimeCount === 0;
 
   return (
     <main>
@@ -130,12 +137,14 @@ export default async function Today() {
 
       {allClear ? (
         <section style={allClearCardStyle}>
-          ✓ Quotes, jobs, and invoices are all up to date
+          {showEverything
+            ? "✓ Quotes, jobs, and invoices are all up to date"
+            : "✓ You're all caught up"}
         </section>
       ) : (
         <section style={cardStyle}>
           <div style={sectionTitleStyle}>Action needed</div>
-          {quotesCount > 0 && (
+          {showEverything && quotesCount > 0 && (
             <Link href="/work?tab=quotes" style={attentionRowStyle}>
               🟠 {quotesCount} quote{quotesCount === 1 ? "" : "s"} need
               {quotesCount === 1 ? "s" : ""} a reply or chase
@@ -158,7 +167,7 @@ export default async function Today() {
               {needsBookingCount === 1 ? "s" : ""} booking in
             </Link>
           )}
-          {overdueCount > 0 && (
+          {showEverything && overdueCount > 0 && (
             <Link href="/work?tab=invoices" style={attentionRowStyle}>
               🔴 {overdueCount} invoice{overdueCount === 1 ? "" : "s"} due or overdue
             </Link>
@@ -166,21 +175,23 @@ export default async function Today() {
         </section>
       )}
 
-      <section style={cardStyle}>
-        <div style={sectionTitleStyle}>Outstanding payments</div>
-        <div style={{ fontSize: 26, fontWeight: 700, marginTop: 6 }}>
-          {formatCurrency(totalOwed, settings.currency)}{" "}
-          <span style={{ fontSize: 14, fontWeight: 400, color: "#888" }}>awaiting</span>
-        </div>
-        {overdueAmount > 0 && (
-          <div style={{ fontSize: 14, color: "#dc2626", marginTop: 2 }}>
-            {formatCurrency(overdueAmount, settings.currency)} overdue
+      {showEverything && (
+        <section style={cardStyle}>
+          <div style={sectionTitleStyle}>Outstanding payments</div>
+          <div style={{ fontSize: 26, fontWeight: 700, marginTop: 6 }}>
+            {formatCurrency(totalOwed, settings.currency)}{" "}
+            <span style={{ fontSize: 14, fontWeight: 400, color: "#888" }}>awaiting</span>
           </div>
-        )}
-        <Link href="/work?tab=invoices" style={cardLinkStyle}>
-          View invoices →
-        </Link>
-      </section>
+          {overdueAmount > 0 && (
+            <div style={{ fontSize: 14, color: "#dc2626", marginTop: 2 }}>
+              {formatCurrency(overdueAmount, settings.currency)} overdue
+            </div>
+          )}
+          <Link href="/work?tab=invoices" style={cardLinkStyle}>
+            View invoices →
+          </Link>
+        </section>
+      )}
     </main>
   );
 }
