@@ -136,7 +136,7 @@ export default async function Clients({ searchParams }) {
       )}
 
       {(customers || []).map((c) => (
-        <Link
+        <a
           key={c.id}
           href={`/clients/${c.id}`}
           style={{
@@ -163,7 +163,7 @@ export default async function Clients({ searchParams }) {
               {formatCurrency(owedByCustomer[c.id], settings.currency)} outstanding
             </div>
           )}
-        </Link>
+        </a>
       ))}
     </main>
   );
