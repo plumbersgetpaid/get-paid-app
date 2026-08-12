@@ -15,12 +15,17 @@ export default function BottomNav() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // The nav lives in the shared layout, which doesn't unmount between page
-  // navigations - so close the menu explicitly whenever the route changes,
-  // as a safety net alongside the explicit close-on-click handlers below.
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  // The login and setup pages shouldn't show the rest of the app's
+  // navigation at all - seeing "Work", "Calendar" etc still reachable
+  // from what's meant to be a logged-out screen is confusing, even though
+  // those pages aren't actually behind any login check yet themselves
+  if (pathname.startsWith("/login") || pathname.startsWith("/setup")) {
+    return null;
+  }
 
   return (
     <>
