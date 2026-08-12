@@ -5,14 +5,20 @@ import SettingsForm from "../components/SettingsForm";
 import LogoutButton from "../components/LogoutButton";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../lib/auth";
+import { canSeeEverything } from "../lib/permissions";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function Settings({ searchParams }) {
-  const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
+
+  const settings = await getBusinessSettings();
   const saved = searchParams?.saved === "1";
   const uploadError = searchParams?.error;
 
