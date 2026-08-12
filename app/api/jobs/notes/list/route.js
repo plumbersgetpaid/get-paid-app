@@ -21,5 +21,16 @@ export async function GET(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ notes: notes || [] });
+  const creatorIds = [...new Set((notes || []).map((n) => n.created_by).filter(Boolean))];
+  const { data: creators } = creatorIds.length
+    ? await db.from("team_members").select("id, name").in("id", creatorIds)
+    : { data: [] };
+  const creatorNameById = Object.fromEntries((creators || []).map((c) => [c.id, c.name]));
+
+  const notesWithCreator = (notes || []).map((n) => ({
+    ...n,
+    creator_name: creatorNameById[n.created_by] || null,
+  }));
+
+  return NextResponse.json({ notes: notesWithCreator });
 }
