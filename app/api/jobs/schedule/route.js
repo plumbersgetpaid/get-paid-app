@@ -32,7 +32,9 @@ export async function POST(req) {
   const db = supabaseAdmin();
 
   if (!force) {
-    // Look for another in-progress job whose scheduled time overlaps this one
+    // Look for every in-progress job whose scheduled time overlaps this one -
+    // with multi-week jobs now common, a single new booking can genuinely
+    // overlap several existing ones at once, not just the first found
     const { data: others } = await db
       .from("jobs")
       .select("id, job_type, customer_id, scheduled_start, scheduled_end")
@@ -40,18 +42,37 @@ export async function POST(req) {
       .not("scheduled_start", "is", null)
       .neq("id", jobId);
 
-    const conflict = (others || []).find((o) => {
+    const conflicts = (others || []).filter((o) => {
       const oStart = new Date(o.scheduled_start);
       const oEnd = new Date(o.scheduled_end);
       return start < oEnd && end > oStart;
     });
 
-    if (conflict) {
-      const { data: conflictCustomer } = await db
+    if (conflicts.length > 0) {
+      const conflictCustomerIds = [...new Set(conflicts.map((c) => c.customer_id))];
+      const { data: conflictCustomers } = await db
         .from("customers")
-        .select("name")
-        .eq("id", conflict.customer_id)
-        .single();
+        .select("id, name")
+        .in("id", conflictCustomerIds);
+      const conflictNameById = Object.fromEntries(
+        (conflictCustomers || []).map((c) => [c.id, c.name])
+      );
+
+      const describeConflict = (c) => {
+        const name = conflictNameById[c.customer_id] || "another customer";
+        const date = new Date(c.scheduled_start).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+        });
+        return `${name} (${c.job_type || "job"}, ${date})`;
+      };
+
+      const conflictMessage =
+        conflicts.length === 1
+          ? `This overlaps with ${describeConflict(conflicts[0])} already booked at that time.`
+          : `This overlaps with ${conflicts.length} jobs already booked in that period: ${conflicts
+              .map(describeConflict)
+              .join(", ")}.`;
 
       const redirectUrl = new URL(`/jobs/schedule/${jobId}`, req.url);
       redirectUrl.searchParams.set("startDate", startDate);
@@ -60,12 +81,7 @@ export async function POST(req) {
       redirectUrl.searchParams.set("durationUnit", durationUnit);
       redirectUrl.searchParams.set("location", location);
       redirectUrl.searchParams.set("includeWeekends", includeWeekends ? "1" : "0");
-      redirectUrl.searchParams.set(
-        "conflict",
-        `This overlaps with ${conflictCustomer?.name || "another job"} (${
-          conflict.job_type || "job"
-        }) already booked at that time.`
-      );
+      redirectUrl.searchParams.set("conflict", conflictMessage);
       return NextResponse.redirect(redirectUrl);
     }
   }
