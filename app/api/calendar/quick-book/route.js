@@ -6,10 +6,12 @@ import { computeScheduleEnd } from "../../../lib/duration";
 import { findExistingCustomer } from "../../../lib/findCustomer";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
+import { getCurrentTeamMember } from "../../../lib/auth";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
   const form = await req.formData();
   const customerName = (form.get("customerName") || "").toString().trim();
   const phone = (form.get("phone") || "").toString().trim();
@@ -95,8 +97,6 @@ export async function POST(req) {
     }
   }
 
-  // Reuse an existing customer matching by email/phone (or name) if one
-  // exists, rather than creating a duplicate every time
   const existingCustomer = await findExistingCustomer(db, {
     name: customerName,
     email,
@@ -108,7 +108,6 @@ export async function POST(req) {
   let customerPhone = phone || null;
   if (existingCustomer) {
     customerId = existingCustomer.id;
-    // Fill in any missing contact details, without overwriting what's there
     const updates = {};
     if (!existingCustomer.phone && phone) updates.phone = phone;
     if (!existingCustomer.email && email) updates.email = email;
@@ -140,6 +139,7 @@ export async function POST(req) {
     accepted_at: new Date().toISOString(),
     scheduled_start: start.toISOString(),
     scheduled_end: end.toISOString(),
+    created_by: currentMember?.id || null,
   });
 
   if (jobErr) {
@@ -147,7 +147,6 @@ export async function POST(req) {
     return NextResponse.json({ error: jobErr.message }, { status: 400 });
   }
 
-  // Let the client know, on whichever channels were requested
   if (notifyEmail || notifyWhatsapp) {
     const template = await getTemplate("booking_confirmation");
     const vars = {
