@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
+import { getCurrentTeamMember } from "../../../lib/auth";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
 
@@ -9,13 +10,15 @@ export default async function ReminderDetail({ params }) {
   const { reminderId } = params;
   const db = supabaseAdmin();
 
+  const currentMember = await getCurrentTeamMember();
+
   const { data: reminder, error } = await db
     .from("personal_events")
     .select("*")
     .eq("id", reminderId)
     .single();
 
-  if (error || !reminder) {
+  if (error || !reminder || reminder.created_by !== currentMember?.id) {
     notFound();
   }
 
