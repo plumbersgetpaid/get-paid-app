@@ -59,7 +59,7 @@ export async function POST(req) {
 
   let token;
   try {
-    token = buildSessionToken(newMember.id);
+    token = await buildSessionToken(newMember.id);
   } catch (e) {
     console.error("Session build error during setup:", e);
     return NextResponse.json(
