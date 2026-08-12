@@ -47,10 +47,23 @@ export default async function ScheduleJob({ params, searchParams }) {
     initialDate = existingStart.toISOString().slice(0, 10);
     initialTime = existingStart.toISOString().slice(11, 16);
     if (job.scheduled_end) {
-      const hours =
-        (new Date(job.scheduled_end) - existingStart) / (1000 * 60 * 60);
-      initialDuration = String(hours);
-      initialDurationUnit = "hours";
+      // The original weeks/days/hours choice is never actually stored -
+      // only the raw start/end timestamps are. Re-deriving this always as
+      // "hours" (e.g. "480 hours" for what was booked as "2 weeks") is
+      // technically correct but unreadable, so show it in whichever
+      // sensible unit divides the gap evenly, falling back to hours only
+      // if nothing bigger fits cleanly.
+      const hours = (new Date(job.scheduled_end) - existingStart) / (1000 * 60 * 60);
+      if (hours % (24 * 7) === 0) {
+        initialDuration = String(hours / (24 * 7));
+        initialDurationUnit = "weeks";
+      } else if (hours % 24 === 0) {
+        initialDuration = String(hours / 24);
+        initialDurationUnit = "days";
+      } else {
+        initialDuration = String(hours);
+        initialDurationUnit = "hours";
+      }
     }
   }
 
