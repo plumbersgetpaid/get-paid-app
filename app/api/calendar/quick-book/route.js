@@ -5,6 +5,7 @@ import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { findExistingCustomer } from "../../../lib/findCustomer";
 import { textToEmailHtml } from "../../../lib/emailHtml";
+import { getEmailFrom } from "../../../lib/emailFrom";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -45,18 +46,37 @@ export async function POST(req) {
       .eq("status", "in_progress")
       .not("scheduled_start", "is", null);
 
-    const conflict = (others || []).find((o) => {
+    const conflicts = (others || []).filter((o) => {
       const oStart = new Date(o.scheduled_start);
       const oEnd = new Date(o.scheduled_end);
       return start < oEnd && end > oStart;
     });
 
-    if (conflict) {
-      const { data: conflictCustomer } = await db
+    if (conflicts.length > 0) {
+      const conflictCustomerIds = [...new Set(conflicts.map((c) => c.customer_id))];
+      const { data: conflictCustomers } = await db
         .from("customers")
-        .select("name")
-        .eq("id", conflict.customer_id)
-        .single();
+        .select("id, name")
+        .in("id", conflictCustomerIds);
+      const conflictNameById = Object.fromEntries(
+        (conflictCustomers || []).map((c) => [c.id, c.name])
+      );
+
+      const describeConflict = (c) => {
+        const name = conflictNameById[c.customer_id] || "another customer";
+        const date = new Date(c.scheduled_start).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+        });
+        return `${name} (${c.job_type || "job"}, ${date})`;
+      };
+
+      const conflictMessage =
+        conflicts.length === 1
+          ? `This overlaps with ${describeConflict(conflicts[0])} already booked at that time.`
+          : `This overlaps with ${conflicts.length} jobs already booked in that period: ${conflicts
+              .map(describeConflict)
+              .join(", ")}.`;
 
       const redirectUrl = new URL("/calendar/quick-book", req.url);
       redirectUrl.searchParams.set("customerName", customerName);
@@ -70,12 +90,7 @@ export async function POST(req) {
       redirectUrl.searchParams.set("durationValue", String(durationValue));
       redirectUrl.searchParams.set("durationUnit", durationUnit);
       redirectUrl.searchParams.set("includeWeekends", includeWeekends ? "1" : "0");
-      redirectUrl.searchParams.set(
-        "conflict",
-        `This overlaps with ${conflictCustomer?.name || "another job"} (${
-          conflict.job_type || "job"
-        }) already booked at that time.`
-      );
+      redirectUrl.searchParams.set("conflict", conflictMessage);
       return NextResponse.redirect(redirectUrl);
     }
   }
@@ -157,7 +172,7 @@ export async function POST(req) {
           bodyText
         )}</div>`;
         await resend.emails.send({
-          from: `${settings.business_name} <onboarding@resend.dev>`,
+          from: getEmailFrom(settings.business_name),
           to: customerEmail,
           subject,
           html,
