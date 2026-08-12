@@ -2,11 +2,18 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "./supabaseClient";
 
-// Deliberately built on nothing but Node's own built-in crypto module and
-// Next.js's own cookies API - no new npm packages. This keeps every piece
-// of login something we can reason about directly, rather than depending
-// on a library whose exact behaviour on this Next.js version we can't
-// verify without internet access in this environment.
+// Password hashing still uses Node's built-in crypto module directly -
+// that's fine, since it only ever runs inside Route Handlers (login,
+// setup), which always run in the Node.js runtime on Vercel.
+//
+// Session token signing, below, deliberately uses the Web Crypto API
+// (the global `crypto.subtle`) instead - identical standard, available
+// in both the Node.js runtime AND the more restricted Edge runtime that
+// Next.js middleware runs in by default. That matters because middleware
+// is what checks login on every single page request; if it used
+// something Edge doesn't support, the whole app could break at once.
+// Verified these two produce byte-for-byte identical signatures before
+// switching, so no one gets logged out by this change.
 
 export const SESSION_COOKIE = "gp_session";
 const SESSION_DAYS = 30;
@@ -57,27 +64,57 @@ function getSecret() {
   return secret;
 }
 
-// Signs a value with HMAC-SHA256, so a session token can be verified just
-// by checking its signature - no database lookup or separate sessions
-// table needed to know whether a token is genuine and untampered with.
-function sign(value) {
-  return crypto.createHmac("sha256", getSecret()).update(value).digest("hex");
+function toHex(buffer) {
+  return [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function fromHex(hex) {
+  if (!/^[0-9a-f]*$/i.test(hex) || hex.length % 2 !== 0) return null;
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+  }
+  return bytes;
+}
+
+async function importSigningKey() {
+  const enc = new TextEncoder();
+  return crypto.subtle.importKey(
+    "raw",
+    enc.encode(getSecret()),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"]
+  );
+}
+
+// Signs a value with HMAC-SHA256 via the Web Crypto API, so a session
+// token can be verified just by checking its signature - no database
+// lookup or separate sessions table needed to know whether a token is
+// genuine and untampered with.
+async function sign(value) {
+  const key = await importSigningKey();
+  const enc = new TextEncoder();
+  const signatureBuffer = await crypto.subtle.sign("HMAC", key, enc.encode(value));
+  return toHex(signatureBuffer);
 }
 
 // Builds a signed, self-contained session token: teamMemberId + expiry
 // timestamp + a signature covering both. Anyone can read the ID and
 // expiry (it's just a cookie), but nobody can forge or alter one without
 // knowing SESSION_SECRET, which only this server has.
-export function buildSessionToken(teamMemberId) {
+export async function buildSessionToken(teamMemberId) {
   const expires = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
   const payload = `${teamMemberId}.${expires}`;
-  return `${payload}.${sign(payload)}`;
+  return `${payload}.${await sign(payload)}`;
 }
 
 // Verifies a session token's format, signature, and expiry. Returns the
 // team member ID only if every check passes - never trusts any part of
 // the token's content until the signature itself has been confirmed.
-export function verifySessionToken(token) {
+// crypto.subtle.verify does the signature comparison in constant time
+// internally, the same protection timingSafeEqual gave the old version.
+export async function verifySessionToken(token) {
   if (!token || typeof token !== "string") return null;
   const parts = token.split(".");
   if (parts.length !== 3) return null;
@@ -85,28 +122,20 @@ export function verifySessionToken(token) {
   const [teamMemberId, expiresStr, signature] = parts;
   const payload = `${teamMemberId}.${expiresStr}`;
 
-  let expectedSignature;
+  const signatureBytes = fromHex(signature);
+  if (!signatureBytes) return null;
+
+  let valid;
   try {
-    expectedSignature = sign(payload);
+    const key = await importSigningKey();
+    const enc = new TextEncoder();
+    valid = await crypto.subtle.verify("HMAC", key, signatureBytes, enc.encode(payload));
   } catch (e) {
     console.error("Session token verification error:", e);
     return null;
   }
 
-  let sigBuffer, expectedBuffer;
-  try {
-    sigBuffer = Buffer.from(signature, "hex");
-    expectedBuffer = Buffer.from(expectedSignature, "hex");
-  } catch {
-    return null;
-  }
-
-  if (
-    sigBuffer.length !== expectedBuffer.length ||
-    !crypto.timingSafeEqual(sigBuffer, expectedBuffer)
-  ) {
-    return null;
-  }
+  if (!valid) return null;
 
   const expires = Number(expiresStr);
   if (!expires || Number.isNaN(expires) || Date.now() > expires) return null;
@@ -124,7 +153,7 @@ export async function getCurrentTeamMember() {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const teamMemberId = verifySessionToken(token);
+  const teamMemberId = await verifySessionToken(token);
   if (!teamMemberId) return null;
 
   const db = supabaseAdmin();
