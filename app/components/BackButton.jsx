@@ -2,13 +2,27 @@
 
 import { useRouter } from "next/navigation";
 
-export default function BackButton({ fallbackHref = "/", style, children = "←" }) {
+export default function BackButton({
+  fallbackHref = "/",
+  style,
+  children = "←",
+  forceFresh = false,
+}) {
   const router = useRouter();
 
   return (
     <button
       type="button"
       onClick={() => {
+        if (forceFresh) {
+          // Skip Next's client-side "back" navigation entirely and do a
+          // real hard reload instead. Used on pages where something might
+          // have just changed that the destination needs to reflect
+          // straight away - Next's client-side router cache can otherwise
+          // serve a stale version of wherever you're going back to.
+          window.location.href = fallbackHref;
+          return;
+        }
         if (window.history.length > 1) {
           router.back();
         } else {
