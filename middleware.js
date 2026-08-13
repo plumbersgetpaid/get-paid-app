@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE } from "./app/lib/auth";
+import { supabaseAdmin } from "./app/lib/supabaseClient";
 
 const PUBLIC_PATHS = [
   "/login",
@@ -9,14 +10,16 @@ const PUBLIC_PATHS = [
   "/api/auth/logout",
 ];
 
-function isPublicPath(pathname) {
-  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+const OWNER_MANAGER_ONLY_PATHS = ["/jobs/recurring"];
+
+function matchesAny(pathname, list) {
+  return list.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
 
-  if (isPublicPath(pathname)) {
+  if (matchesAny(pathname, PUBLIC_PATHS)) {
     return NextResponse.next();
   }
 
@@ -27,6 +30,26 @@ export async function middleware(req) {
     if (!teamMemberId) {
       const loginUrl = new URL("/login", req.url);
       return NextResponse.redirect(loginUrl);
+    }
+
+    const db = supabaseAdmin();
+    const { data: member } = await db
+      .from("team_members")
+      .select("id, role")
+      .eq("id", teamMemberId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (!member) {
+      const loginUrl = new URL("/login", req.url);
+      const res = NextResponse.redirect(loginUrl);
+      res.cookies.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
+      return res;
+    }
+
+    const showEverything = member.role === "owner" || member.role === "manager";
+    if (!showEverything && matchesAny(pathname, OWNER_MANAGER_ONLY_PATHS)) {
+      return NextResponse.redirect(new URL("/", req.url));
     }
 
     return NextResponse.next();
