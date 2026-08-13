@@ -10,10 +10,20 @@ const PUBLIC_PATHS = [
   "/api/auth/logout",
 ];
 
-const OWNER_MANAGER_ONLY_PATHS = ["/jobs/recurring"];
+const OWNER_MANAGER_ONLY_PATHS = [
+  "/jobs/recurring",
+  "/jobs/new",
+  "/clients/new",
+  "/calendar/quick-book",
+];
+const OWNER_MANAGER_ONLY_PATTERNS = [/^\/clients\/[^/]+\/edit$/];
 
 function matchesAny(pathname, list) {
   return list.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
+function matchesAnyPattern(pathname, patterns) {
+  return patterns.some((re) => re.test(pathname));
 }
 
 export async function middleware(req) {
@@ -48,7 +58,10 @@ export async function middleware(req) {
     }
 
     const showEverything = member.role === "owner" || member.role === "manager";
-    if (!showEverything && matchesAny(pathname, OWNER_MANAGER_ONLY_PATHS)) {
+    const isProtectedPath =
+      matchesAny(pathname, OWNER_MANAGER_ONLY_PATHS) ||
+      matchesAnyPattern(pathname, OWNER_MANAGER_ONLY_PATTERNS);
+    if (!showEverything && isProtectedPath) {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
