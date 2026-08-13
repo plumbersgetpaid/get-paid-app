@@ -6,11 +6,15 @@ import { findExistingCustomer } from "../../../lib/findCustomer";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
   const form = await req.formData();
   const name = form.get("name");
   const phone = form.get("phone");
