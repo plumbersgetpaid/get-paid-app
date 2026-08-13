@@ -2,6 +2,8 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import CompleteJobForm from "./CompleteJobForm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,12 @@ export default async function CompleteJob({ params, searchParams }) {
     notFound();
   }
 
+  const currentMember = await getCurrentTeamMember();
+  const showEverything = canSeeEverything(currentMember);
+  if (!showEverything && job.assigned_to !== currentMember?.id) {
+    notFound();
+  }
+
   const { data: customer } = await db
     .from("customers")
     .select("name, email")
@@ -32,13 +40,10 @@ export default async function CompleteJob({ params, searchParams }) {
     .eq("important", true)
     .order("created_at", { ascending: false });
 
-  // Default due date: 14 days from today, in yyyy-mm-dd for the date input
   const defaultDueDate = new Date();
   defaultDueDate.setDate(defaultDueDate.getDate() + 14);
   const defaultDueDateStr = defaultDueDate.toISOString().slice(0, 10);
 
-  // If we're returning from an "Enhance with AI" round trip, keep whatever
-  // the tradie had entered instead of resetting back to the defaults
   const amountValue = searchParams?.amount || job.amount;
   const dueDateValue = searchParams?.dueDate || defaultDueDateStr;
   const noteValue = searchParams?.note || "";
@@ -54,6 +59,7 @@ export default async function CompleteJob({ params, searchParams }) {
       noteValue={noteValue}
       aiError={aiError}
       from={searchParams?.from || ""}
+      showEverything={showEverything}
     />
   );
 }
