@@ -1,6 +1,8 @@
 import { supabaseAdmin } from "../lib/supabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
+import { getCurrentTeamMember } from "../lib/auth";
+import { canSeeEverything } from "../lib/permissions";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
 
@@ -20,14 +22,20 @@ const STATUS_COLORS = {
 export default async function AllJobs({ searchParams }) {
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
+  const currentMember = await getCurrentTeamMember();
+  const showEverything = canSeeEverything(currentMember);
   const q = (searchParams?.q || "").trim().toLowerCase();
-  const status = searchParams?.status; // optional: filter to one status, or "unscheduled"
+  const status = searchParams?.status;
 
-  const { data: rawJobs } = await db
+  let jobsQuery = db
     .from("jobs")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(200);
+  if (!showEverything) {
+    jobsQuery = jobsQuery.eq("assigned_to", currentMember?.id || "__none__");
+  }
+  const { data: rawJobs } = await jobsQuery;
 
   let jobs = rawJobs || [];
 
@@ -127,7 +135,9 @@ export default async function AllJobs({ searchParams }) {
         <div key={job.id} style={cardStyle(STATUS_COLORS[job.status] || "#ccc")}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
-            <div style={{ fontWeight: 600 }}>{formatCurrency(job.amount, settings.currency)}</div>
+            {showEverything && (
+              <div style={{ fontWeight: 600 }}>{formatCurrency(job.amount, settings.currency)}</div>
+            )}
           </div>
           <div style={{ fontSize: 13, color: "#888" }}>
             {job.job_type || "Job"} ·{" "}
@@ -154,18 +164,18 @@ export default async function AllJobs({ searchParams }) {
           )}
           <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
             {job.status === "in_progress" && (
-              <Link href={`/jobs/schedule/${job.id}`} style={jobLinkStyle}>
+              <a href={`/jobs/schedule/${job.id}`} style={jobLinkStyle}>
                 Book / reschedule →
-              </Link>
+              </a>
             )}
-            {job.invoice_id && (
+            {job.invoice_id && showEverything && (
               <Link href={`/invoices/${job.invoice_id}`} style={jobLinkStyle}>
                 View invoice →
               </Link>
             )}
-            <Link href={`/jobs/notes/${job.id}`} style={jobLinkStyle}>
+            <a href={`/jobs/notes/${job.id}`} style={jobLinkStyle}>
               📝 Notes →
-            </Link>
+            </a>
           </div>
         </div>
       ))}
