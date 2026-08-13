@@ -1,11 +1,19 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
+import { getCurrentTeamMember } from "../../lib/auth";
+import { canSeeEverything } from "../../lib/permissions";
+import { notFound } from "next/navigation";
 import VoiceQuickBookAssist from "./VoiceQuickBookAssist";
 
 export const dynamic = "force-dynamic";
 
 export default async function QuickBook({ searchParams }) {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
+
   const settings = await getBusinessSettings();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
