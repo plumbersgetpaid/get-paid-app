@@ -355,13 +355,13 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
                     View invoice →
                   </Link>
                 )}
-                <Link
+                <a
                   href={`/jobs/notes/${job.id}`}
                   style={hasImportantNoteByJob[job.id] ? importantNoteLinkStyle : jobLinkStyle}
                 >
                   {hasImportantNoteByJob[job.id] ? "⚠️ " : "📝 "}Notes
                   {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
-                </Link>
+                </a>
               </div>
             </div>
           );
@@ -410,20 +410,20 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
               )
             )}
             <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <Link href={`/jobs/schedule/${job.id}`} style={secondaryLinkButtonStyle}>
+              <a href={`/jobs/schedule/${job.id}`} style={secondaryLinkButtonStyle}>
                 {job.scheduled_start ? "Reschedule" : "Book in"}
-              </Link>
-              <Link href={`/jobs/complete/${job.id}?from=work`} style={primaryLinkButtonStyle}>
+              </a>
+              <a href={`/jobs/complete/${job.id}?from=work`} style={primaryLinkButtonStyle}>
                 Mark done
-              </Link>
+              </a>
             </div>
-            <Link
+            <a
               href={`/jobs/notes/${job.id}`}
               style={hasImportantNoteByJob[job.id] ? importantPhotosLinkButtonStyle : photosLinkButtonStyle}
             >
               {hasImportantNoteByJob[job.id] ? "⚠️ " : "📝 "}Notes
               {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
-            </Link>
+            </a>
             {showEverything && (
               <AssignJobDropdown
                 jobId={job.id}
