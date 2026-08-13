@@ -1,7 +1,14 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const form = await req.formData();
   const keepId = form.get("keepId");
   const mergeId = form.get("mergeId");
@@ -12,10 +19,6 @@ export async function POST(req) {
 
   const db = supabaseAdmin();
 
-  // Verify both customers genuinely exist before touching anything - if
-  // either ID is stale (e.g. from clicking a button twice, or a merge
-  // that already happened), fail clearly here rather than silently doing
-  // nothing later
   const { data: keepCustomer, error: keepErr } = await db
     .from("customers")
     .select("*")
@@ -38,8 +41,6 @@ export async function POST(req) {
     );
   }
 
-  // Move every job (and therefore its invoices, photos, etc, which all key
-  // off job_id) from the duplicate onto the kept customer
   const { error: reassignErr } = await db
     .from("jobs")
     .update({ customer_id: keepId })
@@ -50,7 +51,6 @@ export async function POST(req) {
     return NextResponse.json({ error: reassignErr.message }, { status: 400 });
   }
 
-  // Also move any recurring job templates - these reference a customer too
   const { error: recurringReassignErr } = await db
     .from("recurring_jobs")
     .update({ customer_id: keepId })
@@ -61,8 +61,6 @@ export async function POST(req) {
     return NextResponse.json({ error: recurringReassignErr.message }, { status: 400 });
   }
 
-  // Fill in any missing contact details on the kept record from the
-  // duplicate, without overwriting anything already there
   const updates = {};
   if (!keepCustomer.phone && mergeCustomer.phone) updates.phone = mergeCustomer.phone;
   if (!keepCustomer.email && mergeCustomer.email) updates.email = mergeCustomer.email;
@@ -70,16 +68,10 @@ export async function POST(req) {
   if (Object.keys(updates).length > 0) {
     const { error: updateErr } = await db.from("customers").update(updates).eq("id", keepId);
     if (updateErr) {
-      // Not fatal to the merge itself - log it and carry on
       console.error("Merge contact-fill error:", updateErr);
     }
   }
 
-  // Now safe to remove the duplicate - explicitly check that a row was
-  // actually deleted, not just that the request didn't error. A delete
-  // that matches zero rows in Postgres "succeeds" with no error at all,
-  // which would otherwise let this silently do nothing and still report
-  // success back to the client.
   const { data: deletedRows, error: deleteErr } = await db
     .from("customers")
     .delete()
