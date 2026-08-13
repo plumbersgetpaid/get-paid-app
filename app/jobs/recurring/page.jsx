@@ -1,6 +1,9 @@
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency } from "../../lib/formatCurrency";
+import { getCurrentTeamMember } from "../../lib/auth";
+import { canSeeEverything } from "../../lib/permissions";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 
@@ -9,6 +12,11 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function RecurringJobs() {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
+
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
 
