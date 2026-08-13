@@ -6,6 +6,8 @@ import { canSeeEverything } from "../../../lib/permissions";
 import BackButton from "../../../components/BackButton";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export default async function EditClient({ params }) {
   const currentMember = await getCurrentTeamMember();
