@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
+import { getCurrentTeamMember } from "../../../../lib/auth";
+import { canSeeEverything } from "../../../../lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function GET(req) {
@@ -10,6 +12,18 @@ export async function GET(req) {
   }
 
   const db = supabaseAdmin();
+
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    const { data: jobForCheck } = await db
+      .from("jobs")
+      .select("assigned_to")
+      .eq("id", jobId)
+      .maybeSingle();
+    if (!jobForCheck || jobForCheck.assigned_to !== currentMember?.id) {
+      return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+    }
+  }
   const { data: notes, error } = await db
     .from("job_notes")
     .select("*")
