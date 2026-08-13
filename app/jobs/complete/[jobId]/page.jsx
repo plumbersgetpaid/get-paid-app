@@ -24,6 +24,14 @@ export default async function CompleteJob({ params, searchParams }) {
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
   if (!showEverything && job.assigned_to !== currentMember?.id) {
+    console.error("Complete-job access check failed:", {
+      jobId,
+      jobAssignedTo: job.assigned_to,
+      currentMemberId: currentMember?.id,
+      currentMemberEmail: currentMember?.email,
+      currentMemberRole: currentMember?.role,
+      currentMemberIsNull: currentMember === null,
+    });
     notFound();
   }
 
