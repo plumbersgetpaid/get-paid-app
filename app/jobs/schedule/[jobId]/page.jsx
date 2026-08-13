@@ -1,6 +1,8 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
 import BackButton from "../../../components/BackButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -22,6 +24,12 @@ export default async function ScheduleJob({ params, searchParams }) {
     notFound();
   }
 
+  const currentMember = await getCurrentTeamMember();
+  const showEverything = canSeeEverything(currentMember);
+  if (!showEverything && job.assigned_to !== currentMember?.id) {
+    notFound();
+  }
+
   const { data: customer } = await db
     .from("customers")
     .select("name, email, phone")
@@ -30,9 +38,6 @@ export default async function ScheduleJob({ params, searchParams }) {
 
   const settings = await getBusinessSettings();
 
-  // Defaults: tomorrow at 9am for 2 hours, unless we're coming back from a
-  // double-booking warning (keep what was entered) or the job's already
-  // got a scheduled time saved
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const defaultDate = tomorrow.toISOString().slice(0, 10);
@@ -47,12 +52,6 @@ export default async function ScheduleJob({ params, searchParams }) {
     initialDate = existingStart.toISOString().slice(0, 10);
     initialTime = existingStart.toISOString().slice(11, 16);
     if (job.scheduled_end) {
-      // The original weeks/days/hours choice is never actually stored -
-      // only the raw start/end timestamps are. Re-deriving this always as
-      // "hours" (e.g. "480 hours" for what was booked as "2 weeks") is
-      // technically correct but unreadable, so show it in whichever
-      // sensible unit divides the gap evenly, falling back to hours only
-      // if nothing bigger fits cleanly.
       const hours = (new Date(job.scheduled_end) - existingStart) / (1000 * 60 * 60);
       if (hours % (24 * 7) === 0) {
         initialDuration = String(hours / (24 * 7));
@@ -84,7 +83,8 @@ export default async function ScheduleJob({ params, searchParams }) {
       <section style={summaryCardStyle}>
         <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
         <div style={{ fontSize: 13, color: "#888" }}>
-          {job.job_type || "Job"} · {formatCurrency(job.amount, settings.currency)}
+          {job.job_type || "Job"}
+          {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>}
         </div>
         {job.time_confirmed === false && (
           <div style={{ fontSize: 12, color: "#b45309", marginTop: 6, fontWeight: 600 }}>
