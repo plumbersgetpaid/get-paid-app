@@ -1,9 +1,16 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
 import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurrence";
+import { getCurrentTeamMember } from "../../../../lib/auth";
+import { canSeeEverything } from "../../../../lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const form = await req.formData();
   const recurringId = form.get("recurringId");
   const jobType = (form.get("jobType") || "").toString().trim();
@@ -45,9 +52,6 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // If this recurring job's next occurrence is already due (today or
-  // earlier) and hasn't fired yet, don't make them wait for tomorrow's
-  // daily check - create it right now with whatever was just saved
   const todayStr = new Date().toISOString().slice(0, 10);
   if (updated?.active && updated.next_occurrence <= todayStr) {
     const settings = await getBusinessSettings();
