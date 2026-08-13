@@ -4,6 +4,8 @@ import BackButton from "../components/BackButton";
 import AccountForm from "./AccountForm";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export default async function Account() {
   const currentMember = await getCurrentTeamMember();
