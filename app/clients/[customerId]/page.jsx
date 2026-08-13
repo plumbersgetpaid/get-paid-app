@@ -9,6 +9,8 @@ import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeEverything } from "../../lib/permissions";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export default async function ClientDetail({ params }) {
   const { customerId } = params;
