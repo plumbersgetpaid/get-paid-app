@@ -14,6 +14,7 @@ export default function CompleteJobForm({
   noteValue,
   aiError,
   from,
+  showEverything,
 }) {
   const [amount, setAmount] = useState(amountValue);
   const [dueDate, setDueDate] = useState(dueDateValue);
@@ -54,10 +55,12 @@ export default function CompleteJobForm({
 
       const formData = new FormData();
       formData.append("jobId", job.id);
-      formData.append("amount", amount);
-      formData.append("dueDate", dueDate);
+      if (showEverything) {
+        formData.append("amount", amount);
+        formData.append("dueDate", dueDate);
+        formData.append("paymentLink", paymentLink);
+      }
       formData.append("note", note);
-      formData.append("paymentLink", paymentLink);
       formData.append("from", from || "");
       for (const f of compressedBefore) formData.append("beforePhotos", f);
       for (const f of compressedAfter) formData.append("afterPhotos", f);
@@ -95,8 +98,6 @@ export default function CompleteJobForm({
       });
       const data = await res.json().catch(() => ({}));
 
-      // Update the note text in place - no navigation, no reload, so any
-      // photos already selected stay exactly where they are
       if (data.note) setNote(data.note);
       if (data.error) setError(data.error + " - your note's been kept as you wrote it.");
       setBusy(false);
@@ -125,7 +126,8 @@ export default function CompleteJobForm({
       >
         <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
         <div style={{ fontSize: 13, color: "#888" }}>
-          {job.job_type || "Job"} · originally quoted £{job.amount}
+          {job.job_type || "Job"}
+          {showEverything && <> · originally quoted £{job.amount}</>}
         </div>
         {!customer?.email && (
           <div style={{ fontSize: 12, color: "#b45309", marginTop: 8 }}>
@@ -170,63 +172,73 @@ export default function CompleteJobForm({
       {error && <div style={aiErrorBoxStyle}>{error}</div>}
 
       <form onSubmit={handleMarkDone} style={{ display: "grid", gap: 12 }}>
-        <label style={{ fontSize: 13, color: "#666" }}>
-          Final invoice amount
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-            style={{ ...inputStyle, marginTop: 6 }}
-          />
-          <span style={{ fontSize: 12, color: "#888" }}>
-            Adjust this if more or less work was done than originally quoted -
-            the customer gets an invoice for this amount, not the quote.
-          </span>
-        </label>
+        {showEverything && (
+          <>
+            <label style={{ fontSize: 13, color: "#666" }}>
+              Final invoice amount
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+                style={{ ...inputStyle, marginTop: 6 }}
+              />
+              <span style={{ fontSize: 12, color: "#888" }}>
+                Adjust this if more or less work was done than originally quoted -
+                the customer gets an invoice for this amount, not the quote.
+              </span>
+            </label>
+
+            <label style={{ fontSize: 13, color: "#666" }}>
+              Payment due date
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                required
+                style={{ ...inputStyle, marginTop: 6 }}
+              />
+            </label>
+
+            <label style={{ fontSize: 13, color: "#666" }}>
+              Payment link (optional)
+              <input
+                type="url"
+                placeholder="https://... - e.g. a Stripe or GoCardless link for this amount"
+                value={paymentLink}
+                onChange={(e) => setPaymentLink(e.target.value)}
+                style={{ ...inputStyle, marginTop: 6 }}
+              />
+              <span style={{ fontSize: 12, color: "#888" }}>
+                Adds a "Pay now" button to the invoice, alongside your bank
+                details - the customer can use either. Leave blank for bank
+                details only, same as always.
+              </span>
+            </label>
+          </>
+        )}
 
         <label style={{ fontSize: 13, color: "#666" }}>
-          Payment due date
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            required
-            style={{ ...inputStyle, marginTop: 6 }}
-          />
-        </label>
-
-        <label style={{ fontSize: 13, color: "#666" }}>
-          Payment link (optional)
-          <input
-            type="url"
-            placeholder="https://... - e.g. a Stripe or GoCardless link for this amount"
-            value={paymentLink}
-            onChange={(e) => setPaymentLink(e.target.value)}
-            style={{ ...inputStyle, marginTop: 6 }}
-          />
-          <span style={{ fontSize: 12, color: "#888" }}>
-            Adds a "Pay now" button to the invoice, alongside your bank
-            details - the customer can use either. Leave blank for bank
-            details only, same as always.
-          </span>
-        </label>
-
-        <label style={{ fontSize: 13, color: "#666" }}>
-          Reason for price change (optional)
+          {showEverything ? "Reason for price change (optional)" : "Completion note (optional)"}
           <textarea
-            placeholder="e.g. found an extra leak while there, customer also asked for a tap swap"
+            placeholder={
+              showEverything
+                ? "e.g. found an extra leak while there, customer also asked for a tap swap"
+                : "e.g. anything worth noting about how the job went"
+            }
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
             style={{ ...inputStyle, marginTop: 6, resize: "vertical" }}
           />
-          <span style={{ fontSize: 12, color: "#888" }}>
-            Only shown to the customer if the final amount differs from the
-            quote. Jot it down rough - AI can tidy it up for you below.
-          </span>
+          {showEverything && (
+            <span style={{ fontSize: 12, color: "#888" }}>
+              Only shown to the customer if the final amount differs from the
+              quote. Jot it down rough - AI can tidy it up for you below.
+            </span>
+          )}
         </label>
 
         <button
@@ -276,7 +288,7 @@ export default function CompleteJobForm({
             Cancel
           </BackButton>
           <button type="submit" disabled={busy} style={submitButtonStyle}>
-            {busy ? busyLabel : "Mark done & send invoice"}
+            {busy ? busyLabel : showEverything ? "Mark done & send invoice" : "Mark done"}
           </button>
         </div>
       </form>
