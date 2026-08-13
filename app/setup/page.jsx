@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import SetupForm from "./SetupForm";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export default async function Setup() {
   const db = supabaseAdmin();
