@@ -1,9 +1,19 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
+import { getCurrentTeamMember } from "../../lib/auth";
+import { canSeeEverything } from "../../lib/permissions";
+import { notFound } from "next/navigation";
 import VoiceQuoteAssist from "./VoiceQuoteAssist";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewQuote() {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
+
   const settings = await getBusinessSettings();
   return (
     <main>
