@@ -1,11 +1,18 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
+import { getCurrentTeamMember } from "../../../../lib/auth";
+import { canSeeEverything } from "../../../../lib/permissions";
 import BackButton from "../../../../components/BackButton";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditRecurringJob({ params }) {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
+
   const { recurringId } = params;
   const db = supabaseAdmin();
 
