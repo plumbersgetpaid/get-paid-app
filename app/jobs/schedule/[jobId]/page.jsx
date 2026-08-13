@@ -9,6 +9,8 @@ import { notFound } from "next/navigation";
 import VoiceScheduleAssist from "./VoiceScheduleAssist";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export default async function ScheduleJob({ params, searchParams }) {
   const { jobId } = params;
