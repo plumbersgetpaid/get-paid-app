@@ -1,11 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "../../../lib/supabaseClient";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
 import BackButton from "../../../components/BackButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditClient({ params }) {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
+
   const { customerId } = params;
   const db = supabaseAdmin();
 
