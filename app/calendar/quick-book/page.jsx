@@ -7,6 +7,8 @@ import { notFound } from "next/navigation";
 import VoiceQuickBookAssist from "./VoiceQuickBookAssist";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export default async function QuickBook({ searchParams }) {
   const currentMember = await getCurrentTeamMember();
