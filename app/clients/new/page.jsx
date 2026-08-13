@@ -1,7 +1,17 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
+import { getCurrentTeamMember } from "../../lib/auth";
+import { canSeeEverything } from "../../lib/permissions";
+import { notFound } from "next/navigation";
 
-export default function NewClient() {
+export const dynamic = "force-dynamic";
+
+export default async function NewClient() {
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    notFound();
+  }
+
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
