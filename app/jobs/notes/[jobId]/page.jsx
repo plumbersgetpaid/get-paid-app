@@ -1,9 +1,13 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
 import BackButton from "../../../components/BackButton";
 import NotesSection from "./NotesSection";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export default async function JobNotes({ params }) {
   const { jobId } = params;
@@ -16,6 +20,12 @@ export default async function JobNotes({ params }) {
     .single();
 
   if (error || !job) {
+    notFound();
+  }
+
+  const currentMember = await getCurrentTeamMember();
+  const showEverything = canSeeEverything(currentMember);
+  if (!showEverything && job.assigned_to !== currentMember?.id) {
     notFound();
   }
 
