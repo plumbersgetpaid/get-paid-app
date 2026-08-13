@@ -322,7 +322,7 @@ export default async function Calendar({ searchParams }) {
               {entriesByDate[dateKey]
                 .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
                 .map((entry, i) => (
-                  <Link key={i} href={entry.href} style={entryRowStyle(entry.type)}>
+                  <a key={i} href={entry.href} style={entryRowStyle(entry.type)}>
                     <span style={{ marginRight: 8 }}>
                       {entry.type === "job" || entry.type === "job-late"
                         ? "🔧"
@@ -336,7 +336,7 @@ export default async function Calendar({ searchParams }) {
                       <span style={{ color: "#888", marginRight: 8 }}>{entry.time}</span>
                     )}
                     {entry.label}
-                  </Link>
+                  </a>
                 ))}
             </div>
           </section>
