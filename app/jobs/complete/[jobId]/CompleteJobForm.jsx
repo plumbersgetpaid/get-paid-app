@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import BackButton from "../../../components/BackButton";
 import { compressImage } from "../../../lib/compressImage";
 
@@ -152,15 +151,15 @@ export default function CompleteJobForm({
               )}
             </div>
           ))}
-          <Link href={`/jobs/notes/${job.id}`} style={importantNotesLinkStyle}>
+          <a href={`/jobs/notes/${job.id}`} style={importantNotesLinkStyle}>
             View all notes →
-          </Link>
+          </a>
         </section>
       )}
 
-      <Link href={`/jobs/notes/${job.id}`} style={notesButtonStyle}>
+      <a href={`/jobs/notes/${job.id}`} style={notesButtonStyle}>
         📝 Job notes (team only)
-      </Link>
+      </a>
 
       {aiError && (
         <div style={aiErrorBoxStyle}>
