@@ -166,12 +166,12 @@ export default async function ClientDetail({ params }) {
                   View invoice →
                 </Link>
               )}
-              <Link
+              <a
                 href={`/jobs/notes/${job.id}`}
                 style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
               >
                 📝 Notes{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
-              </Link>
+              </a>
             </div>
           </div>
         );
