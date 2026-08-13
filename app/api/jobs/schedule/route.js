@@ -5,6 +5,8 @@ import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -25,16 +27,25 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing scheduling details" }, { status: 400 });
   }
 
+  const db = supabaseAdmin();
+
+  const currentMember = await getCurrentTeamMember();
+  if (!canSeeEverything(currentMember)) {
+    const { data: existingJob } = await db
+      .from("jobs")
+      .select("assigned_to")
+      .eq("id", jobId)
+      .maybeSingle();
+    if (!existingJob || existingJob.assigned_to !== currentMember?.id) {
+      return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+    }
+  }
+
   const settings = await getBusinessSettings();
   const start = new Date(`${startDate}T${startTime}:00`);
   const end = computeScheduleEnd(start, durationValue, durationUnit, includeWeekends);
 
-  const db = supabaseAdmin();
-
   if (!force) {
-    // Look for every in-progress job whose scheduled time overlaps this one -
-    // with multi-week jobs now common, a single new booking can genuinely
-    // overlap several existing ones at once, not just the first found
     const { data: others } = await db
       .from("jobs")
       .select("id, job_type, customer_id, scheduled_start, scheduled_end")
@@ -92,8 +103,8 @@ export async function POST(req) {
       scheduled_start: start.toISOString(),
       scheduled_end: end.toISOString(),
       location: location || null,
-      time_confirmed: true, // a human has now explicitly set/confirmed the time
-      reminder_sent_at: null, // reset so the day-before reminder fires for the new time
+      time_confirmed: true,
+      reminder_sent_at: null,
     })
     .eq("id", jobId)
     .select("*")
@@ -104,7 +115,6 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // Let the client know, on whichever channels were requested
   if ((notifyEmail || notifyWhatsapp) && updatedJob) {
     const { data: customer } = await db
       .from("customers")
