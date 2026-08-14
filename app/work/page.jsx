@@ -394,9 +394,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
 
         return (
           <div key={job.id} style={cardStyle(isLate ? "#dc2626" : "#2563eb")}>
-            <a href={`/jobs/view/${job.id}`} style={customerNameLinkStyle}>
-              {job.customer_name}
-            </a>
+            <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
             <div style={{ fontSize: 13, color: "#888" }}>
               {job.job_type}
               {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>}
@@ -430,22 +428,12 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
                 </div>
               )
             )}
-            {showEverything && (
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <a href={`/jobs/schedule/${job.id}`} style={secondaryLinkButtonStyle}>
-                  {job.scheduled_start ? "Reschedule" : "Book in"}
-                </a>
-                <a href={`/jobs/complete/${job.id}?from=work`} style={primaryLinkButtonStyle}>
-                  Mark done
-                </a>
-              </div>
-            )}
             <a
-              href={`/jobs/notes/${job.id}`}
-              style={hasImportantNoteByJob[job.id] ? importantPhotosLinkButtonStyle : photosLinkButtonStyle}
+              href={`/jobs/view/${job.id}`}
+              style={hasImportantNoteByJob[job.id] ? importantViewJobButtonStyle : viewJobButtonStyle}
             >
-              {hasImportantNoteByJob[job.id] ? "⚠️ " : "📝 "}Notes
-              {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
+              {hasImportantNoteByJob[job.id] ? "⚠️ " : ""}View job
+              {noteCountByJob[job.id] ? ` · ${noteCountByJob[job.id]} note${noteCountByJob[job.id] === 1 ? "" : "s"}` : ""}
             </a>
             {showEverything && (
               <AssignAndShareControl
@@ -650,13 +638,6 @@ const jobLinkStyle = {
   textDecoration: "underline",
 };
 
-const customerNameLinkStyle = {
-  display: "block",
-  fontWeight: 600,
-  color: "#111",
-  textDecoration: "none",
-};
-
 const importantNoteLinkStyle = {
   ...jobLinkStyle,
   color: "#92400e",
@@ -723,48 +704,22 @@ const declineLinkStyle = {
   padding: 0,
 };
 
-const secondaryLinkButtonStyle = {
-  flex: 1,
-  textAlign: "center",
-  background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
-  padding: "8px 12px",
-  borderRadius: 8,
-  fontWeight: 600,
-  textDecoration: "none",
-  fontSize: 14,
-};
-
-const primaryLinkButtonStyle = {
-  flex: 1,
-  textAlign: "center",
-  background: "#16a34a",
-  color: "white",
-  border: "none",
-  padding: "8px 12px",
-  borderRadius: 8,
-  fontWeight: 600,
-  textDecoration: "none",
-  fontSize: 14,
-};
-
-const photosLinkButtonStyle = {
+const viewJobButtonStyle = {
   display: "block",
   textAlign: "center",
-  marginTop: 8,
+  marginTop: 10,
   background: "white",
   color: "#111",
   border: "1px solid #ddd",
-  padding: "8px 12px",
+  padding: "10px 12px",
   borderRadius: 8,
   fontWeight: 600,
   textDecoration: "none",
   fontSize: 14,
 };
 
-const importantPhotosLinkButtonStyle = {
-  ...photosLinkButtonStyle,
+const importantViewJobButtonStyle = {
+  ...viewJobButtonStyle,
   background: "#fef3c7",
   border: "1px solid #fde68a",
   color: "#92400e",
