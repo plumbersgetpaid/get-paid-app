@@ -3,6 +3,7 @@ import BackButton from "../../components/BackButton";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeEverything } from "../../lib/permissions";
+import { supabaseAdmin } from "../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import VoiceQuickBookAssist from "./VoiceQuickBookAssist";
 
@@ -15,6 +16,14 @@ export default async function QuickBook({ searchParams }) {
   if (!canSeeEverything(currentMember)) {
     notFound();
   }
+
+  const db = supabaseAdmin();
+  const { data: teamMembersData } = await db
+    .from("team_members")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name");
+  const teamMembers = teamMembersData || [];
 
   const settings = await getBusinessSettings();
   const tomorrow = new Date();
@@ -80,6 +89,22 @@ export default async function QuickBook({ searchParams }) {
           defaultValue={initialLocation}
           style={inputStyle}
         />
+
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Assign to
+          <select
+            name="assignedTo"
+            defaultValue={searchParams?.assignedTo || ""}
+            style={{ ...inputStyle, marginTop: 6 }}
+          >
+            <option value="">Unassigned</option>
+            {teamMembers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <label
           style={{
