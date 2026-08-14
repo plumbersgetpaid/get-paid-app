@@ -1,11 +1,16 @@
 import BottomNav from "./components/BottomNav";
+import { getCurrentTeamMember } from "./lib/auth";
+import { canSeeEverything } from "./lib/permissions";
 
 export const metadata = {
   title: "Get Paid",
   description: "Never chase an invoice by hand again",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const currentMember = await getCurrentTeamMember();
+  const showEverything = canSeeEverything(currentMember);
+
   return (
     <html lang="en">
       <body
@@ -19,7 +24,7 @@ export default function RootLayout({ children }) {
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px", paddingBottom: 110 }}>
           {children}
         </div>
-        <BottomNav />
+        <BottomNav showEverything={showEverything} />
       </body>
     </html>
   );
