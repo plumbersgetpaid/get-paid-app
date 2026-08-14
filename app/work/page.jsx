@@ -5,7 +5,8 @@ import { getTodayInLondon } from "../lib/today";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
-import MultiAssignControl from "../components/MultiAssignControl";
+import AssignJobDropdown from "../components/AssignJobDropdown";
+import ShareJobControl from "../components/ShareJobControl";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -235,16 +236,11 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   const { data: allShares } = jobIdsForShares.length
     ? await db.from("job_shares").select("job_id, team_member_id").in("job_id", jobIdsForShares)
     : { data: [] };
-  const assigneesByJob = {};
-  for (const j of jobs) {
-    const primary = teamMembers.find((m) => m.id === j.assigned_to);
-    assigneesByJob[j.id] = primary ? [primary] : [];
-  }
+  const sharesByJob = {};
   for (const s of allShares || []) {
     const member = teamMembers.find((m) => m.id === s.team_member_id);
     if (!member) continue;
-    const list = (assigneesByJob[s.job_id] ||= []);
-    if (!list.some((a) => a.id === member.id)) list.push(member);
+    (sharesByJob[s.job_id] ||= []).push(member);
   }
 
   jobs = jobs.map((j) => ({
@@ -442,12 +438,19 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
               {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
             </a>
             {showEverything && (
-              <MultiAssignControl
+              <AssignJobDropdown
                 jobId={job.id}
-                initialAssignees={assigneesByJob[job.id] || []}
+                assignedTo={job.assigned_to}
                 teamMembers={teamMembers}
               />
             )}
+            <ShareJobControl
+              jobId={job.id}
+              initialShares={sharesByJob[job.id] || []}
+              teamMembers={teamMembers.filter(
+                (m) => m.id !== job.assigned_to && m.id !== currentMember?.id
+              )}
+            />
           </div>
         );
       })}
