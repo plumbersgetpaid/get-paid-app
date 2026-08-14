@@ -8,7 +8,7 @@ export default function AccountForm({ currentName, currentEmail }) {
   const [nameError, setNameError] = useState(null);
   const [nameSaved, setNameSaved] = useState(false);
 
-  const [email, setEmail] = useState(currentEmail);
+  const [email, setEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
   const [emailError, setEmailError] = useState(null);
@@ -137,9 +137,9 @@ export default function AccountForm({ currentName, currentEmail }) {
 
       <section style={cardStyle}>
         <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>Your email</div>
-        <div style={{ fontSize: 12, color: "#888", marginBottom: 10 }}>
-          This is what you log in with - changing it takes effect the next
-          time you sign in, so make sure you'll remember the new one.
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: "#888" }}>Current email</div>
+          <div style={{ fontSize: 15 }}>{currentEmail}</div>
         </div>
         <form
           onSubmit={handleEmailSubmit}
@@ -154,6 +154,7 @@ export default function AccountForm({ currentName, currentEmail }) {
                 setEmail(e.target.value);
                 setEmailSaved(false);
               }}
+              placeholder="e.g. name@example.com"
               required
               style={inputStyle}
             />
@@ -171,6 +172,10 @@ export default function AccountForm({ currentName, currentEmail }) {
           </label>
           {emailError && <div style={errorBoxStyle}>{emailError}</div>}
           {emailSaved && <div style={successBoxStyle}>Email updated</div>}
+          <div style={{ fontSize: 12, color: "#888" }}>
+            This is what you log in with - changing it takes effect the
+            next time you sign in, so make sure you'll remember the new one.
+          </div>
           <button
             type="submit"
             disabled={emailBusy || !email.trim() || !emailPassword}
