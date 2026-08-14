@@ -129,13 +129,37 @@ export default async function Calendar({ searchParams }) {
         .order("due_date", { ascending: true })
     : { data: [] };
 
-  const { data: reminders } = await db
+  const { data: sharedReminderRows } = await db
+    .from("reminder_shares")
+    .select("reminder_id")
+    .eq("team_member_id", currentMember?.id || "__none__");
+  const sharedReminderIds = (sharedReminderRows || []).map((r) => r.reminder_id);
+
+  let remindersQuery = db
     .from("personal_events")
     .select("*")
-    .eq("created_by", currentMember?.id || "__none__")
     .gte("scheduled_start", `${rangeStartStr}T00:00:00`)
     .lte("scheduled_start", `${rangeEndStr}T23:59:59`)
     .order("scheduled_start", { ascending: true });
+  const meId = currentMember?.id || "__none__";
+  remindersQuery =
+    sharedReminderIds.length > 0
+      ? remindersQuery.or(`created_by.eq.${meId},id.in.(${sharedReminderIds.join(",")})`)
+      : remindersQuery.eq("created_by", meId);
+  const { data: reminders } = await remindersQuery;
+
+  const { data: allTeamMembers } = await db.from("team_members").select("id, name");
+  const teamMemberNameById = Object.fromEntries((allTeamMembers || []).map((m) => [m.id, m.name]));
+  const reminderIdsForSharing = (reminders || []).map((r) => r.id);
+  const { data: allReminderShares } = reminderIdsForSharing.length
+    ? await db.from("reminder_shares").select("reminder_id, team_member_id").in("reminder_id", reminderIdsForSharing)
+    : { data: [] };
+  const sharedNamesByReminder = {};
+  for (const s of allReminderShares || []) {
+    const name = teamMemberNameById[s.team_member_id];
+    if (!name) continue;
+    (sharedNamesByReminder[s.reminder_id] ||= []).push(name);
+  }
 
   const { data: recurringJobs } = await db
     .from("recurring_jobs")
@@ -218,13 +242,22 @@ export default async function Calendar({ searchParams }) {
   for (const reminder of reminders || []) {
     const dateKey = reminder.scheduled_start.slice(0, 10);
     if (!entriesByDate[dateKey]) entriesByDate[dateKey] = [];
+    const isMine = reminder.created_by === currentMember?.id;
+    const sharedNames = sharedNamesByReminder[reminder.id] || [];
+    let suffix = "";
+    if (isMine && sharedNames.length > 0) {
+      suffix = ` (also for ${sharedNames.join(", ")})`;
+    } else if (!isMine) {
+      const creatorName = teamMemberNameById[reminder.created_by] || "someone";
+      suffix = ` (set by ${creatorName})`;
+    }
     entriesByDate[dateKey].push({
       type: "reminder",
       time: new Date(reminder.scheduled_start).toLocaleTimeString("en-GB", {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      label: reminder.title,
+      label: `${reminder.title}${suffix}`,
       href: `/calendar/reminder/${reminder.id}`,
     });
   }
