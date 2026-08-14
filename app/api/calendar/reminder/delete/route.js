@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../../lib/auth";
+import { canAccessReminder } from "../../../../lib/reminderAccess";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -19,11 +20,16 @@ export async function POST(req) {
 
   const { data: existing } = await db
     .from("personal_events")
-    .select("created_by")
+    .select("*")
     .eq("id", reminderId)
     .maybeSingle();
 
-  if (!existing || existing.created_by !== currentMember.id) {
+  if (!existing) {
+    return NextResponse.json({ error: "Reminder not found" }, { status: 404 });
+  }
+
+  const hasAccess = await canAccessReminder(db, existing, currentMember.id);
+  if (!hasAccess) {
     return NextResponse.json({ error: "Reminder not found" }, { status: 404 });
   }
 
