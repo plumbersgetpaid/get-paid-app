@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
+import MultiAssignField from "../../../components/MultiAssignField";
 
 export default function NewRecurringJob() {
   const router = useRouter();
@@ -156,14 +157,9 @@ export default function NewRecurringJob() {
 
         <label style={{ fontSize: 13, color: "#666" }}>
           Assign to
-          <select name="assignedTo" defaultValue="" style={{ ...inputStyle, marginTop: 6 }}>
-            <option value="">Unassigned</option>
-            {teamMembers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <div style={{ marginTop: 6 }}>
+            <MultiAssignField teamMembers={teamMembers} />
+          </div>
         </label>
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
