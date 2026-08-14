@@ -7,6 +7,7 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
 import BackButton from "../../../components/BackButton";
 import AssignAndShareControl from "../../../components/AssignAndShareControl";
+import DeleteJobButton from "../../../components/DeleteJobButton";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -240,14 +241,7 @@ export default async function ViewJob({ params }) {
           </>
         )}
 
-        {showEverything && !existingInvoice && (
-          <form action="/api/jobs/delete" method="POST">
-            <input type="hidden" name="jobId" value={job.id} />
-            <button type="submit" style={deleteButtonStyle}>
-              🗑️ Delete this job permanently
-            </button>
-          </form>
-        )}
+        {showEverything && !existingInvoice && <DeleteJobButton jobId={job.id} />}
 
         {showEverything && existingInvoice && job.status !== "cancelled" && (
           <form action="/api/jobs/cancel" method="POST">
@@ -335,19 +329,6 @@ const primaryButtonStyle = {
   borderRadius: 10,
   fontWeight: 600,
   textDecoration: "none",
-  fontSize: 15,
-};
-
-const deleteButtonStyle = {
-  width: "100%",
-  display: "block",
-  textAlign: "center",
-  background: "white",
-  color: "#b91c1c",
-  border: "1px solid #fca5a5",
-  padding: "14px",
-  borderRadius: 10,
-  fontWeight: 600,
   fontSize: 15,
 };
 
