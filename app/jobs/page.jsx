@@ -3,6 +3,7 @@ import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
+import { filterJobsForMember } from "../lib/jobAccess";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
 
@@ -33,7 +34,7 @@ export default async function AllJobs({ searchParams }) {
     .order("created_at", { ascending: false })
     .limit(200);
   if (!showEverything) {
-    jobsQuery = jobsQuery.eq("assigned_to", currentMember?.id || "__none__");
+    jobsQuery = await filterJobsForMember(db, jobsQuery, currentMember?.id);
   }
   const { data: rawJobs } = await jobsQuery;
 
@@ -163,7 +164,7 @@ export default async function AllJobs({ searchParams }) {
             </div>
           )}
           <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-            {job.status === "in_progress" && (
+            {job.status === "in_progress" && showEverything && (
               <a href={`/jobs/schedule/${job.id}`} style={jobLinkStyle}>
                 Book / reschedule →
               </a>
