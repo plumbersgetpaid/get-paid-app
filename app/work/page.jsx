@@ -394,7 +394,9 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
 
         return (
           <div key={job.id} style={cardStyle(isLate ? "#dc2626" : "#2563eb")}>
-            <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
+            <a href={`/jobs/view/${job.id}`} style={customerNameLinkStyle}>
+              {job.customer_name}
+            </a>
             <div style={{ fontSize: 13, color: "#888" }}>
               {job.job_type}
               {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>}
@@ -646,6 +648,13 @@ const jobLinkStyle = {
   fontSize: 12,
   color: "#111",
   textDecoration: "underline",
+};
+
+const customerNameLinkStyle = {
+  display: "block",
+  fontWeight: 600,
+  color: "#111",
+  textDecoration: "none",
 };
 
 const importantNoteLinkStyle = {
