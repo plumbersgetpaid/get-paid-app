@@ -174,8 +174,8 @@ export default async function AllJobs({ searchParams }) {
                 View invoice →
               </Link>
             )}
-            <a href={`/jobs/notes/${job.id}`} style={jobLinkStyle}>
-              📝 Notes →
+            <a href={`/jobs/view/${job.id}`} style={jobLinkStyle}>
+              View job →
             </a>
           </div>
         </div>
