@@ -5,8 +5,7 @@ import { getTodayInLondon } from "../lib/today";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
-import AssignJobDropdown from "../components/AssignJobDropdown";
-import ShareJobControl from "../components/ShareJobControl";
+import AssignAndShareControl from "../components/AssignAndShareControl";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -194,6 +193,8 @@ async function QuotesTab({ db, settings, sub }) {
   );
 }
 
+// Formats how overdue a job is in plain language, e.g. "2 hours late" or
+// "3 days late" - a bare "Running late" didn't give any sense of scale
 function formatLateness(scheduledEnd) {
   const diffMs = new Date() - new Date(scheduledEnd);
   const diffHours = diffMs / (1000 * 60 * 60);
@@ -213,6 +214,9 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     : "today";
 
   let jobsQuery = db.from("jobs").select("*").eq("status", "in_progress");
+  // A subcontractor sees jobs they're directly assigned to, plus any
+  // job someone's shared with them - this filter runs on the server, in
+  // the query itself, not as a UI hide
   if (!showEverything) {
     jobsQuery = await filterJobsForMember(db, jobsQuery, currentMember?.id);
   }
@@ -224,6 +228,9 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     : { data: [] };
   const nameById = Object.fromEntries((customers || []).map((c) => [c.id, c.name]));
 
+  // Fetched for everyone, not just owner/manager - a subcontractor still
+  // benefits from seeing who booked a job even though only owner/manager
+  // get the reassignment dropdown further down
   const { data: teamMembersData } = await db
     .from("team_members")
     .select("id, name")
@@ -232,15 +239,29 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   const teamMembers = teamMembersData || [];
   const teamMemberNameById = Object.fromEntries(teamMembers.map((m) => [m.id, m.name]));
 
+  // One query for every job's shares, grouped by job - avoids a separate
+  // query per card
   const jobIdsForShares = jobs.map((j) => j.id);
   const { data: allShares } = jobIdsForShares.length
     ? await db.from("job_shares").select("job_id, team_member_id").in("job_id", jobIdsForShares)
     : { data: [] };
-  const sharesByJob = {};
+  // Combines the legacy single assigned_to column with job_shares into
+  // one list per job - from here on, assignment and sharing are the
+  // same thing: everyone in this list has full access to the job, no
+  // distinction between "the" assignee and "shared with" anyone else.
+  // Each entry is a fresh copy of the member object, not a shared
+  // reference to the same object reused across multiple jobs - matters
+  // for how this data gets serialized when passed to client components.
+  const assigneesByJob = {};
+  for (const j of jobs) {
+    const primary = teamMembers.find((m) => m.id === j.assigned_to);
+    assigneesByJob[j.id] = primary ? [{ ...primary }] : [];
+  }
   for (const s of allShares || []) {
     const member = teamMembers.find((m) => m.id === s.team_member_id);
     if (!member) continue;
-    (sharesByJob[s.job_id] ||= []).push(member);
+    const list = (assigneesByJob[s.job_id] ||= []);
+    if (!list.some((a) => a.id === member.id)) list.push({ ...member });
   }
 
   jobs = jobs.map((j) => ({
@@ -250,6 +271,10 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   }));
 
   const todayStr = getTodayInLondon();
+  // "Today" includes anything overdue too - a job scheduled for a day that's
+  // already passed and still not marked done was previously falling through
+  // every bucket (not today, not upcoming, not unscheduled) and vanishing
+  // from this screen entirely, even though it was still fully active
   const todayJobs = jobs
     .filter((j) => j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr)
     .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start));
@@ -263,6 +288,8 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     .select("id", { count: "exact", head: true })
     .in("status", ["complete", "invoiced", "paid"]);
 
+  // Only fetch the completed preview list when that sub-tab is actually
+  // being viewed - no point loading it every time
   let completedJobs = [];
   if (activeSub === "completed") {
     const { data: rawCompleted } = await db
@@ -438,19 +465,12 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
               {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
             </a>
             {showEverything && (
-              <AssignJobDropdown
+              <AssignAndShareControl
                 jobId={job.id}
-                assignedTo={job.assigned_to}
+                initialAssignees={assigneesByJob[job.id] || []}
                 teamMembers={teamMembers}
               />
             )}
-            <ShareJobControl
-              jobId={job.id}
-              initialShares={sharesByJob[job.id] || []}
-              teamMembers={teamMembers.filter(
-                (m) => m.id !== job.assigned_to && m.id !== currentMember?.id
-              )}
-            />
           </div>
         );
       })}
@@ -486,6 +506,8 @@ async function InvoicesTab({ db, settings, sub }) {
   const paidInvoices = paidInvoicesRaw || [];
   const paidTotal = paidInvoices.reduce((s, i) => s + Number(i.amount), 0);
 
+  // Only fetch customer/job details for paid invoices when that sub-tab is
+  // actually being viewed - no point loading it every time
   let paidPreview = [];
   if (activeSub === "paid") {
     const jobIds = [...new Set(paidInvoices.map((i) => i.job_id))];
