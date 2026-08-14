@@ -1,6 +1,9 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
+import { canAccessReminder } from "../../../lib/reminderAccess";
+import MultiAssignField from "../../../components/MultiAssignField";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
 
@@ -20,8 +23,34 @@ export default async function ReminderDetail({ params }) {
     .eq("id", reminderId)
     .single();
 
-  if (error || !reminder || reminder.created_by !== currentMember?.id) {
+  if (error || !reminder) {
     notFound();
+  }
+
+  const hasAccess = await canAccessReminder(db, reminder, currentMember?.id);
+  if (!hasAccess) {
+    notFound();
+  }
+
+  const isCreator = reminder.created_by === currentMember?.id;
+  const showEverything = canSeeEverything(currentMember);
+
+  let teamMembers = [];
+  let currentSharedIds = [];
+  if (showEverything && isCreator) {
+    const { data } = await db
+      .from("team_members")
+      .select("id, name")
+      .eq("is_active", true)
+      .neq("id", currentMember.id)
+      .order("name");
+    teamMembers = data || [];
+
+    const { data: shares } = await db
+      .from("reminder_shares")
+      .select("team_member_id")
+      .eq("reminder_id", reminderId);
+    currentSharedIds = (shares || []).map((s) => s.team_member_id);
   }
 
   const start = new Date(reminder.scheduled_start);
@@ -36,6 +65,12 @@ export default async function ReminderDetail({ params }) {
         <BackButton fallbackHref="/calendar" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Personal reminder</h1>
       </div>
+
+      {!isCreator && (
+        <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
+          Shared with you - anyone on this reminder can edit or delete it.
+        </p>
+      )}
 
       <form
         action="/api/calendar/reminder/update"
@@ -69,6 +104,19 @@ export default async function ReminderDetail({ params }) {
             style={inputStyle}
           />
         </label>
+
+        {showEverything && isCreator && (
+          <label style={{ fontSize: 13, color: "#666" }}>
+            Also share with
+            <div style={{ marginTop: 6 }}>
+              <MultiAssignField
+                teamMembers={teamMembers}
+                name="sharedWith"
+                initialSelectedIds={currentSharedIds}
+              />
+            </div>
+          </label>
+        )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <Link href="/calendar" style={cancelButtonStyle}>
