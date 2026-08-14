@@ -551,7 +551,7 @@ async function InvoicesTab({ db, settings, sub }) {
 
       {activeSub === "paid"
         ? activeList.map((inv) => (
-            <div key={inv.id} style={cardStyle("#16a34a")}>
+            <Link key={inv.id} href={`/invoices/${inv.id}`} style={paidInvoiceCardLinkStyle}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
                 <div style={{ fontWeight: 600 }}>
@@ -562,15 +562,21 @@ async function InvoicesTab({ db, settings, sub }) {
                 {inv.job_type || "Job"} · paid{" "}
                 {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString("en-GB") : ""}
               </div>
-            </div>
+            </Link>
           ))
         : activeList.slice(0, 8).map((inv) => (
             <div key={inv.invoice_id} style={cardStyle("#dc2626")}>
               <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
-              <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
+              <div style={{ fontSize: 13, color: "#888", marginBottom: 6 }}>
                 {formatCurrency(inv.amount, settings.currency)} · due {inv.due_date} ·{" "}
                 {inv.days_overdue > 0 ? `${inv.days_overdue} days overdue` : "not yet due"}
               </div>
+              <Link
+                href={`/invoices/${inv.invoice_id}`}
+                style={{ ...jobLinkStyle, display: "inline-block", marginBottom: 10 }}
+              >
+                View invoice →
+              </Link>
               <div style={{ display: "flex", gap: 8 }}>
                 <form action="/api/invoices/chase" method="POST" style={{ flex: 1 }}>
                   <input type="hidden" name="invoiceId" value={inv.invoice_id} />
@@ -671,6 +677,13 @@ const cardStyle = (color) => ({
   marginBottom: 8,
   borderLeft: `4px solid ${color}`,
 });
+
+const paidInvoiceCardLinkStyle = {
+  ...cardStyle("#16a34a"),
+  display: "block",
+  textDecoration: "none",
+  color: "inherit",
+};
 
 const primaryButtonStyle = {
   width: "100%",
