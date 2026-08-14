@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
@@ -10,6 +10,14 @@ export default function NewRecurringJob() {
   const today = new Date().toISOString().slice(0, 10);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+
+  useEffect(() => {
+    fetch("/api/team/list")
+      .then((res) => res.json())
+      .then((data) => setTeamMembers(data.teamMembers || []))
+      .catch((err) => console.error("Load team members error:", err));
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -31,10 +39,6 @@ export default function NewRecurringJob() {
         return;
       }
 
-      // Replace this page in the browser's history with the destination,
-      // so pressing Back afterwards skips straight past this form to
-      // wherever the tradie actually came from - not back into a
-      // just-submitted form
       router.replace("/jobs/recurring");
     } catch (err) {
       console.error("Recurring job save error:", err);
@@ -149,6 +153,18 @@ export default function NewRecurringJob() {
             WhatsApp
           </label>
         </div>
+
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Assign to
+          <select name="assignedTo" defaultValue="" style={{ ...inputStyle, marginTop: 6 }}>
+            <option value="">Unassigned</option>
+            {teamMembers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <Link href="/jobs/recurring" style={cancelButtonStyle}>
