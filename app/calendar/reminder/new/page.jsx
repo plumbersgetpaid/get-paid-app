@@ -1,6 +1,10 @@
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canSeeEverything } from "../../../lib/permissions";
+import { supabaseAdmin } from "../../../lib/supabaseClient";
+import MultiAssignField from "../../../components/MultiAssignField";
 import VoiceReminderAssist from "./VoiceReminderAssist";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +13,21 @@ export const revalidate = 0;
 
 export default async function NewReminder() {
   const settings = await getBusinessSettings();
+  const currentMember = await getCurrentTeamMember();
+  const showEverything = canSeeEverything(currentMember);
   const today = new Date().toISOString().slice(0, 10);
+
+  let teamMembers = [];
+  if (showEverything) {
+    const db = supabaseAdmin();
+    const { data } = await db
+      .from("team_members")
+      .select("id, name")
+      .eq("is_active", true)
+      .neq("id", currentMember.id)
+      .order("name");
+    teamMembers = data || [];
+  }
 
   return (
     <main>
@@ -49,6 +67,15 @@ export default async function NewReminder() {
           />
           Include weekends for this reminder
         </label>
+
+        {showEverything && teamMembers.length > 0 && (
+          <label style={{ fontSize: 13, color: "#666" }}>
+            Also share with (optional)
+            <div style={{ marginTop: 6 }}>
+              <MultiAssignField teamMembers={teamMembers} name="sharedWith" />
+            </div>
+          </label>
+        )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <Link href="/calendar" style={cancelButtonStyle}>
