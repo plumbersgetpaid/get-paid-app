@@ -13,6 +13,9 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 function deriveJobStatus(job, now) {
+  if (job.status === "cancelled") {
+    return { label: "Cancelled", color: "#6b7280" };
+  }
   if (["complete", "invoiced", "paid"].includes(job.status)) {
     return { label: "Finished", color: "#16a34a" };
   }
@@ -71,6 +74,10 @@ export default async function ViewJob({ params }) {
 
   const showEverything = canSeeEverything(currentMember);
   const settings = await getBusinessSettings();
+
+  const { data: existingInvoice } = showEverything
+    ? await db.from("invoices").select("id").eq("job_id", jobId).maybeSingle()
+    : { data: null };
 
   const { data: customer } = await db
     .from("customers")
@@ -232,7 +239,39 @@ export default async function ViewJob({ params }) {
             </a>
           </>
         )}
+
+        {showEverything && !existingInvoice && (
+          <form action="/api/jobs/delete" method="POST">
+            <input type="hidden" name="jobId" value={job.id} />
+            <button type="submit" style={deleteButtonStyle}>
+              🗑️ Delete this job permanently
+            </button>
+          </form>
+        )}
+
+        {showEverything && existingInvoice && job.status !== "cancelled" && (
+          <form action="/api/jobs/cancel" method="POST">
+            <input type="hidden" name="jobId" value={job.id} />
+            <input type="hidden" name="from" value="work" />
+            <button type="submit" style={cancelButtonStyle}>
+              📦 Cancel this job
+            </button>
+          </form>
+        )}
       </div>
+
+      {showEverything && !existingInvoice && (
+        <p style={{ fontSize: 12, color: "#888", marginTop: 8, textAlign: "center" }}>
+          No invoice attached yet, so this can be deleted outright - once
+          invoiced, it can only be cancelled, not removed.
+        </p>
+      )}
+      {showEverything && existingInvoice && job.status !== "cancelled" && (
+        <p style={{ fontSize: 12, color: "#888", marginTop: 8, textAlign: "center" }}>
+          This has an invoice attached, so it can't be deleted - cancelling
+          keeps it and the invoice on record, just out of your active jobs.
+        </p>
+      )}
     </main>
   );
 }
@@ -296,5 +335,31 @@ const primaryButtonStyle = {
   borderRadius: 10,
   fontWeight: 600,
   textDecoration: "none",
+  fontSize: 15,
+};
+
+const deleteButtonStyle = {
+  width: "100%",
+  display: "block",
+  textAlign: "center",
+  background: "white",
+  color: "#b91c1c",
+  border: "1px solid #fca5a5",
+  padding: "14px",
+  borderRadius: 10,
+  fontWeight: 600,
+  fontSize: 15,
+};
+
+const cancelButtonStyle = {
+  width: "100%",
+  display: "block",
+  textAlign: "center",
+  background: "white",
+  color: "#92400e",
+  border: "1px solid #fde68a",
+  padding: "14px",
+  borderRadius: 10,
+  fontWeight: 600,
   fontSize: 15,
 };
