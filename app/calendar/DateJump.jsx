@@ -75,7 +75,7 @@ const wrapperStyle = {
 };
 
 const dateJumpStyle = {
-  padding: "8px 10px",
+  padding: "10px 12px",
   borderRadius: 8,
   border: "1px solid #ddd",
   fontSize: 13,
@@ -90,7 +90,7 @@ const hintStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: "0 10px",
+  padding: "0 13px 0 12px",
   color: "#767676",
   fontSize: 13,
   pointerEvents: "none",
