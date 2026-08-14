@@ -22,7 +22,7 @@ export async function POST(req) {
   const frequencyUnit = form.get("frequencyUnit") || "months";
   const notifyEmail = form.get("notifyEmail") === "1";
   const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
-  const assignedTo = (form.get("assignedTo") || "").toString().trim() || null;
+  const desiredAssigneeIds = form.getAll("assignedTo").filter(Boolean);
   const nextOccurrenceTime = (form.get("nextOccurrenceTime") || "").toString().trim();
 
   if (!recurringId) {
@@ -30,6 +30,13 @@ export async function POST(req) {
   }
 
   const db = supabaseAdmin();
+
+  const { data: existingShares } = await db
+    .from("recurring_job_shares")
+    .select("team_member_id")
+    .eq("recurring_job_id", recurringId);
+  const currentShareIds = (existingShares || []).map((s) => s.team_member_id);
+
   const { data: updated, error } = await db
     .from("recurring_jobs")
     .update({
@@ -43,7 +50,7 @@ export async function POST(req) {
       notify_email: notifyEmail,
       notify_whatsapp: notifyWhatsapp,
       next_occurrence_time: nextOccurrenceTime || null,
-      assigned_to: assignedTo,
+      assigned_to: null,
     })
     .eq("id", recurringId)
     .select()
@@ -52,6 +59,27 @@ export async function POST(req) {
   if (error) {
     console.error("Update recurring job error:", error);
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  const currentSet = new Set(currentShareIds);
+  const desiredSet = new Set(desiredAssigneeIds);
+  const toAdd = [...desiredSet].filter((id) => !currentSet.has(id));
+  const toRemove = [...currentSet].filter((id) => !desiredSet.has(id));
+
+  if (toRemove.length > 0) {
+    await db
+      .from("recurring_job_shares")
+      .delete()
+      .eq("recurring_job_id", recurringId)
+      .in("team_member_id", toRemove);
+  }
+  if (toAdd.length > 0) {
+    const { error: addErr } = await db
+      .from("recurring_job_shares")
+      .insert(toAdd.map((teamMemberId) => ({ recurring_job_id: recurringId, team_member_id: teamMemberId })));
+    if (addErr) {
+      console.error("Recurring job assign update error:", addErr);
+    }
   }
 
   const todayStr = new Date().toISOString().slice(0, 10);
