@@ -190,23 +190,8 @@ export async function POST(req) {
 
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
-
-  const { data: jobForCheck } = await db
-    .from("jobs")
-    .select("assigned_to")
-    .eq("id", jobId)
-    .maybeSingle();
-
-  if (!jobForCheck) {
-    return NextResponse.json({ error: "Job not found" }, { status: 400 });
-  }
   if (!showEverything) {
-    if (jobForCheck.assigned_to !== currentMember?.id) {
-      return NextResponse.json({ error: "Not allowed" }, { status: 403 });
-    }
-    amountInput = null;
-    dueDateInput = null;
-    paymentLinkInput = "";
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
   const { data: job, error: jobErr } = await db
