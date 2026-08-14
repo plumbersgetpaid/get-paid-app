@@ -21,7 +21,7 @@ export async function POST(req) {
   const email = form.get("email");
   const jobType = form.get("jobType");
   const amount = form.get("amount");
-  const assignedTo = (form.get("assignedTo") || "").toString().trim() || null;
+  const assignedToIds = form.getAll("assignedTo").filter(Boolean);
   const location = (form.get("location") || "").toString().trim();
   const proposedDate = form.get("proposedDate");
   const proposedTime = form.get("proposedTime") || "09:00";
@@ -83,7 +83,7 @@ export async function POST(req) {
       scheduled_start: scheduledStart,
       scheduled_end: scheduledEnd,
       created_by: currentMember?.id || null,
-      assigned_to: assignedTo,
+      assigned_to: null,
     })
     .select()
     .single();
@@ -91,6 +91,15 @@ export async function POST(req) {
   if (jobErr) {
     console.error("Job insert error:", jobErr);
     return NextResponse.json({ error: jobErr.message }, { status: 400 });
+  }
+
+  if (assignedToIds.length > 0 && job) {
+    const { error: sharesErr } = await db
+      .from("job_shares")
+      .insert(assignedToIds.map((teamMemberId) => ({ job_id: job.id, team_member_id: teamMemberId })));
+    if (sharesErr) {
+      console.error("New quote assign error:", sharesErr);
+    }
   }
 
   if (email && process.env.RESEND_API_KEY) {
