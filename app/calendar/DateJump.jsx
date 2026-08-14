@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 function ymdToUTCDate(ymd) {
@@ -36,23 +37,32 @@ function computeOffset(range, todayStr, pickedStr) {
 
 export default function DateJump({ range, todayStr }) {
   const router = useRouter();
+  const [isEmpty, setIsEmpty] = useState(true);
 
   function handleChange(e) {
     const picked = e.target.value;
+    setIsEmpty(!picked);
     if (!picked) return;
     const offset = computeOffset(range, todayStr, picked);
     router.push(`/calendar?range=${range}&offset=${offset}`);
   }
 
   return (
-    <input
-      type="date"
-      onChange={handleChange}
-      aria-label="Jump to date"
-      style={dateJumpStyle}
-    />
+    <div style={wrapperStyle}>
+      <input
+        type="date"
+        onChange={handleChange}
+        aria-label="Jump to date"
+        style={dateJumpStyle}
+      />
+      {isEmpty && <span style={hintStyle}>dd/mm/yyyy</span>}
+    </div>
   );
 }
+
+const wrapperStyle = {
+  position: "relative",
+};
 
 const dateJumpStyle = {
   padding: "8px 10px",
@@ -62,4 +72,15 @@ const dateJumpStyle = {
   minWidth: 0,
   background: "white",
   color: "#111",
+};
+
+const hintStyle = {
+  position: "absolute",
+  left: 11,
+  top: "50%",
+  transform: "translateY(-50%)",
+  color: "#767676",
+  fontSize: 13,
+  pointerEvents: "none",
+  zIndex: 1,
 };
