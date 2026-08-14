@@ -12,6 +12,33 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
+function deriveJobStatus(job, now) {
+  if (["complete", "invoiced", "paid"].includes(job.status)) {
+    return { label: "Finished", color: "#16a34a" };
+  }
+  if (!job.scheduled_start) {
+    return { label: "Not yet booked in", color: "#b45309" };
+  }
+  const start = new Date(job.scheduled_start);
+  const end = job.scheduled_end ? new Date(job.scheduled_end) : null;
+  if (start > now) {
+    return { label: "Upcoming", color: "#2563eb" };
+  }
+  if (job.time_confirmed !== false && end && end < now) {
+    return { label: "Running late", color: "#dc2626" };
+  }
+  return { label: "In progress", color: "#16a34a" };
+}
+
+function describeCompletion(startIso, endIso) {
+  const start = new Date(startIso);
+  const end = new Date(endIso);
+  const sameDay = start.toDateString() === end.toDateString();
+  return sameDay
+    ? `~${end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} today`
+    : end.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
+
 function describeDuration(startIso, endIso) {
   const hours = (new Date(endIso) - new Date(startIso)) / (1000 * 60 * 60);
   if (hours <= 0) return null;
@@ -69,6 +96,11 @@ export default async function ViewJob({ params }) {
     job.scheduled_start && job.scheduled_end
       ? describeDuration(job.scheduled_start, job.scheduled_end)
       : null;
+  const completionLabel =
+    job.scheduled_start && job.scheduled_end
+      ? describeCompletion(job.scheduled_start, job.scheduled_end)
+      : null;
+  const status = deriveJobStatus(job, new Date());
 
   return (
     <main>
@@ -99,6 +131,11 @@ export default async function ViewJob({ params }) {
       <section style={cardStyle}>
         <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 10 }}>
           {job.job_type || "Job"}
+        </div>
+
+        <div style={rowStyle}>
+          <span style={rowLabelStyle}>Status</span>
+          <span style={{ ...rowValueStyle, color: status.color }}>{status.label}</span>
         </div>
 
         {job.location && (
@@ -138,6 +175,13 @@ export default async function ViewJob({ params }) {
           <div style={rowStyle}>
             <span style={rowLabelStyle}>⏱ Expected duration</span>
             <span style={rowValueStyle}>{durationLabel}</span>
+          </div>
+        )}
+
+        {completionLabel && (
+          <div style={rowStyle}>
+            <span style={rowLabelStyle}>🏁 Expected completion</span>
+            <span style={rowValueStyle}>{completionLabel}</span>
           </div>
         )}
 
