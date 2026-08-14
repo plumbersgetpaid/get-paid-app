@@ -1,12 +1,12 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
-import { canAccessJob } from "../../../lib/jobAccess";
+import { canSeeEverything } from "../../../lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
-  if (!currentMember) {
-    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
+  if (!canSeeEverything(currentMember)) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
   const form = await req.formData();
@@ -29,9 +29,8 @@ export async function POST(req) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
-  const hasAccess = await canAccessJob(db, job, currentMember);
-  if (!hasAccess) {
-    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  if (job.assigned_to === teamMemberId) {
+    await db.from("jobs").update({ assigned_to: null }).eq("id", jobId);
   }
 
   const { error } = await db
