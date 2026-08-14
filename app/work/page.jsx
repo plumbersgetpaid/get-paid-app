@@ -37,6 +37,9 @@ export default async function Work({ searchParams }) {
             Invoices
           </Link>
         )}
+        <Link href="/work?tab=reminders" style={tabStyle(tab === "reminders")}>
+          Reminders
+        </Link>
       </div>
 
       {tab === "quotes" && showEverything && (
@@ -53,6 +56,13 @@ export default async function Work({ searchParams }) {
       )}
       {tab === "invoices" && showEverything && (
         <InvoicesTab db={db} settings={settings} sub={searchParams?.sub || "overdue"} />
+      )}
+      {tab === "reminders" && (
+        <RemindersTab
+          db={db}
+          currentMember={currentMember}
+          sub={searchParams?.sub || "upcoming"}
+        />
       )}
     </main>
   );
@@ -608,7 +618,122 @@ async function InvoicesTab({ db, settings, sub }) {
   );
 }
 
-const tabRowStyle = { display: "flex", gap: 8, marginBottom: 16 };
+async function RemindersTab({ db, currentMember, sub }) {
+  const activeSub = ["upcoming", "past"].includes(sub) ? sub : "upcoming";
+  const meId = currentMember?.id || "__none__";
+
+  const { data: sharedReminderRows } = await db
+    .from("reminder_shares")
+    .select("reminder_id")
+    .eq("team_member_id", meId);
+  const sharedReminderIds = (sharedReminderRows || []).map((r) => r.reminder_id);
+
+  let remindersQuery = db
+    .from("personal_events")
+    .select("*")
+    .order("scheduled_start", { ascending: true });
+  remindersQuery =
+    sharedReminderIds.length > 0
+      ? remindersQuery.or(`created_by.eq.${meId},id.in.(${sharedReminderIds.join(",")})`)
+      : remindersQuery.eq("created_by", meId);
+  const { data: rawReminders } = await remindersQuery;
+  const reminders = rawReminders || [];
+
+  const { data: allTeamMembers } = await db.from("team_members").select("id, name");
+  const teamMemberNameById = Object.fromEntries((allTeamMembers || []).map((m) => [m.id, m.name]));
+  const reminderIds = reminders.map((r) => r.id);
+  const { data: allReminderShares } = reminderIds.length
+    ? await db
+        .from("reminder_shares")
+        .select("reminder_id, team_member_id")
+        .in("reminder_id", reminderIds)
+    : { data: [] };
+  const sharedNamesByReminder = {};
+  for (const s of allReminderShares || []) {
+    const name = teamMemberNameById[s.team_member_id];
+    if (!name) continue;
+    (sharedNamesByReminder[s.reminder_id] ||= []).push(name);
+  }
+
+  const now = new Date();
+  const upcomingReminders = reminders.filter((r) => new Date(r.scheduled_start) >= now);
+  const pastReminders = reminders
+    .filter((r) => new Date(r.scheduled_start) < now)
+    .reverse();
+
+  const activeList = activeSub === "upcoming" ? upcomingReminders : pastReminders;
+
+  const subTabs = [
+    { key: "upcoming", label: "Upcoming", count: upcomingReminders.length },
+    { key: "past", label: "Past", count: pastReminders.length },
+  ];
+
+  return (
+    <div>
+      <Link href="/calendar/reminder/new" style={addReminderButtonStyle}>
+        + Reminder
+      </Link>
+
+      <div style={subTabRowStyle}>
+        {subTabs.map((t) => (
+          <Link
+            key={t.key}
+            href={`/work?tab=reminders&sub=${t.key}`}
+            style={subTabStyle(activeSub === t.key)}
+          >
+            {t.label} ({t.count})
+          </Link>
+        ))}
+      </div>
+
+      {activeList.length === 0 && (
+        <p style={{ color: "#888" }}>
+          {activeSub === "upcoming" ? "No upcoming reminders." : "No past reminders."}
+        </p>
+      )}
+
+      {activeList.slice(0, 20).map((reminder) => {
+        const isMine = reminder.created_by === meId;
+        const sharedNames = sharedNamesByReminder[reminder.id] || [];
+        let suffix = "";
+        if (isMine && sharedNames.length > 0) {
+          suffix = ` · also for ${sharedNames.join(", ")}`;
+        } else if (!isMine) {
+          suffix = ` · set by ${teamMemberNameById[reminder.created_by] || "someone"}`;
+        }
+
+        return (
+          <Link
+            key={reminder.id}
+            href={`/calendar/reminder/${reminder.id}`}
+            style={reminderCardLinkStyle}
+          >
+            <div style={{ fontWeight: 600 }}>{reminder.title}</div>
+            <div style={{ fontSize: 13, color: "#888" }}>
+              📌{" "}
+              {new Date(reminder.scheduled_start).toLocaleString("en-GB", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+              {suffix}
+            </div>
+          </Link>
+        );
+      })}
+
+      {activeList.length > 20 && (
+        <p style={{ fontSize: 12, color: "#888", marginTop: 8 }}>
+          Showing the first 20 - check Calendar for anything further out.
+        </p>
+      )}
+    </div>
+  );
+}
+
+const tabRowStyle = { display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" };
 
 const tabStyle = (active) => ({
   flex: 1,
@@ -683,6 +808,28 @@ const paidInvoiceCardLinkStyle = {
   display: "block",
   textDecoration: "none",
   color: "inherit",
+};
+
+const reminderCardLinkStyle = {
+  ...cardStyle("#9333ea"),
+  display: "block",
+  textDecoration: "none",
+  color: "inherit",
+};
+
+const addReminderButtonStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  background: "#111",
+  color: "white",
+  border: "none",
+  borderRadius: 999,
+  padding: "10px 16px",
+  fontSize: 14,
+  fontWeight: 700,
+  textDecoration: "none",
+  marginBottom: 16,
 };
 
 const primaryButtonStyle = {
