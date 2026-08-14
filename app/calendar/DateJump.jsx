@@ -90,7 +90,7 @@ const hintStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: "0 13px 0 12px",
+  padding: "0 12px",
   color: "#767676",
   fontSize: 13,
   pointerEvents: "none",
