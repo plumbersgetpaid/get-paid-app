@@ -5,8 +5,7 @@ import { getTodayInLondon } from "../lib/today";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
-import AssignJobDropdown from "../components/AssignJobDropdown";
-import ShareJobControl from "../components/ShareJobControl";
+import MultiAssignControl from "../components/MultiAssignControl";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -236,11 +235,16 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   const { data: allShares } = jobIdsForShares.length
     ? await db.from("job_shares").select("job_id, team_member_id").in("job_id", jobIdsForShares)
     : { data: [] };
-  const sharesByJob = {};
+  const assigneesByJob = {};
+  for (const j of jobs) {
+    const primary = teamMembers.find((m) => m.id === j.assigned_to);
+    assigneesByJob[j.id] = primary ? [primary] : [];
+  }
   for (const s of allShares || []) {
     const member = teamMembers.find((m) => m.id === s.team_member_id);
     if (!member) continue;
-    (sharesByJob[s.job_id] ||= []).push(member);
+    const list = (assigneesByJob[s.job_id] ||= []);
+    if (!list.some((a) => a.id === member.id)) list.push(member);
   }
 
   jobs = jobs.map((j) => ({
@@ -438,19 +442,12 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
               {noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
             </a>
             {showEverything && (
-              <AssignJobDropdown
+              <MultiAssignControl
                 jobId={job.id}
-                assignedTo={job.assigned_to}
+                initialAssignees={assigneesByJob[job.id] || []}
                 teamMembers={teamMembers}
               />
             )}
-            <ShareJobControl
-              jobId={job.id}
-              initialShares={sharesByJob[job.id] || []}
-              teamMembers={teamMembers.filter(
-                (m) => m.id !== job.assigned_to && m.id !== currentMember?.id
-              )}
-            />
           </div>
         );
       })}
@@ -573,7 +570,8 @@ async function InvoicesTab({ db, settings, sub }) {
               </div>
             </div>
           ))
-        : activeList.slice(0, 8).map((inv) => (            <div key={inv.invoice_id} style={cardStyle("#dc2626")}>
+        : activeList.slice(0, 8).map((inv) => (
+            <div key={inv.invoice_id} style={cardStyle("#dc2626")}>
               <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
               <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
                 {formatCurrency(inv.amount, settings.currency)} · due {inv.due_date} ·{" "}
@@ -796,5 +794,3 @@ const accountantLinkStyle = {
   textDecoration: "none",
   marginBottom: 16,
 };
-
-            
