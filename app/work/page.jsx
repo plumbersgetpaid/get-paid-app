@@ -573,5 +573,228 @@ async function InvoicesTab({ db, settings, sub }) {
               </div>
             </div>
           ))
-        : activeList.slice(0, 8).map((inv) => (
+        : activeList.slice(0, 8).map((inv) => (            <div key={inv.invoice_id} style={cardStyle("#dc2626")}>
+              <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
+              <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
+                {formatCurrency(inv.amount, settings.currency)} · due {inv.due_date} ·{" "}
+                {inv.days_overdue > 0 ? `${inv.days_overdue} days overdue` : "not yet due"}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <form action="/api/invoices/chase" method="POST" style={{ flex: 1 }}>
+                  <input type="hidden" name="invoiceId" value={inv.invoice_id} />
+                  <button type="submit" style={secondaryButtonStyle}>
+                    Chase now
+                  </button>
+                </form>
+                <form action="/api/invoices/mark-paid" method="POST" style={{ flex: 1 }}>
+                  <input type="hidden" name="invoiceId" value={inv.invoice_id} />
+                  <button type="submit" style={primaryButtonStyle}>
+                    Mark as paid
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))}
+
+      {activeSub !== "paid" && activeList.length > 8 && (
+        <Link href="/invoices" style={viewAllLinkStyle}>
+          View all in {subTabs.find((t) => t.key === activeSub).label} →
+        </Link>
+      )}
+      {activeSub === "paid" && paidInvoices.length > 8 && (
+        <Link href="/invoices" style={viewAllLinkStyle}>
+          View all {paidInvoices.length} paid invoices →
+        </Link>
+      )}
+    </div>
+  );
+}
+
+const tabRowStyle = { display: "flex", gap: 8, marginBottom: 16 };
+
+const tabStyle = (active) => ({
+  flex: 1,
+  textAlign: "center",
+  padding: "10px 0",
+  borderRadius: 8,
+  textDecoration: "none",
+  fontWeight: 700,
+  fontSize: 14,
+  background: active ? "#111" : "white",
+  color: active ? "white" : "#111",
+});
+
+const subTabRowStyle = { display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" };
+
+const subTabStyle = (active) => ({
+  flex: "1 1 auto",
+  textAlign: "center",
+  padding: "8px 6px",
+  borderRadius: 8,
+  textDecoration: "none",
+  fontWeight: 600,
+  fontSize: 12,
+  whiteSpace: "nowrap",
+  background: active ? "#2563eb" : "white",
+  color: active ? "white" : "#111",
+  border: active ? "none" : "1px solid #ddd",
+});
+
+const jobLinkStyle = {
+  fontSize: 12,
+  color: "#111",
+  textDecoration: "underline",
+};
+
+const importantNoteLinkStyle = {
+  ...jobLinkStyle,
+  color: "#92400e",
+  fontWeight: 700,
+};
+
+const searchFormStyle = { display: "flex", gap: 8, marginBottom: 16 };
+
+const searchInputStyle = {
+  flex: 1,
+  padding: "12px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  fontSize: 15,
+};
+
+const searchButtonStyle = {
+  background: "#111",
+  color: "white",
+  border: "none",
+  padding: "12px 16px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 14,
+};
+
+const cardStyle = (color) => ({
+  background: "white",
+  borderRadius: 10,
+  padding: 14,
+  marginBottom: 8,
+  borderLeft: `4px solid ${color}`,
+});
+
+const primaryButtonStyle = {
+  width: "100%",
+  background: "#111",
+  color: "white",
+  border: "none",
+  padding: "8px 10px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 13,
+};
+
+const secondaryButtonStyle = {
+  width: "100%",
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "8px 10px",
+  borderRadius: 8,
+  fontWeight: 600,
+  fontSize: 13,
+};
+
+const declineLinkStyle = {
+  background: "none",
+  border: "none",
+  color: "#b91c1c",
+  fontSize: 12,
+  textDecoration: "underline",
+  cursor: "pointer",
+  padding: 0,
+};
+
+const secondaryLinkButtonStyle = {
+  flex: 1,
+  textAlign: "center",
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "8px 12px",
+  borderRadius: 8,
+  fontWeight: 600,
+  textDecoration: "none",
+  fontSize: 14,
+};
+
+const primaryLinkButtonStyle = {
+  flex: 1,
+  textAlign: "center",
+  background: "#16a34a",
+  color: "white",
+  border: "none",
+  padding: "8px 12px",
+  borderRadius: 8,
+  fontWeight: 600,
+  textDecoration: "none",
+  fontSize: 14,
+};
+
+const photosLinkButtonStyle = {
+  display: "block",
+  textAlign: "center",
+  marginTop: 8,
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "8px 12px",
+  borderRadius: 8,
+  fontWeight: 600,
+  textDecoration: "none",
+  fontSize: 14,
+};
+
+const importantPhotosLinkButtonStyle = {
+  ...photosLinkButtonStyle,
+  background: "#fef3c7",
+  border: "1px solid #fde68a",
+  color: "#92400e",
+};
+
+const viewAllLinkStyle = {
+  display: "block",
+  textAlign: "center",
+  fontSize: 13,
+  color: "#666",
+  textDecoration: "underline",
+  marginTop: 8,
+};
+
+const recurringButtonStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  background: "#fef3c7",
+  color: "#92400e",
+  border: "1px solid #fde68a",
+  borderRadius: 999,
+  padding: "8px 14px",
+  fontSize: 13,
+  fontWeight: 700,
+  textDecoration: "none",
+  marginBottom: 16,
+};
+
+const accountantLinkStyle = {
+  display: "block",
+  textAlign: "center",
+  background: "white",
+  color: "#111",
+  border: "1px solid #ddd",
+  padding: "12px",
+  borderRadius: 10,
+  fontWeight: 600,
+  fontSize: 13,
+  textDecoration: "none",
+  marginBottom: 16,
+};
+
             
