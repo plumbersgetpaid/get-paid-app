@@ -5,6 +5,7 @@ import { getTodayInLondon } from "../lib/today";
 import { advanceDate } from "../lib/duration";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
+import { filterJobsForMember } from "../lib/jobAccess";
 import DateJump from "./DateJump";
 import Link from "next/link";
 
@@ -108,7 +109,7 @@ export default async function Calendar({ searchParams }) {
     .lte("scheduled_start", `${rangeEndStr}T23:59:59`)
     .order("scheduled_start", { ascending: true });
   if (!showEverything) {
-    scheduledJobsQuery = scheduledJobsQuery.eq("assigned_to", currentMember?.id || "__none__");
+    scheduledJobsQuery = await filterJobsForMember(db, scheduledJobsQuery, currentMember?.id);
   }
   const { data: scheduledJobs } = await scheduledJobsQuery;
 
