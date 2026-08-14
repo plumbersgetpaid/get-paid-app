@@ -51,8 +51,10 @@ const dateInputStyle = {
 const hintStyle = {
   position: "absolute",
   left: 11,
-  top: "50%",
-  transform: "translateY(-50%)",
+  top: 0,
+  bottom: 0,
+  display: "flex",
+  alignItems: "center",
   color: "#767676",
   fontSize: 14,
   pointerEvents: "none",
