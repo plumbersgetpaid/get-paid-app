@@ -21,12 +21,7 @@ export default function DateFieldWithHint({ name, defaultValue, label }) {
           onChange={(e) => setValue(e.target.value)}
           style={dateInputStyle}
         />
-        {showCustomHint && !value && (
-          <span style={hintStyle}>
-            <span>dd/mm/yyyy</span>
-            <span>📅</span>
-          </span>
-        )}
+        {showCustomHint && !value && <span style={hintStyle}>dd/mm/yyyy</span>}
       </div>
     </label>
   );
@@ -63,8 +58,7 @@ const hintStyle = {
   inset: 0,
   display: "flex",
   alignItems: "center",
-  justifyContent: "space-between",
-  padding: "0 11px",
+  justifyContent: "center",
   color: "#767676",
   fontSize: 14,
   pointerEvents: "none",
