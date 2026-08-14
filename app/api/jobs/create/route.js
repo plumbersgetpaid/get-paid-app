@@ -21,6 +21,7 @@ export async function POST(req) {
   const email = form.get("email");
   const jobType = form.get("jobType");
   const amount = form.get("amount");
+  const assignedTo = (form.get("assignedTo") || "").toString().trim() || null;
   const location = (form.get("location") || "").toString().trim();
   const proposedDate = form.get("proposedDate");
   const proposedTime = form.get("proposedTime") || "09:00";
@@ -82,6 +83,7 @@ export async function POST(req) {
       scheduled_start: scheduledStart,
       scheduled_end: scheduledEnd,
       created_by: currentMember?.id || null,
+      assigned_to: assignedTo,
     })
     .select()
     .single();
