@@ -5,6 +5,7 @@ import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeEverything } from "../../lib/permissions";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { notFound } from "next/navigation";
+import MultiAssignField from "../../components/MultiAssignField";
 import VoiceQuoteAssist from "./VoiceQuoteAssist";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function NewQuote() {
+  // Also enforced centrally in middleware - defense in depth
   const currentMember = await getCurrentTeamMember();
   if (!canSeeEverything(currentMember)) {
     notFound();
@@ -113,14 +115,9 @@ export default async function NewQuote() {
 
         <label style={{ fontSize: 13, color: "#666" }}>
           Assign to
-          <select name="assignedTo" defaultValue="" style={{ ...inputStyle, marginTop: 6 }}>
-            <option value="">Unassigned</option>
-            {teamMembers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <div style={{ marginTop: 6 }}>
+            <MultiAssignField teamMembers={teamMembers} />
+          </div>
         </label>
 
         <div style={{ display: "flex", gap: 10 }}>
