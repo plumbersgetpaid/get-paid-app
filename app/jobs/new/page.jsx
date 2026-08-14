@@ -3,6 +3,7 @@ import BackButton from "../../components/BackButton";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeEverything } from "../../lib/permissions";
+import { supabaseAdmin } from "../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import VoiceQuoteAssist from "./VoiceQuoteAssist";
 
@@ -15,6 +16,14 @@ export default async function NewQuote() {
   if (!canSeeEverything(currentMember)) {
     notFound();
   }
+
+  const db = supabaseAdmin();
+  const { data: teamMembersData } = await db
+    .from("team_members")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name");
+  const teamMembers = teamMembersData || [];
 
   const settings = await getBusinessSettings();
   return (
@@ -101,6 +110,18 @@ export default async function NewQuote() {
             </label>
           </div>
         </details>
+
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Assign to
+          <select name="assignedTo" defaultValue="" style={{ ...inputStyle, marginTop: 6 }}>
+            <option value="">Unassigned</option>
+            {teamMembers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <div style={{ display: "flex", gap: 10 }}>
           <Link href="/" style={cancelButtonStyle}>
