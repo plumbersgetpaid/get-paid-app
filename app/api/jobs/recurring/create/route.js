@@ -26,7 +26,7 @@ export async function POST(req) {
   const confirmTimeLater = form.get("confirmTimeLater") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
   const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
-  const assignedTo = (form.get("assignedTo") || "").toString().trim() || null;
+  const assignedToIds = form.getAll("assignedTo").filter(Boolean);
 
   if (!name || !startDate) {
     return NextResponse.json({ error: "Missing customer name or start date" }, { status: 400 });
@@ -74,7 +74,7 @@ export async function POST(req) {
       notify_email: notifyEmail,
       notify_whatsapp: notifyWhatsapp,
       created_by: currentMember?.id || null,
-      assigned_to: assignedTo,
+      assigned_to: null,
     })
     .select()
     .single();
@@ -82,6 +82,20 @@ export async function POST(req) {
   if (error) {
     console.error("Recurring job insert error:", error);
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (assignedToIds.length > 0 && newRecurring) {
+    const { error: sharesErr } = await db
+      .from("recurring_job_shares")
+      .insert(
+        assignedToIds.map((teamMemberId) => ({
+          recurring_job_id: newRecurring.id,
+          team_member_id: teamMemberId,
+        }))
+      );
+    if (sharesErr) {
+      console.error("Recurring job assign error:", sharesErr);
+    }
   }
 
   const todayStr = new Date().toISOString().slice(0, 10);
