@@ -428,14 +428,16 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
                 </div>
               )
             )}
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <a href={`/jobs/schedule/${job.id}`} style={secondaryLinkButtonStyle}>
-                {job.scheduled_start ? "Reschedule" : "Book in"}
-              </a>
-              <a href={`/jobs/complete/${job.id}?from=work`} style={primaryLinkButtonStyle}>
-                Mark done
-              </a>
-            </div>
+            {showEverything && (
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <a href={`/jobs/schedule/${job.id}`} style={secondaryLinkButtonStyle}>
+                  {job.scheduled_start ? "Reschedule" : "Book in"}
+                </a>
+                <a href={`/jobs/complete/${job.id}?from=work`} style={primaryLinkButtonStyle}>
+                  Mark done
+                </a>
+              </div>
+            )}
             <a
               href={`/jobs/notes/${job.id}`}
               style={hasImportantNoteByJob[job.id] ? importantPhotosLinkButtonStyle : photosLinkButtonStyle}
