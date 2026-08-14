@@ -2,7 +2,6 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 
-// Escapes a value for safe inclusion in a CSV cell
 function csvCell(value) {
   const str = String(value ?? "");
   if (/[",\n]/.test(str)) {
@@ -15,16 +14,21 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");
+  const invoiceId = searchParams.get("invoiceId");
 
   const db = supabaseAdmin();
   const settings = await getBusinessSettings();
 
   let query = db.from("invoices").select("*").order("created_at", { ascending: true });
-  if (start) query = query.gte("created_at", start);
-  if (end) {
-    const endDate = new Date(end);
-    endDate.setDate(endDate.getDate() + 1);
-    query = query.lt("created_at", endDate.toISOString().slice(0, 10));
+  if (invoiceId) {
+    query = query.eq("id", invoiceId);
+  } else {
+    if (start) query = query.gte("created_at", start);
+    if (end) {
+      const endDate = new Date(end);
+      endDate.setDate(endDate.getDate() + 1);
+      query = query.lt("created_at", endDate.toISOString().slice(0, 10));
+    }
   }
 
   const { data: invoices } = await query;
@@ -84,7 +88,9 @@ export async function GET(req) {
   }
 
   const csv = lines.join("\r\n");
-  const filename = `invoices${start ? `-${start}` : ""}${end ? `-to-${end}` : ""}.csv`;
+  const filename = invoiceId
+    ? `${formatInvoiceNumber(rows[0]?.invoice_number ?? "")}.csv`
+    : `invoices${start ? `-${start}` : ""}${end ? `-to-${end}` : ""}.csv`;
 
   return new Response(csv, {
     status: 200,
