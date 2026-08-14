@@ -18,6 +18,7 @@ const STATUS_COLORS = {
   complete: "#2563eb",
   invoiced: "#dc2626",
   paid: "#16a34a",
+  cancelled: "#6b7280",
 };
 
 export default async function AllJobs({ searchParams }) {
