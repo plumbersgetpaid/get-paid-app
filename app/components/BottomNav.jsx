@@ -11,7 +11,7 @@ const TABS = [
   { href: "/clients", icon: "👤", label: "Clients" },
 ];
 
-export default function BottomNav() {
+export default function BottomNav({ showEverything }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -19,10 +19,6 @@ export default function BottomNav() {
     setMenuOpen(false);
   }, [pathname]);
 
-  // The login and setup pages shouldn't show the rest of the app's
-  // navigation at all - seeing "Work", "Calendar" etc still reachable
-  // from what's meant to be a logged-out screen is confusing, even though
-  // those pages aren't actually behind any login check yet themselves
   if (pathname.startsWith("/login") || pathname.startsWith("/setup")) {
     return null;
   }
@@ -44,16 +40,20 @@ export default function BottomNav() {
         </button>
         {menuOpen && (
           <div style={fabMenuStyle}>
-            <Link href="/jobs/new" style={fabMenuItemStyle} onClick={() => setMenuOpen(false)}>
-              📝 New quote
-            </Link>
-            <Link
-              href="/calendar/quick-book"
-              style={fabMenuItemStyle}
-              onClick={() => setMenuOpen(false)}
-            >
-              🔧 Quick book a job
-            </Link>
+            {showEverything && (
+              <Link href="/jobs/new" style={fabMenuItemStyle} onClick={() => setMenuOpen(false)}>
+                📝 New quote
+              </Link>
+            )}
+            {showEverything && (
+              <Link
+                href="/calendar/quick-book"
+                style={fabMenuItemStyle}
+                onClick={() => setMenuOpen(false)}
+              >
+                🔧 Quick book a job
+              </Link>
+            )}
             <Link
               href="/calendar/reminder/new"
               style={fabMenuItemStyle}
@@ -61,13 +61,15 @@ export default function BottomNav() {
             >
               📌 Personal reminder
             </Link>
-            <Link
-              href="/jobs/recurring/new"
-              style={fabMenuItemStyle}
-              onClick={() => setMenuOpen(false)}
-            >
-              🔁 Recurring job
-            </Link>
+            {showEverything && (
+              <Link
+                href="/jobs/recurring/new"
+                style={fabMenuItemStyle}
+                onClick={() => setMenuOpen(false)}
+              >
+                🔁 Recurring job
+              </Link>
+            )}
           </div>
         )}
       </div>
