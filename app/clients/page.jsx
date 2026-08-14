@@ -4,6 +4,7 @@ import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
+import { getSharedJobIds } from "../lib/jobAccess";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -28,7 +29,13 @@ export default async function Clients({ searchParams }) {
       .from("jobs")
       .select("customer_id")
       .eq("assigned_to", currentMember?.id || "__none__");
-    const allowedCustomerIds = new Set((assignedJobs || []).map((j) => j.customer_id));
+    const sharedJobIds = await getSharedJobIds(db, currentMember?.id);
+    const { data: sharedJobs } = sharedJobIds.length
+      ? await db.from("jobs").select("customer_id").in("id", sharedJobIds)
+      : { data: [] };
+    const allowedCustomerIds = new Set(
+      [...(assignedJobs || []), ...(sharedJobs || [])].map((j) => j.customer_id)
+    );
     customers = customers.filter((c) => allowedCustomerIds.has(c.id));
   }
 
