@@ -7,6 +7,7 @@ import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency } from "../../lib/formatCurrency";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeEverything } from "../../lib/permissions";
+import { filterJobsForMember } from "../../lib/jobAccess";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -35,7 +36,7 @@ export default async function ClientDetail({ params }) {
     .eq("customer_id", customerId)
     .order("created_at", { ascending: false });
   if (!showEverything) {
-    jobsQuery = jobsQuery.eq("assigned_to", currentMember?.id || "__none__");
+    jobsQuery = await filterJobsForMember(db, jobsQuery, currentMember?.id);
   }
   const { data: jobs } = await jobsQuery;
 
@@ -169,10 +170,10 @@ export default async function ClientDetail({ params }) {
                 </Link>
               )}
               <a
-                href={`/jobs/notes/${job.id}`}
+                href={`/jobs/view/${job.id}`}
                 style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
               >
-                📝 Notes{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]})` : ""}
+                View job{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]} note${noteCountByJob[job.id] === 1 ? "" : "s"})` : ""}
               </a>
             </div>
           </div>
