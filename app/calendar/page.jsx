@@ -290,9 +290,11 @@ export default async function Calendar({ searchParams }) {
       <h1 style={{ fontSize: 20, margin: 0 }}>Calendar</h1>
 
       <div style={{ display: "flex", gap: 10, margin: "16px 0" }}>
-        <Link href="/calendar/quick-book" style={quickBookButtonStyle}>
-          + Quick book
-        </Link>
+        {showEverything && (
+          <Link href="/calendar/quick-book" style={quickBookButtonStyle}>
+            + Quick book
+          </Link>
+        )}
         <Link href="/calendar/reminder/new" style={reminderButtonStyle}>
           + Reminder
         </Link>
