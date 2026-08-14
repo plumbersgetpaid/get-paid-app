@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function DateFieldWithHint({ name, defaultValue, label }) {
   const [value, setValue] = useState(defaultValue || "");
+  const [showCustomHint, setShowCustomHint] = useState(false);
+
+  useEffect(() => {
+    setShowCustomHint(window.matchMedia("(hover: none) and (pointer: coarse)").matches);
+  }, []);
 
   return (
     <label style={labelStyle}>
@@ -16,7 +21,12 @@ export default function DateFieldWithHint({ name, defaultValue, label }) {
           onChange={(e) => setValue(e.target.value)}
           style={dateInputStyle}
         />
-        {!value && <span style={hintStyle}>dd/mm/yyyy</span>}
+        {showCustomHint && !value && (
+          <span style={hintStyle}>
+            <span>dd/mm/yyyy</span>
+            <span>📅</span>
+          </span>
+        )}
       </div>
     </label>
   );
@@ -50,11 +60,11 @@ const dateInputStyle = {
 
 const hintStyle = {
   position: "absolute",
-  left: 11,
-  top: 0,
-  bottom: 0,
+  inset: 0,
   display: "flex",
   alignItems: "center",
+  justifyContent: "space-between",
+  padding: "0 10px",
   color: "#767676",
   fontSize: 14,
   pointerEvents: "none",
