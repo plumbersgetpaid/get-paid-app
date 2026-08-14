@@ -342,6 +342,7 @@ export default async function Calendar({ searchParams }) {
 
       {sortedDates.map((dateKey) => {
         const isToday = dateKey === todayStr;
+        const isPast = dateKey < todayStr;
         const dateLabel = new Date(`${dateKey}T00:00:00`).toLocaleDateString("en-GB", {
           weekday: "long",
           day: "numeric",
@@ -349,8 +350,8 @@ export default async function Calendar({ searchParams }) {
         });
 
         return (
-          <section key={dateKey} style={dayCardStyle(isToday)}>
-            <div style={dayHeaderStyle(isToday)}>
+          <section key={dateKey} style={dayCardStyle(isToday, isPast)}>
+            <div style={dayHeaderStyle(isToday, isPast)}>
               {isToday && <span style={todayBadgeStyle}>TODAY</span>}
               {dateLabel}
             </div>
@@ -463,8 +464,8 @@ const jumpToTodayStyle = {
   textDecoration: "underline",
 };
 
-const dayCardStyle = (isToday) => ({
-  background: "white",
+const dayCardStyle = (isToday, isPast) => ({
+  background: isPast ? "#f7f7f5" : "white",
   borderRadius: 12,
   marginBottom: 16,
   overflow: "hidden",
@@ -472,9 +473,9 @@ const dayCardStyle = (isToday) => ({
   border: isToday ? "2px solid #111" : "1px solid transparent",
 });
 
-const dayHeaderStyle = (isToday) => ({
-  background: isToday ? "#111" : "#eef0f3",
-  color: isToday ? "white" : "#111",
+const dayHeaderStyle = (isToday, isPast) => ({
+  background: isToday ? "#111" : isPast ? "#ececea" : "#eef0f3",
+  color: isToday ? "white" : isPast ? "#888" : "#111",
   fontSize: 15,
   fontWeight: 700,
   padding: "10px 12px",
