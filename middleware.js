@@ -5,9 +5,13 @@ import { supabaseAdmin } from "./app/lib/supabaseClient";
 const PUBLIC_PATHS = [
   "/login",
   "/setup",
+  "/forgot-password",
+  "/reset-password",
   "/api/auth/login",
   "/api/auth/setup",
   "/api/auth/logout",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
 ];
 
 const OWNER_MANAGER_ONLY_PATHS = [
@@ -16,6 +20,7 @@ const OWNER_MANAGER_ONLY_PATHS = [
   "/clients/new",
   "/calendar/quick-book",
 ];
+
 const OWNER_MANAGER_ONLY_PATTERNS = [
   /^\/clients\/[^/]+\/edit$/,
   /^\/jobs\/schedule\/[^/]+$/,
