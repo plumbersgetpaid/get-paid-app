@@ -50,6 +50,7 @@ export async function createRecurringOccurrence(db, settings, r) {
       scheduled_end: end.toISOString(),
       time_confirmed: timeIsConfirmed,
       created_by: r.created_by || null,
+      assigned_to: r.assigned_to || null,
     })
     .select()
     .single();
