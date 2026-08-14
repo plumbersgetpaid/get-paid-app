@@ -6,6 +6,7 @@ import { canAccessJob } from "../../../lib/jobAccess";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
 import BackButton from "../../../components/BackButton";
+import AssignAndShareControl from "../../../components/AssignAndShareControl";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -61,9 +62,8 @@ export default async function ViewJob({ params }) {
     .select("team_member_id")
     .eq("job_id", jobId);
   for (const s of shares || []) assigneeIds.add(s.team_member_id);
-  const assigneeNames = (allTeamMembers || [])
-    .filter((m) => assigneeIds.has(m.id))
-    .map((m) => m.name);
+  const assignees = (allTeamMembers || []).filter((m) => assigneeIds.has(m.id));
+  const assigneeNames = assignees.map((m) => m.name);
 
   const durationLabel =
     job.scheduled_start && job.scheduled_end
@@ -141,12 +141,23 @@ export default async function ViewJob({ params }) {
           </div>
         )}
 
-        <div style={rowStyle}>
-          <span style={rowLabelStyle}>👤 Assigned to</span>
-          <span style={rowValueStyle}>
-            {assigneeNames.length > 0 ? assigneeNames.join(", ") : "Unassigned"}
-          </span>
-        </div>
+        {showEverything ? (
+          <div style={{ padding: "10px 0", borderBottom: "1px solid #f2f2f2" }}>
+            <div style={{ ...rowLabelStyle, fontSize: 14, marginBottom: 6 }}>👤 Assigned to</div>
+            <AssignAndShareControl
+              jobId={job.id}
+              initialAssignees={assignees}
+              teamMembers={allTeamMembers || []}
+            />
+          </div>
+        ) : (
+          <div style={rowStyle}>
+            <span style={rowLabelStyle}>👤 Assigned to</span>
+            <span style={rowValueStyle}>
+              {assigneeNames.length > 0 ? assigneeNames.join(", ") : "Unassigned"}
+            </span>
+          </div>
+        )}
 
         {showEverything && (
           <div style={rowStyle}>
