@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import DuplicatesSection from "./DuplicatesSection";
+import DeleteClientButton from "../../components/DeleteClientButton";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
@@ -179,6 +180,10 @@ export default async function ClientDetail({ params }) {
           </div>
         );
       })}
+
+      {showEverything && (!jobs || jobs.length === 0) && (
+        <DeleteClientButton customerId={customer.id} />
+      )}
     </main>
   );
 }
