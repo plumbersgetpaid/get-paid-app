@@ -26,6 +26,7 @@ export async function POST(req) {
   const confirmTimeLater = form.get("confirmTimeLater") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
   const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
+  const assignedTo = (form.get("assignedTo") || "").toString().trim() || null;
 
   if (!name || !startDate) {
     return NextResponse.json({ error: "Missing customer name or start date" }, { status: 400 });
@@ -73,6 +74,7 @@ export async function POST(req) {
       notify_email: notifyEmail,
       notify_whatsapp: notifyWhatsapp,
       created_by: currentMember?.id || null,
+      assigned_to: assignedTo,
     })
     .select()
     .single();
