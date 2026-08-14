@@ -5,6 +5,7 @@ import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
 import { notFound } from "next/navigation";
 import BackButton from "../components/BackButton";
+import DateFieldWithHint from "../components/DateFieldWithHint";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -146,24 +147,8 @@ export default async function AllInvoices({ searchParams }) {
         >
           {searchParams?.q && <input type="hidden" name="q" value={searchParams.q} />}
           <div style={{ display: "flex", gap: 10 }}>
-            <label style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#666" }}>
-              From (dd/mm/yyyy)
-              <input
-                type="date"
-                name="start"
-                defaultValue={rangeStart}
-                style={dateInputStyle}
-              />
-            </label>
-            <label style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#666" }}>
-              To (dd/mm/yyyy)
-              <input
-                type="date"
-                name="end"
-                defaultValue={rangeEnd}
-                style={dateInputStyle}
-              />
-            </label>
+            <DateFieldWithHint name="start" defaultValue={rangeStart} label="From" />
+            <DateFieldWithHint name="end" defaultValue={rangeEnd} label="To" />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button type="submit" style={applyRangeButtonStyle}>
