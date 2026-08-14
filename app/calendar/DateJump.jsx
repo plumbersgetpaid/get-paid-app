@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 function ymdToUTCDate(ymd) {
@@ -38,6 +38,11 @@ function computeOffset(range, todayStr, pickedStr) {
 export default function DateJump({ range, todayStr }) {
   const router = useRouter();
   const [isEmpty, setIsEmpty] = useState(true);
+  const [showCustomHint, setShowCustomHint] = useState(false);
+
+  useEffect(() => {
+    setShowCustomHint(window.matchMedia("(hover: none) and (pointer: coarse)").matches);
+  }, []);
 
   function handleChange(e) {
     const picked = e.target.value;
@@ -55,7 +60,12 @@ export default function DateJump({ range, todayStr }) {
         aria-label="Jump to date"
         style={dateJumpStyle}
       />
-      {isEmpty && <span style={hintStyle}>dd/mm/yyyy</span>}
+      {showCustomHint && isEmpty && (
+        <span style={hintStyle}>
+          <span>dd/mm/yyyy</span>
+          <span>📅</span>
+        </span>
+      )}
     </div>
   );
 }
@@ -76,11 +86,11 @@ const dateJumpStyle = {
 
 const hintStyle = {
   position: "absolute",
-  left: 11,
-  top: 0,
-  bottom: 0,
+  inset: 0,
   display: "flex",
   alignItems: "center",
+  justifyContent: "space-between",
+  padding: "0 10px",
   color: "#767676",
   fontSize: 13,
   pointerEvents: "none",
