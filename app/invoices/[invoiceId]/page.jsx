@@ -188,13 +188,20 @@ export default async function InvoiceDetail({ params }) {
         </section>
       </section>
 
-      <div style={{ marginTop: 20 }}>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
         <a
           href={`/api/invoices/${invoice.id}/pdf`}
           download
           style={downloadButtonStyle}
         >
-          Download as PDF
+          📄 Download PDF
+        </a>
+        <a
+          href={`/api/invoices/export-csv?invoiceId=${invoice.id}`}
+          download
+          style={downloadButtonStyle}
+        >
+          📊 Download CSV
         </a>
       </div>
     </main>
@@ -227,7 +234,7 @@ const paymentLinkSaveButtonStyle = {
 
 const downloadButtonStyle = {
   display: "block",
-  width: "100%",
+  flex: 1,
   boxSizing: "border-box",
   textAlign: "center",
   background: "#111",
