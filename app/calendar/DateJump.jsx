@@ -1,51 +1,77 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function DateFieldWithHint({ name, defaultValue, label }) {
-  const [value, setValue] = useState(defaultValue || "");
+function ymdToUTCDate(ymd) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+function computeOffset(range, todayStr, pickedStr) {
+  const today = ymdToUTCDate(todayStr);
+  const picked = ymdToUTCDate(pickedStr);
+
+  if (range === "today") {
+    return Math.round((picked - today) / (1000 * 60 * 60 * 24));
+  }
+
+  if (range === "week") {
+    const todayDow = today.getUTCDay();
+    const todayMonday = new Date(today);
+    todayMonday.setUTCDate(today.getUTCDate() + (todayDow === 0 ? -6 : 1 - todayDow));
+
+    const pickedDow = picked.getUTCDay();
+    const pickedMonday = new Date(picked);
+    pickedMonday.setUTCDate(picked.getUTCDate() + (pickedDow === 0 ? -6 : 1 - pickedDow));
+
+    const diffDays = Math.round((pickedMonday - todayMonday) / (1000 * 60 * 60 * 24));
+    return Math.round(diffDays / 7);
+  }
 
   return (
-    <label style={labelStyle}>
-      {label}
-      <div style={wrapperStyle}>
-        <input
-          type="date"
-          name={name}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          style={dateInputStyle}
-        />
-        {!value && <span style={hintStyle}>dd/mm/yyyy</span>}
-      </div>
-    </label>
+    (picked.getUTCFullYear() - today.getUTCFullYear()) * 12 +
+    (picked.getUTCMonth() - today.getUTCMonth())
   );
 }
 
-const labelStyle = {
-  flex: 1,
-  minWidth: 0,
-  fontSize: 12,
-  color: "#666",
-  display: "block",
-};
+export default function DateJump({ range, todayStr }) {
+  const router = useRouter();
+  const [isEmpty, setIsEmpty] = useState(true);
+
+  function handleChange(e) {
+    const picked = e.target.value;
+    setIsEmpty(!picked);
+    if (!picked) return;
+    const offset = computeOffset(range, todayStr, picked);
+    router.push(`/calendar?range=${range}&offset=${offset}`);
+  }
+
+  return (
+    <div style={wrapperStyle}>
+      <input
+        type="date"
+        onChange={handleChange}
+        aria-label="Jump to date"
+        style={dateJumpStyle}
+      />
+      {isEmpty && <span style={hintStyle}>dd/mm/yyyy</span>}
+    </div>
+  );
+}
 
 const wrapperStyle = {
   position: "relative",
-  marginTop: 4,
 };
 
-const dateInputStyle = {
-  display: "block",
-  width: "100%",
-  minWidth: 0,
-  boxSizing: "border-box",
-  padding: "10px",
+const dateJumpStyle = {
+  padding: "8px 10px",
   borderRadius: 8,
   border: "1px solid #ddd",
-  fontSize: 14,
+  fontSize: 13,
+  minWidth: 0,
   background: "white",
-  position: "relative",
+  color: "#111",
 };
 
 const hintStyle = {
@@ -56,7 +82,7 @@ const hintStyle = {
   display: "flex",
   alignItems: "center",
   color: "#767676",
-  fontSize: 14,
+  fontSize: 13,
   pointerEvents: "none",
   zIndex: 1,
 };
