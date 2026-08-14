@@ -218,13 +218,17 @@ export default async function Calendar({ searchParams }) {
             job.job_type || "Job"
           } (⏰ time to be confirmed)`
         : isLate
-        ? `${jobCustomerName[job.customer_id] || "Customer"} - ${
-            job.job_type || "Job"
-          } (⚠️ ${formatLateness(job.scheduled_end)} - tap to mark done)`
+        ? `${jobCustomerName[job.customer_id] || "Customer"} - ${job.job_type || "Job"} (⚠️ ${formatLateness(
+            job.scheduled_end
+          )}${showEverything ? " - tap to mark done" : ""})`
         : `${jobCustomerName[job.customer_id] || "Customer"} - ${
             job.job_type || "Job"
           } (${completionLabel})`,
-      href: isLate ? `/jobs/complete/${job.id}` : `/jobs/schedule/${job.id}`,
+      href: showEverything
+        ? isLate
+          ? `/jobs/complete/${job.id}`
+          : `/jobs/schedule/${job.id}`
+        : `/jobs/notes/${job.id}`,
     });
   }
 
