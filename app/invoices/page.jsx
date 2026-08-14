@@ -147,7 +147,7 @@ export default async function AllInvoices({ searchParams }) {
           {searchParams?.q && <input type="hidden" name="q" value={searchParams.q} />}
           <div style={{ display: "flex", gap: 10 }}>
             <label style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#666" }}>
-              From
+              From (dd/mm/yyyy)
               <input
                 type="date"
                 name="start"
@@ -156,7 +156,7 @@ export default async function AllInvoices({ searchParams }) {
               />
             </label>
             <label style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#666" }}>
-              To
+              To (dd/mm/yyyy)
               <input
                 type="date"
                 name="end"
