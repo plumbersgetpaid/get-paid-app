@@ -22,6 +22,7 @@ export async function POST(req) {
   const frequencyUnit = form.get("frequencyUnit") || "months";
   const notifyEmail = form.get("notifyEmail") === "1";
   const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
+  const assignedTo = (form.get("assignedTo") || "").toString().trim() || null;
   const nextOccurrenceTime = (form.get("nextOccurrenceTime") || "").toString().trim();
 
   if (!recurringId) {
@@ -42,6 +43,7 @@ export async function POST(req) {
       notify_email: notifyEmail,
       notify_whatsapp: notifyWhatsapp,
       next_occurrence_time: nextOccurrenceTime || null,
+      assigned_to: assignedTo,
     })
     .eq("id", recurringId)
     .select()
