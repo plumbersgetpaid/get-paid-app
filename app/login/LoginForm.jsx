@@ -56,6 +56,10 @@ export default function LoginForm() {
         />
       </label>
 
+      <a href="/forgot-password" style={{ fontSize: 13, color: "#666", textAlign: "right" }}>
+        Forgot password?
+      </a>
+
       {error && <div style={errorBoxStyle}>{error}</div>}
 
       <button type="submit" disabled={busy} style={submitButtonStyle}>
