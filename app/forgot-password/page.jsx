@@ -5,7 +5,9 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default function ForgotPassword() {
+export default function ForgotPassword({ searchParams }) {
+  const cameFromAccount = searchParams?.from === "account";
+
   return (
     <main style={{ maxWidth: 400, margin: "60px auto", padding: "0 20px" }}>
       <h1 style={{ fontSize: 22, marginBottom: 8, textAlign: "center" }}>
@@ -17,8 +19,8 @@ export default function ForgotPassword() {
       </p>
       <ForgotPasswordForm />
       <div style={{ textAlign: "center", marginTop: 20 }}>
-        <Link href="/login" style={{ fontSize: 13, color: "#666" }}>
-          ← Back to login
+        <Link href={cameFromAccount ? "/account" : "/login"} style={{ fontSize: 13, color: "#666" }}>
+          {cameFromAccount ? "← Back to my account" : "← Back to login"}
         </Link>
       </div>
     </main>
