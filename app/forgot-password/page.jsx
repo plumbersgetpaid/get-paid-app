@@ -1,5 +1,5 @@
 import ForgotPasswordForm from "./ForgotPasswordForm";
-import Link from "next/link";
+import BackButton from "../components/BackButton";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -19,10 +19,22 @@ export default function ForgotPassword({ searchParams }) {
       </p>
       <ForgotPasswordForm />
       <div style={{ textAlign: "center", marginTop: 20 }}>
-        <Link href={cameFromAccount ? "/account" : "/login"} style={{ fontSize: 13, color: "#666" }}>
+        <BackButton
+          fallbackHref={cameFromAccount ? "/account" : "/login"}
+          style={backLinkStyle}
+        >
           {cameFromAccount ? "← Back to my account" : "← Back to login"}
-        </Link>
+        </BackButton>
       </div>
     </main>
   );
 }
+
+const backLinkStyle = {
+  background: "none",
+  border: "none",
+  fontSize: 13,
+  color: "#666",
+  cursor: "pointer",
+  padding: 0,
+};
