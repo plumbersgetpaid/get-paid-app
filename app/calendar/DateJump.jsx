@@ -60,12 +60,7 @@ export default function DateJump({ range, todayStr }) {
         aria-label="Jump to date"
         style={dateJumpStyle}
       />
-      {showCustomHint && isEmpty && (
-        <span style={hintStyle}>
-          <span>dd/mm/yyyy</span>
-          <span>📅</span>
-        </span>
-      )}
+      {showCustomHint && isEmpty && <span style={hintStyle}>dd/mm/yyyy</span>}
     </div>
   );
 }
@@ -89,8 +84,7 @@ const hintStyle = {
   inset: 0,
   display: "flex",
   alignItems: "center",
-  justifyContent: "space-between",
-  padding: "0 12px",
+  justifyContent: "center",
   color: "#767676",
   fontSize: 13,
   pointerEvents: "none",
