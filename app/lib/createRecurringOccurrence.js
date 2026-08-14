@@ -50,7 +50,7 @@ export async function createRecurringOccurrence(db, settings, r) {
       scheduled_end: end.toISOString(),
       time_confirmed: timeIsConfirmed,
       created_by: r.created_by || null,
-      assigned_to: r.assigned_to || null,
+      assigned_to: null,
     })
     .select()
     .single();
@@ -58,6 +58,24 @@ export async function createRecurringOccurrence(db, settings, r) {
   if (jobErr || !job) {
     console.error("Recurring job creation error:", jobErr);
     return { created: false };
+  }
+
+  const assigneeIds = new Set();
+  if (r.assigned_to) assigneeIds.add(r.assigned_to);
+  const { data: recurringShares } = await db
+    .from("recurring_job_shares")
+    .select("team_member_id")
+    .eq("recurring_job_id", r.id);
+  for (const s of recurringShares || []) {
+    assigneeIds.add(s.team_member_id);
+  }
+  if (assigneeIds.size > 0) {
+    const { error: sharesErr } = await db
+      .from("job_shares")
+      .insert([...assigneeIds].map((teamMemberId) => ({ job_id: job.id, team_member_id: teamMemberId })));
+    if (sharesErr) {
+      console.error("Recurring occurrence assign error:", sharesErr);
+    }
   }
 
   if (conflict && settings.contact_email && process.env.RESEND_API_KEY) {
