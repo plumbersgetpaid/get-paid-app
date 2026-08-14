@@ -35,7 +35,7 @@ export default function ResetPasswordForm({ token }) {
         return;
       }
 
-      window.location.href = "/login?reset=1";
+      window.location.href = "/login";
     } catch (err) {
       console.error("Reset password error:", err);
       if (err.name === "TimeoutError" || err.name === "AbortError") {
