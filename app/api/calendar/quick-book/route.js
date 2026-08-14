@@ -24,6 +24,7 @@ export async function POST(req) {
   const jobType = (form.get("jobType") || "").toString().trim();
   const location = (form.get("location") || "").toString().trim();
   const amountInput = (form.get("amount") || "").toString().trim();
+  const assignedTo = (form.get("assignedTo") || "").toString().trim() || null;
   const startDate = form.get("startDate");
   const startTime = form.get("startTime");
   const durationValue = parseFloat(form.get("durationValue") || "2");
@@ -92,6 +93,7 @@ export async function POST(req) {
       redirectUrl.searchParams.set("jobType", jobType);
       redirectUrl.searchParams.set("location", location);
       redirectUrl.searchParams.set("amount", amountInput);
+      redirectUrl.searchParams.set("assignedTo", assignedTo || "");
       redirectUrl.searchParams.set("startDate", startDate);
       redirectUrl.searchParams.set("startTime", startTime);
       redirectUrl.searchParams.set("durationValue", String(durationValue));
@@ -145,6 +147,7 @@ export async function POST(req) {
     scheduled_start: start.toISOString(),
     scheduled_end: end.toISOString(),
     created_by: currentMember?.id || null,
+    assigned_to: assignedTo,
   });
 
   if (jobErr) {
