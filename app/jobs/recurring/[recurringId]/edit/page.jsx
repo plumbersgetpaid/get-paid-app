@@ -28,6 +28,13 @@ export default async function EditRecurringJob({ params }) {
     notFound();
   }
 
+  const { data: teamMembersData } = await db
+    .from("team_members")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name");
+  const teamMembers = teamMembersData || [];
+
   const { data: customer } = await db
     .from("customers")
     .select("name")
@@ -168,6 +175,22 @@ export default async function EditRecurringJob({ params }) {
             only affects the next occurrence - after that, this clears
             itself and things go back to normal.
           </span>
+        </label>
+
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Assign to
+          <select
+            name="assignedTo"
+            defaultValue={recurring.assigned_to || ""}
+            style={{ ...inputStyle, marginTop: 6 }}
+          >
+            <option value="">Unassigned</option>
+            {teamMembers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
         </label>
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
