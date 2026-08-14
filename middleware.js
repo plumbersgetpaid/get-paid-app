@@ -16,7 +16,11 @@ const OWNER_MANAGER_ONLY_PATHS = [
   "/clients/new",
   "/calendar/quick-book",
 ];
-const OWNER_MANAGER_ONLY_PATTERNS = [/^\/clients\/[^/]+\/edit$/];
+const OWNER_MANAGER_ONLY_PATTERNS = [
+  /^\/clients\/[^/]+\/edit$/,
+  /^\/jobs\/schedule\/[^/]+$/,
+  /^\/jobs\/complete\/[^/]+$/,
+];
 
 function matchesAny(pathname, list) {
   return list.some((p) => pathname === p || pathname.startsWith(p + "/"));
