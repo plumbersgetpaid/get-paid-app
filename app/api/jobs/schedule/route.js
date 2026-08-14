@@ -31,14 +31,7 @@ export async function POST(req) {
 
   const currentMember = await getCurrentTeamMember();
   if (!canSeeEverything(currentMember)) {
-    const { data: existingJob } = await db
-      .from("jobs")
-      .select("assigned_to")
-      .eq("id", jobId)
-      .maybeSingle();
-    if (!existingJob || existingJob.assigned_to !== currentMember?.id) {
-      return NextResponse.json({ error: "Not allowed" }, { status: 403 });
-    }
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
   const settings = await getBusinessSettings();
