@@ -25,7 +25,7 @@ export default async function CompleteJob({ params, searchParams }) {
 
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
-  if (!showEverything && job.assigned_to !== currentMember?.id) {
+  if (!showEverything) {
     notFound();
   }
 
