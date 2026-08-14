@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canSeeEverything } from "../../../../lib/permissions";
 import BackButton from "../../../../components/BackButton";
+import MultiAssignField from "../../../../components/MultiAssignField";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,19 @@ export default async function EditRecurringJob({ params }) {
     .eq("is_active", true)
     .order("name");
   const teamMembers = teamMembersData || [];
+
+  // Combines the legacy single assigned_to with recurring_job_shares
+  // into one starting set for the tick-box field - same pattern as
+  // regular jobs, so this form shows everyone currently on it
+  const currentAssigneeIds = new Set();
+  if (recurring.assigned_to) currentAssigneeIds.add(recurring.assigned_to);
+  const { data: recurringShares } = await db
+    .from("recurring_job_shares")
+    .select("team_member_id")
+    .eq("recurring_job_id", recurringId);
+  for (const s of recurringShares || []) {
+    currentAssigneeIds.add(s.team_member_id);
+  }
 
   const { data: customer } = await db
     .from("customers")
@@ -179,18 +193,12 @@ export default async function EditRecurringJob({ params }) {
 
         <label style={{ fontSize: 13, color: "#666" }}>
           Assign to
-          <select
-            name="assignedTo"
-            defaultValue={recurring.assigned_to || ""}
-            style={{ ...inputStyle, marginTop: 6 }}
-          >
-            <option value="">Unassigned</option>
-            {teamMembers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <div style={{ marginTop: 6 }}>
+            <MultiAssignField
+              teamMembers={teamMembers}
+              initialSelectedIds={[...currentAssigneeIds]}
+            />
+          </div>
         </label>
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
