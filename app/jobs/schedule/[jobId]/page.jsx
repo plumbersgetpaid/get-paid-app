@@ -26,9 +26,11 @@ export default async function ScheduleJob({ params, searchParams }) {
     notFound();
   }
 
+  // Scheduling is now owner/manager only - a subcontractor no longer
+  // reschedules their own jobs, even the one they're assigned to
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
-  if (!showEverything && job.assigned_to !== currentMember?.id) {
+  if (!showEverything) {
     notFound();
   }
 
