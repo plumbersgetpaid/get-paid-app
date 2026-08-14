@@ -2,6 +2,7 @@ import { getCurrentTeamMember } from "../lib/auth";
 import { redirect } from "next/navigation";
 import BackButton from "../components/BackButton";
 import AccountForm from "./AccountForm";
+import LogoutButton from "../components/LogoutButton";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -28,6 +29,10 @@ export default async function Account() {
       </section>
 
       <AccountForm currentName={currentMember.name} />
+
+      <div style={{ marginTop: 24 }}>
+        <LogoutButton />
+      </div>
     </main>
   );
 }
