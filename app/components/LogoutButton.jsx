@@ -10,7 +10,7 @@ export default function LogoutButton() {
     try {
       await fetch("/api/auth/logout", {
         method: "POST",
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(5000),
       });
     } catch (err) {
       console.error("Logout error:", err);
