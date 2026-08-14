@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../../lib/auth";
-import { canSeeEverything } from "../../../../lib/permissions";
+import { canAccessJob } from "../../../../lib/jobAccess";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -17,15 +17,14 @@ export async function POST(req) {
 
   const db = supabaseAdmin();
 
-  if (!canSeeEverything(currentMember)) {
-    const { data: jobForCheck } = await db
-      .from("jobs")
-      .select("assigned_to")
-      .eq("id", jobId)
-      .maybeSingle();
-    if (!jobForCheck || jobForCheck.assigned_to !== currentMember?.id) {
-      return NextResponse.json({ error: "Not allowed" }, { status: 403 });
-    }
+  const { data: jobForCheck } = await db
+    .from("jobs")
+    .select("id, assigned_to")
+    .eq("id", jobId)
+    .maybeSingle();
+  const hasAccess = await canAccessJob(db, jobForCheck, currentMember);
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
   let imageUrl = null;
