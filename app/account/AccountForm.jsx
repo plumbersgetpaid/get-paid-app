@@ -234,7 +234,7 @@ export default function AccountForm({ currentName, currentEmail }) {
           </button>
         </form>
         <div style={{ marginTop: 12, textAlign: "center" }}>
-          <a href="/forgot-password" style={forgotLinkStyle}>
+          <a href="/forgot-password?from=account" style={forgotLinkStyle}>
             Forgotten your current password? Reset it by email instead
           </a>
         </div>
