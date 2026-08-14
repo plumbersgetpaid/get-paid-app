@@ -233,6 +233,11 @@ export default function AccountForm({ currentName, currentEmail }) {
             {passwordBusy ? "Saving..." : "Change password"}
           </button>
         </form>
+        <div style={{ marginTop: 12, textAlign: "center" }}>
+          <a href="/forgot-password" style={forgotLinkStyle}>
+            Forgotten your current password? Reset it by email instead
+          </a>
+        </div>
       </section>
     </>
   );
@@ -281,6 +286,12 @@ const errorBoxStyle = {
   padding: 10,
   borderRadius: 8,
   fontSize: 13,
+};
+
+const forgotLinkStyle = {
+  fontSize: 12,
+  color: "#666",
+  textDecoration: "underline",
 };
 
 const successBoxStyle = {
