@@ -2,11 +2,17 @@
 
 import { useState } from "react";
 
-export default function AccountForm({ currentName }) {
+export default function AccountForm({ currentName, currentEmail }) {
   const [name, setName] = useState(currentName);
   const [nameBusy, setNameBusy] = useState(false);
   const [nameError, setNameError] = useState(null);
   const [nameSaved, setNameSaved] = useState(false);
+
+  const [email, setEmail] = useState(currentEmail);
+  const [emailPassword, setEmailPassword] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailError, setEmailError] = useState(null);
+  const [emailSaved, setEmailSaved] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -40,6 +46,35 @@ export default function AccountForm({ currentName }) {
       setNameError("Couldn't reach the server");
     }
     setNameBusy(false);
+  }
+
+  async function handleEmailSubmit(e) {
+    e.preventDefault();
+    setEmailError(null);
+    setEmailSaved(false);
+    setEmailBusy(true);
+
+    try {
+      const form = new FormData();
+      form.append("newEmail", email);
+      form.append("currentPassword", emailPassword);
+      const res = await fetch("/api/account/update-email", {
+        method: "POST",
+        body: form,
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setEmailError(data.error || "Couldn't save that");
+      } else {
+        setEmailSaved(true);
+        setEmailPassword("");
+      }
+    } catch (err) {
+      console.error("Update email error:", err);
+      setEmailError("Couldn't reach the server");
+    }
+    setEmailBusy(false);
   }
 
   async function handlePasswordSubmit(e) {
@@ -96,6 +131,52 @@ export default function AccountForm({ currentName }) {
           {nameSaved && <div style={successBoxStyle}>Saved</div>}
           <button type="submit" disabled={nameBusy || !name.trim()} style={submitButtonStyle}>
             {nameBusy ? "Saving..." : "Save name"}
+          </button>
+        </form>
+      </section>
+
+      <section style={cardStyle}>
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>Your email</div>
+        <div style={{ fontSize: 12, color: "#888", marginBottom: 10 }}>
+          This is what you log in with - changing it takes effect the next
+          time you sign in, so make sure you'll remember the new one.
+        </div>
+        <form
+          onSubmit={handleEmailSubmit}
+          style={{ display: "grid", gap: 10 }}
+        >
+          <label style={labelStyle}>
+            New email
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailSaved(false);
+              }}
+              required
+              style={inputStyle}
+            />
+          </label>
+          <label style={labelStyle}>
+            Current password, to confirm
+            <input
+              type="password"
+              value={emailPassword}
+              onChange={(e) => setEmailPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              style={inputStyle}
+            />
+          </label>
+          {emailError && <div style={errorBoxStyle}>{emailError}</div>}
+          {emailSaved && <div style={successBoxStyle}>Email updated</div>}
+          <button
+            type="submit"
+            disabled={emailBusy || !email.trim() || !emailPassword}
+            style={submitButtonStyle}
+          >
+            {emailBusy ? "Saving..." : "Save email"}
           </button>
         </form>
       </section>
