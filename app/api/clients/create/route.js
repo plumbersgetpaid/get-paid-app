@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeClientDatabase } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -19,12 +19,13 @@ export async function POST(req) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const { error } = await db.from("customers").insert({
     name,
     phone: phone || null,
     email: email || null,
     address: address || null,
+    business_id: currentMember.business_id,
   });
 
   if (error) {
