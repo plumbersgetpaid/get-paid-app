@@ -1,6 +1,9 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canInvoice } from "../../../lib/permissions";
+import { NextResponse } from "next/server";
 
 function csvCell(value) {
   const str = String(value ?? "");
@@ -11,6 +14,11 @@ function csvCell(value) {
 }
 
 export async function GET(req) {
+  const currentMember = await getCurrentTeamMember();
+  if (!canInvoice(currentMember)) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");
