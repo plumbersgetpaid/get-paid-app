@@ -2,12 +2,12 @@ import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
 import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurrence";
 import { getCurrentTeamMember } from "../../../../lib/auth";
-import { canSeeEverything } from "../../../../lib/permissions";
+import { canCreateRecurringJob } from "../../../../lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
-  if (!canSeeEverything(currentMember)) {
+  if (!canCreateRecurringJob(currentMember)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
