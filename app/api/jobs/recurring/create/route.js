@@ -1,107 +1,91 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
-import { findExistingCustomer } from "../../../../lib/findCustomer";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
 import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurrence";
 import { getCurrentTeamMember } from "../../../../lib/auth";
-import { canSeeEverything } from "../../../../lib/permissions";
+import { canCreateRecurringJob } from "../../../../lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
-  if (!canSeeEverything(currentMember)) {
+  if (!canCreateRecurringJob(currentMember)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
   const form = await req.formData();
-  const name = (form.get("name") || "").toString().trim();
-  const phone = (form.get("phone") || "").toString().trim();
-  const email = (form.get("email") || "").toString().trim();
+  const recurringId = form.get("recurringId");
   const jobType = (form.get("jobType") || "").toString().trim();
   const location = (form.get("location") || "").toString().trim();
   const amount = form.get("amount");
-  const startDate = form.get("startDate");
   const preferredTime = form.get("preferredTime") || "09:00";
+  const confirmTimeLater = form.get("confirmTimeLater") === "1";
   const frequencyValue = parseInt(form.get("frequencyValue") || "1", 10);
   const frequencyUnit = form.get("frequencyUnit") || "months";
-  const confirmTimeLater = form.get("confirmTimeLater") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
   const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
-  const assignedToIds = form.getAll("assignedTo").filter(Boolean);
+  const desiredAssigneeIds = form.getAll("assignedTo").filter(Boolean);
+  const nextOccurrenceTime = (form.get("nextOccurrenceTime") || "").toString().trim();
 
-  if (!name || !startDate) {
-    return NextResponse.json({ error: "Missing customer name or start date" }, { status: 400 });
+  if (!recurringId) {
+    return NextResponse.json({ error: "Missing recurringId" }, { status: 400 });
   }
 
   const db = supabaseAdmin();
 
-  const existingCustomer = await findExistingCustomer(db, { name, email, phone });
+  const { data: existingShares } = await db
+    .from("recurring_job_shares")
+    .select("team_member_id")
+    .eq("recurring_job_id", recurringId);
+  const currentShareIds = (existingShares || []).map((s) => s.team_member_id);
 
-  let customerId;
-  if (existingCustomer) {
-    customerId = existingCustomer.id;
-    const updates = {};
-    if (!existingCustomer.phone && phone) updates.phone = phone;
-    if (!existingCustomer.email && email) updates.email = email;
-    if (Object.keys(updates).length > 0) {
-      await db.from("customers").update(updates).eq("id", customerId);
-    }
-  } else {
-    const { data: newCustomer, error: custErr } = await db
-      .from("customers")
-      .insert({ name, phone: phone || null, email: email || null })
-      .select()
-      .single();
-
-    if (custErr) {
-      console.error("Recurring job customer insert error:", custErr);
-      return NextResponse.json({ error: custErr.message }, { status: 400 });
-    }
-    customerId = newCustomer.id;
-  }
-
-  const { data: newRecurring, error } = await db
+  const { data: updated, error } = await db
     .from("recurring_jobs")
-    .insert({
-      customer_id: customerId,
+    .update({
       job_type: jobType || null,
       location: location || null,
       amount: amount ? parseFloat(amount) : 0,
-      next_occurrence: startDate,
       preferred_time: preferredTime,
+      confirm_time_later: confirmTimeLater,
       frequency_value: frequencyValue,
       frequency_unit: frequencyUnit,
-      confirm_time_later: confirmTimeLater,
       notify_email: notifyEmail,
       notify_whatsapp: notifyWhatsapp,
-      created_by: currentMember?.id || null,
+      next_occurrence_time: nextOccurrenceTime || null,
       assigned_to: null,
     })
+    .eq("id", recurringId)
     .select()
     .single();
 
   if (error) {
-    console.error("Recurring job insert error:", error);
+    console.error("Update recurring job error:", error);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  if (assignedToIds.length > 0 && newRecurring) {
-    const { error: sharesErr } = await db
+  const currentSet = new Set(currentShareIds);
+  const desiredSet = new Set(desiredAssigneeIds);
+  const toAdd = [...desiredSet].filter((id) => !currentSet.has(id));
+  const toRemove = [...currentSet].filter((id) => !desiredSet.has(id));
+
+  if (toRemove.length > 0) {
+    await db
       .from("recurring_job_shares")
-      .insert(
-        assignedToIds.map((teamMemberId) => ({
-          recurring_job_id: newRecurring.id,
-          team_member_id: teamMemberId,
-        }))
-      );
-    if (sharesErr) {
-      console.error("Recurring job assign error:", sharesErr);
+      .delete()
+      .eq("recurring_job_id", recurringId)
+      .in("team_member_id", toRemove);
+  }
+  if (toAdd.length > 0) {
+    const { error: addErr } = await db
+      .from("recurring_job_shares")
+      .insert(toAdd.map((teamMemberId) => ({ recurring_job_id: recurringId, team_member_id: teamMemberId })));
+    if (addErr) {
+      console.error("Recurring job assign update error:", addErr);
     }
   }
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  if (startDate <= todayStr) {
+  if (updated?.active && updated.next_occurrence <= todayStr) {
     const settings = await getBusinessSettings();
-    await createRecurringOccurrence(db, settings, newRecurring);
+    await createRecurringOccurrence(db, settings, updated);
   }
 
   return NextResponse.redirect(new URL("/jobs/recurring", req.url));
