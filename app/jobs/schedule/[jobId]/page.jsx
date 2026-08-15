@@ -1,8 +1,8 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything, canReschedule } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,7 +14,15 @@ export const revalidate = 0;
 
 export default async function ScheduleJob({ params, searchParams }) {
   const { jobId } = params;
-  const db = supabaseAdmin();
+
+  const currentMember = await getCurrentTeamMember();
+
+  const showEverything = canSeeEverything(currentMember);
+  if (!canReschedule(currentMember)) {
+    notFound();
+  }
+
+  const db = await getScopedDb(currentMember);
 
   const { data: job, error: jobError } = await db
     .from("jobs")
@@ -23,12 +31,6 @@ export default async function ScheduleJob({ params, searchParams }) {
     .single();
 
   if (jobError || !job) {
-    notFound();
-  }
-
-  const currentMember = await getCurrentTeamMember();
-  const showEverything = canSeeEverything(currentMember);
-  if (!canReschedule(currentMember)) {
     notFound();
   }
 
@@ -190,20 +192,6 @@ export default async function ScheduleJob({ params, searchParams }) {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const summaryCardStyle = {
   background: "white",
