@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -16,7 +17,8 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing jobId" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
 
   const { data: existingInvoice } = await db
     .from("invoices")
@@ -37,7 +39,7 @@ export async function POST(req) {
     .not("image_storage_path", "is", null);
   const notePaths = (notesWithImages || []).map((n) => n.image_storage_path).filter(Boolean);
   if (notePaths.length > 0) {
-    await db.storage.from("job-note-images").remove(notePaths);
+    await adminDb.storage.from("job-note-images").remove(notePaths);
   }
 
   const { data: photos } = await db
@@ -46,7 +48,7 @@ export async function POST(req) {
     .eq("job_id", jobId);
   const photoPaths = (photos || []).map((p) => p.storage_path).filter(Boolean);
   if (photoPaths.length > 0) {
-    await db.storage.from("job-photos").remove(photoPaths);
+    await adminDb.storage.from("job-photos").remove(photoPaths);
   }
 
   await db.from("job_notes").delete().eq("job_id", jobId);
