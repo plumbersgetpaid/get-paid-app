@@ -1,4 +1,3 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { computeScheduleEnd } from "../../../lib/duration";
@@ -7,6 +6,7 @@ import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canCreateQuote } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -29,7 +29,7 @@ export async function POST(req) {
   const durationUnit = form.get("durationUnit") || "hours";
   const includeWeekends = form.get("includeWeekends") === "1";
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const settings = await getBusinessSettings();
 
   const existingCustomer = await findExistingCustomer(db, { name, email, phone });
@@ -47,7 +47,7 @@ export async function POST(req) {
   } else {
     const { data: newCustomer, error: custErr } = await db
       .from("customers")
-      .insert({ name, phone, email })
+      .insert({ name, phone, email, business_id: currentMember.business_id })
       .select()
       .single();
 
@@ -84,6 +84,7 @@ export async function POST(req) {
       scheduled_end: scheduledEnd,
       created_by: currentMember?.id || null,
       assigned_to: null,
+      business_id: currentMember.business_id,
     })
     .select()
     .single();
@@ -94,9 +95,13 @@ export async function POST(req) {
   }
 
   if (assignedToIds.length > 0 && job) {
-    const { error: sharesErr } = await db
-      .from("job_shares")
-      .insert(assignedToIds.map((teamMemberId) => ({ job_id: job.id, team_member_id: teamMemberId })));
+    const { error: sharesErr } = await db.from("job_shares").insert(
+      assignedToIds.map((teamMemberId) => ({
+        job_id: job.id,
+        team_member_id: teamMemberId,
+        business_id: currentMember.business_id,
+      }))
+    );
     if (sharesErr) {
       console.error("New quote assign error:", sharesErr);
     }
