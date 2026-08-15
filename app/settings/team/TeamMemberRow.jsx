@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import DeleteTeamMemberButton from "../../components/DeleteTeamMemberButton";
 
 export default function TeamMemberRow({ member, isSelf }) {
@@ -104,9 +103,9 @@ export default function TeamMemberRow({ member, isSelf }) {
         )}
 
         {role === "subcontractor" && (
-          <Link href={`/settings/team/${member.id}`} style={permissionsLinkStyle}>
+          <a href={`/settings/team/${member.id}`} style={permissionsLinkStyle}>
             ⚙️ Permissions
-          </Link>
+          </a>
         )}
 
         {!locked && !isActive && (
