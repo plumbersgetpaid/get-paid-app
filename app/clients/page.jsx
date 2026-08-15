@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { supabaseAdmin } from "../lib/supabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canSeeClientDatabase } from "../lib/permissions";
 import { getSharedJobIds } from "../lib/jobAccess";
+import { getScopedDb } from "../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,6 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function Clients({ searchParams }) {
-  const db = supabaseAdmin();
   const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
@@ -20,6 +19,8 @@ export default async function Clients({ searchParams }) {
   if (!canSeeClientDatabase(currentMember)) {
     notFound();
   }
+
+  const db = await getScopedDb(currentMember);
 
   const q = (searchParams?.q || "").trim().toLowerCase();
 
