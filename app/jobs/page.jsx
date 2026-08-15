@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../lib/supabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getCurrentTeamMember } from "../lib/auth";
-import { canSeeEverything } from "../lib/permissions";
+import { canSeeEverything, canReschedule, canInvoice } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
@@ -165,12 +165,12 @@ export default async function AllJobs({ searchParams }) {
             </div>
           )}
           <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-            {job.status === "in_progress" && showEverything && (
+            {job.status === "in_progress" && canReschedule(currentMember) && (
               <a href={`/jobs/schedule/${job.id}`} style={jobLinkStyle}>
                 Book / reschedule →
               </a>
             )}
-            {job.invoice_id && showEverything && (
+            {job.invoice_id && canInvoice(currentMember) && (
               <Link href={`/invoices/${job.invoice_id}`} style={jobLinkStyle}>
                 View invoice →
               </Link>
@@ -184,20 +184,6 @@ export default async function AllJobs({ searchParams }) {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const searchInputStyle = {
   flex: 1,
