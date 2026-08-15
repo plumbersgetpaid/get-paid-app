@@ -2,7 +2,7 @@ import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../../lib/auth";
-import { canSeeEverything } from "../../lib/permissions";
+import { canCreateJob } from "../../lib/permissions";
 import { supabaseAdmin } from "../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import MultiAssignField from "../../components/MultiAssignField";
@@ -14,7 +14,7 @@ export const revalidate = 0;
 
 export default async function QuickBook({ searchParams }) {
   const currentMember = await getCurrentTeamMember();
-  if (!canSeeEverything(currentMember)) {
+  if (!canCreateJob(currentMember)) {
     notFound();
   }
 
@@ -155,20 +155,6 @@ const inputStyle = {
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
-};
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
 };
 
 const warningBoxStyle = {
