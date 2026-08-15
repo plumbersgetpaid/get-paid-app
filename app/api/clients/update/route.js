@@ -1,11 +1,11 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
-import { canSeeEverything } from "../../../lib/permissions";
+import { canSeeClientDatabase } from "../../../lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
-  if (!canSeeEverything(currentMember)) {
+  if (!canSeeClientDatabase(currentMember)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
