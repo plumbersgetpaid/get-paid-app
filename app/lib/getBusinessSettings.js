@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabaseClient";
+import { getCurrentTeamMember } from "./auth";
 
 const DEFAULTS = {
   business_name: "Your Plumber",
@@ -16,13 +17,23 @@ const DEFAULTS = {
   send_review_requests: true,
 };
 
-export async function getBusinessSettings() {
+export async function getBusinessSettings(businessId) {
+  let resolvedBusinessId = businessId;
+  if (!resolvedBusinessId) {
+    const currentMember = await getCurrentTeamMember();
+    resolvedBusinessId = currentMember?.business_id;
+  }
+
+  if (!resolvedBusinessId) {
+    return DEFAULTS;
+  }
+
   const db = supabaseAdmin();
   const { data, error } = await db
     .from("business_settings")
     .select("*")
-    .eq("id", 1)
-    .single();
+    .eq("business_id", resolvedBusinessId)
+    .maybeSingle();
 
   if (error || !data) {
     return DEFAULTS;
