@@ -1,4 +1,3 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
@@ -7,6 +6,7 @@ import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canReschedule } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -27,13 +27,12 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing scheduling details" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
-
   const currentMember = await getCurrentTeamMember();
   if (!canReschedule(currentMember)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
+  const db = await getScopedDb(currentMember);
   const settings = await getBusinessSettings();
   const start = new Date(`${startDate}T${startTime}:00`);
   const end = computeScheduleEnd(start, durationValue, durationUnit, includeWeekends);
