@@ -3,7 +3,7 @@ import CompleteJobForm from "./CompleteJobForm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../lib/auth";
-import { canSeeEverything } from "../../../lib/permissions";
+import { canSeeEverything, canInvoice } from "../../../lib/permissions";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -25,7 +25,7 @@ export default async function CompleteJob({ params, searchParams }) {
 
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
-  if (!showEverything) {
+  if (!canInvoice(currentMember)) {
     notFound();
   }
 
