@@ -1,9 +1,9 @@
-import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency, formatInvoiceNumber } from "../../lib/formatCurrency";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canInvoice } from "../../lib/permissions";
+import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import BackButton from "../../components/BackButton";
 import Link from "next/link";
 
@@ -13,13 +13,14 @@ export const revalidate = 0;
 
 export default async function InvoiceDetail({ params }) {
   const { invoiceId } = params;
-  const db = supabaseAdmin();
   const settings = await getBusinessSettings();
 
   const currentMember = await getCurrentTeamMember();
   if (!canInvoice(currentMember)) {
     notFound();
   }
+
+  const db = await getScopedDb(currentMember);
 
   const { data: invoice, error } = await db
     .from("invoices")
