@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import DeleteTeamMemberButton from "../../components/DeleteTeamMemberButton";
 
 export default function TeamMemberRow({ member, isSelf }) {
   const [role, setRole] = useState(member.role);
@@ -79,7 +80,7 @@ export default function TeamMemberRow({ member, isSelf }) {
         {!isActive && <span style={inactiveBadgeStyle}>Deactivated</span>}
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
         {locked ? (
           <span style={{ fontSize: 13, textTransform: "capitalize", color: "#666" }}>
             {member.role}
@@ -106,6 +107,10 @@ export default function TeamMemberRow({ member, isSelf }) {
           <Link href={`/settings/team/${member.id}`} style={permissionsLinkStyle}>
             ⚙️ Permissions
           </Link>
+        )}
+
+        {!locked && !isActive && (
+          <DeleteTeamMemberButton memberId={member.id} memberName={member.name} />
         )}
       </div>
 
