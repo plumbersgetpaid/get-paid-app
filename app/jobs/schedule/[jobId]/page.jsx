@@ -2,6 +2,7 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything, canReschedule } from "../../../lib/permissions";
+import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import Link from "next/link";
@@ -31,6 +32,11 @@ export default async function ScheduleJob({ params, searchParams }) {
     .single();
 
   if (jobError || !job) {
+    notFound();
+  }
+
+  const hasAccess = await canAccessJob(db, job, currentMember);
+  if (!hasAccess) {
     notFound();
   }
 
