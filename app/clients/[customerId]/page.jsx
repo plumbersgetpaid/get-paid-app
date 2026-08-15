@@ -7,7 +7,7 @@ import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency } from "../../lib/formatCurrency";
 import { getCurrentTeamMember } from "../../lib/auth";
-import { canSeeEverything } from "../../lib/permissions";
+import { canSeeEverything, canSeeClientDatabase } from "../../lib/permissions";
 import { filterJobsForMember } from "../../lib/jobAccess";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +20,10 @@ export default async function ClientDetail({ params }) {
   const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
+
+  if (!canSeeClientDatabase(currentMember)) {
+    notFound();
+  }
 
   const { data: customer, error } = await db
     .from("customers")
@@ -187,20 +191,6 @@ export default async function ClientDetail({ params }) {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const cardStyle = {
   background: "white",
