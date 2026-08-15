@@ -5,6 +5,12 @@ import { sendWhatsAppMessage } from "./sendWhatsApp";
 import { advanceDate } from "./duration";
 import { Resend } from "resend";
 
+// Creates one real job from a recurring job template's current due
+// occurrence: books it in, warns about any genuine scheduling clash,
+// notifies the client if the time is real and that's turned on, then
+// advances the template to its next occurrence. Never invoices
+// automatically - that always happens the normal way, when the tradie
+// marks the job done.
 export async function createRecurringOccurrence(db, settings, r) {
   const { data: customer } = await db
     .from("customers")
@@ -51,6 +57,7 @@ export async function createRecurringOccurrence(db, settings, r) {
       time_confirmed: timeIsConfirmed,
       created_by: r.created_by || null,
       assigned_to: null,
+      business_id: r.business_id,
     })
     .select()
     .single();
@@ -70,9 +77,13 @@ export async function createRecurringOccurrence(db, settings, r) {
     assigneeIds.add(s.team_member_id);
   }
   if (assigneeIds.size > 0) {
-    const { error: sharesErr } = await db
-      .from("job_shares")
-      .insert([...assigneeIds].map((teamMemberId) => ({ job_id: job.id, team_member_id: teamMemberId })));
+    const { error: sharesErr } = await db.from("job_shares").insert(
+      [...assigneeIds].map((teamMemberId) => ({
+        job_id: job.id,
+        team_member_id: teamMemberId,
+        business_id: r.business_id,
+      }))
+    );
     if (sharesErr) {
       console.error("Recurring occurrence assign error:", sharesErr);
     }
