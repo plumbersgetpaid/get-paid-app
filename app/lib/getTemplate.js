@@ -1,7 +1,6 @@
 import { supabaseAdmin } from "./supabaseClient";
+import { getCurrentTeamMember } from "./auth";
 
-// Fallback copy if a template hasn't been saved yet (or the row is missing) -
-// keeps every email working even before the tradie has customized anything
 const DEFAULTS = {
   quote: {
     subject: "Your quote for {{job_type}}",
@@ -41,13 +40,24 @@ const DEFAULTS = {
   },
 };
 
-export async function getTemplate(key) {
+export async function getTemplate(key, businessId) {
+  let resolvedBusinessId = businessId;
+  if (!resolvedBusinessId) {
+    const currentMember = await getCurrentTeamMember();
+    resolvedBusinessId = currentMember?.business_id;
+  }
+
+  if (!resolvedBusinessId) {
+    return DEFAULTS[key] || { subject: "", body: "" };
+  }
+
   const db = supabaseAdmin();
   const { data } = await db
     .from("message_templates")
     .select("*")
     .eq("key", key)
-    .single();
+    .eq("business_id", resolvedBusinessId)
+    .maybeSingle();
 
   if (data?.body) {
     return { subject: data.subject || DEFAULTS[key]?.subject || "", body: data.body };
@@ -55,8 +65,6 @@ export async function getTemplate(key) {
   return DEFAULTS[key] || { subject: "", body: "" };
 }
 
-// Replaces {{token}} placeholders with values from `vars`. Unknown tokens
-// are replaced with an empty string rather than left in place.
 export function renderTemplate(str, vars) {
   if (!str) return "";
   return str.replace(/{{\s*(\w+)\s*}}/g, (_, token) => {
