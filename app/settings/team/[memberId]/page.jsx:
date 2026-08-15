@@ -13,11 +13,15 @@ export default async function TeamMemberPermissions({ params }) {
   const { memberId } = params;
   const currentMember = await getCurrentTeamMember();
   if (!canSeeEverything(currentMember)) {
+    console.error(
+      "Team member permissions: canSeeEverything failed for",
+      currentMember ? { id: currentMember.id, role: currentMember.role } : "null currentMember"
+    );
     notFound();
   }
 
   const db = supabaseAdmin();
-  const { data: member } = await db
+  const { data: member, error: memberError } = await db
     .from("team_members")
     .select(
       "id, name, role, can_invoice, can_see_client_database, can_create_quote, can_create_job, can_create_recurring_job, can_reschedule"
@@ -25,11 +29,21 @@ export default async function TeamMemberPermissions({ params }) {
     .eq("id", memberId)
     .maybeSingle();
 
+  if (memberError) {
+    console.error("Team member permissions lookup error:", memberError);
+  }
+
   if (!member) {
     notFound();
   }
 
   if (member.role !== "subcontractor") {
+    console.error(
+      "Team member permissions: wrong role for",
+      member.id,
+      "- role was",
+      member.role
+    );
     notFound();
   }
 
