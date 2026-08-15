@@ -1,8 +1,18 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { formatCurrency } from "../../../lib/formatCurrency";
+import { getEmailFrom } from "../../../lib/emailFrom";
+import { textToEmailHtml } from "../../../lib/emailHtml";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const form = await req.formData();
   const jobId = form.get("jobId");
 
@@ -10,7 +20,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing jobId" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: job, error: jobErr } = await db
     .from("jobs")
@@ -32,15 +42,21 @@ export async function POST(req) {
   if (customer?.email && process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
+      const settings = await getBusinessSettings();
+      const bodyText = `Hi ${customer.name},\n\nJust checking in on the quote we sent for ${
+        job.job_type || "your job"
+      } (${formatCurrency(job.amount, settings.currency)}). Let us know if you'd like to go ahead, or if you have any questions.\n\nThanks,\n${
+        settings.business_name
+      }`;
+      const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
+        bodyText
+      )}</div>`;
+
       await resend.emails.send({
-        from: "Get Paid <onboarding@resend.dev>",
+        from: getEmailFrom(settings.business_name),
         to: customer.email,
         subject: "Following up on your quote",
-        html: `
-          <p>Hi ${customer.name},</p>
-          <p>Just checking in on the quote we sent for ${job.job_type || "your job"} (£${job.amount}). Let us know if you'd like to go ahead, or if you have any questions.</p>
-          <p>Thanks,<br/>Your Plumber</p>
-        `,
+        html,
       });
 
       await db
