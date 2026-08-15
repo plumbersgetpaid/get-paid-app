@@ -1,8 +1,8 @@
-import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
 import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurrence";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canCreateRecurringJob } from "../../../../lib/permissions";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -29,7 +29,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing recurringId" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: existingShares } = await db
     .from("recurring_job_shares")
@@ -74,9 +74,13 @@ export async function POST(req) {
       .in("team_member_id", toRemove);
   }
   if (toAdd.length > 0) {
-    const { error: addErr } = await db
-      .from("recurring_job_shares")
-      .insert(toAdd.map((teamMemberId) => ({ recurring_job_id: recurringId, team_member_id: teamMemberId })));
+    const { error: addErr } = await db.from("recurring_job_shares").insert(
+      toAdd.map((teamMemberId) => ({
+        recurring_job_id: recurringId,
+        team_member_id: teamMemberId,
+        business_id: currentMember.business_id,
+      }))
+    );
     if (addErr) {
       console.error("Recurring job assign update error:", addErr);
     }
