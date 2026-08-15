@@ -1,10 +1,15 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canAccessJob } from "../../../../lib/jobAccess";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const form = await req.formData();
   const jobId = form.get("jobId");
   const note = (form.get("note") || "").toString().trim();
@@ -15,7 +20,8 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing job or note text" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
 
   const { data: jobForCheck } = await db
     .from("jobs")
@@ -35,7 +41,7 @@ export async function POST(req) {
     const ext = (image.name.split(".").pop() || "jpg").toLowerCase();
     const path = `${jobId}/${Date.now()}.${ext}`;
 
-    const { error: uploadError } = await db.storage
+    const { error: uploadError } = await adminDb.storage
       .from("job-note-images")
       .upload(path, bytes, { contentType: image.type || "image/jpeg", upsert: true });
 
@@ -47,7 +53,7 @@ export async function POST(req) {
       );
     }
 
-    const { data: publicUrlData } = db.storage.from("job-note-images").getPublicUrl(path);
+    const { data: publicUrlData } = adminDb.storage.from("job-note-images").getPublicUrl(path);
     imageUrl = publicUrlData.publicUrl;
     imageStoragePath = path;
   }
@@ -59,6 +65,7 @@ export async function POST(req) {
     image_url: imageUrl,
     image_storage_path: imageStoragePath,
     created_by: currentMember?.id || null,
+    business_id: currentMember.business_id,
   });
 
   if (error) {
