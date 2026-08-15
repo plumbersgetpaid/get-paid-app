@@ -1,5 +1,4 @@
 import { PDFDocument } from "pdf-lib";
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
@@ -7,6 +6,7 @@ import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function GET(req) {
@@ -20,7 +20,7 @@ export async function GET(req) {
   const start = searchParams.get("start");
   const end = searchParams.get("end");
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   let query = db.from("invoices").select("*").order("created_at", { ascending: true });
   let filenameSuffix = "all";
