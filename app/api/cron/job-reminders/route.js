@@ -1,10 +1,9 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { getEmailFrom } from "../../../lib/emailFrom";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
-// Designed to be called once a day, first thing in the morning, by a
-// scheduler. Emails the business a summary of jobs booked in for tomorrow.
 export async function GET(req) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -39,34 +38,44 @@ export async function GET(req) {
     .in("id", customerIds);
   const nameById = Object.fromEntries((customers || []).map((c) => [c.id, c.name]));
 
-  const settings = await getBusinessSettings();
+  const jobsByBusiness = new Map();
+  for (const j of jobs) {
+    if (!jobsByBusiness.has(j.business_id)) {
+      jobsByBusiness.set(j.business_id, []);
+    }
+    jobsByBusiness.get(j.business_id).push(j);
+  }
 
-  if (settings.contact_email && process.env.RESEND_API_KEY) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
+  for (const [businessId, businessJobs] of jobsByBusiness) {
+    const settings = await getBusinessSettings(businessId);
 
-    const lines = [...jobs]
-      .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start))
-      .map((j) => {
-        const time = new Date(j.scheduled_start).toLocaleTimeString("en-GB", {
-          hour: "2-digit",
-          minute: "2-digit",
+    if (settings.contact_email && process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+
+      const lines = [...businessJobs]
+        .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start))
+        .map((j) => {
+          const time = new Date(j.scheduled_start).toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          return `${time} - ${nameById[j.customer_id] || "Customer"} (${
+            j.job_type || "Job"
+          })`;
         });
-        return `${time} - ${nameById[j.customer_id] || "Customer"} (${
-          j.job_type || "Job"
-        })`;
-      });
 
-    try {
-      await resend.emails.send({
-        from: `${settings.business_name} <onboarding@resend.dev>`,
-        to: settings.contact_email,
-        subject: `Tomorrow's jobs (${jobs.length})`,
-        html: `<div style="font-family:sans-serif; white-space:pre-wrap;"><p>Here's what's booked in for tomorrow:</p><p>${lines.join(
-          "<br/>"
-        )}</p></div>`,
-      });
-    } catch (e) {
-      console.error("Reminder email error:", e);
+      try {
+        await resend.emails.send({
+          from: getEmailFrom(settings.business_name),
+          to: settings.contact_email,
+          subject: `Tomorrow's jobs (${businessJobs.length})`,
+          html: `<div style="font-family:sans-serif; white-space:pre-wrap;"><p>Here's what's booked in for tomorrow:</p><p>${lines.join(
+            "<br/>"
+          )}</p></div>`,
+        });
+      } catch (e) {
+        console.error("Reminder email error:", e);
+      }
     }
   }
 
