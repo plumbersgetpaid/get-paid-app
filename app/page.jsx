@@ -4,6 +4,7 @@ import { formatCurrency } from "./lib/formatCurrency";
 import { getTodayInLondon } from "./lib/today";
 import { getCurrentTeamMember } from "./lib/auth";
 import { canSeeEverything, canInvoice } from "./lib/permissions";
+import { getScopedDb } from "./lib/scopedSupabaseClient";
 import Greeting from "./components/Greeting";
 import Link from "next/link";
 
@@ -12,15 +13,17 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function Today() {
-  const db = supabaseAdmin();
-  const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
 
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
+
+  const settings = await getBusinessSettings();
   const todayStr = getTodayInLondon();
 
   const { data: outstanding } = canInvoice(currentMember)
-    ? await db.from("outstanding_invoices").select("*")
+    ? await adminDb.from("outstanding_invoices").select("*")
     : { data: [] };
   const totalOwed = (outstanding || []).reduce((sum, i) => sum + Number(i.amount), 0);
   const dueOrOverdueInvoices = (outstanding || []).filter((i) => i.days_overdue >= 0);
