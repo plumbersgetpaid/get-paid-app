@@ -1,87 +1,45 @@
-import { NextResponse } from "next/server";
-import { verifySessionToken, SESSION_COOKIE } from "./app/lib/auth";
-import { supabaseAdmin } from "./app/lib/supabaseClient";
-
-const PUBLIC_PATHS = [
-  "/login",
-  "/setup",
-  "/forgot-password",
-  "/reset-password",
-  "/api/auth/login",
-  "/api/auth/setup",
-  "/api/auth/logout",
-  "/api/auth/forgot-password",
-  "/api/auth/reset-password",
-];
-
-const OWNER_MANAGER_ONLY_PATHS = [
-  "/jobs/recurring",
-  "/jobs/new",
-  "/clients/new",
-  "/calendar/quick-book",
-];
-
-const OWNER_MANAGER_ONLY_PATTERNS = [
-  /^\/clients\/[^/]+\/edit$/,
-  /^\/jobs\/schedule\/[^/]+$/,
-  /^\/jobs\/complete\/[^/]+$/,
-];
-
-function matchesAny(pathname, list) {
-  return list.some((p) => pathname === p || pathname.startsWith(p + "/"));
+// Single, shared definition of "this person can see everything" - money,
+// invoices, all jobs regardless of assignment, clients, settings. Kept
+// in one place so every page checks the same rule the same way, rather
+// than each page re-implementing its own version of "is this an owner or
+// manager" that could quietly drift out of sync with the others over
+// time.
+export function canSeeEverything(member) {
+  return member?.role === "owner" || member?.role === "manager";
 }
 
-function matchesAnyPattern(pathname, patterns) {
-  return patterns.some((re) => re.test(pathname));
+// Below this point: per-capability checks for a subcontractor. Every one
+// of these is owner/manager-first - canSeeEverything() short-circuits to
+// true before the specific column is even looked at, so an owner or
+// manager is never affected by these at all, regardless of what's set on
+// their own row (which for them is meaningless anyway - the column only
+// has real effect on a subcontractor's own row).
+//
+// Each function name matches its own database column 1:1 deliberately -
+// canInvoice() reads can_invoice, canReschedule() reads can_reschedule,
+// and so on - so there's no separate mapping to keep in sync by hand
+// between what's stored and what's checked.
+
+export function canInvoice(member) {
+  return canSeeEverything(member) || !!member?.can_invoice;
 }
 
-export async function middleware(req) {
-  const { pathname } = req.nextUrl;
-
-  if (matchesAny(pathname, PUBLIC_PATHS)) {
-    return NextResponse.next();
-  }
-
-  try {
-    const token = req.cookies.get(SESSION_COOKIE)?.value;
-    const teamMemberId = token ? await verifySessionToken(token) : null;
-
-    if (!teamMemberId) {
-      const loginUrl = new URL("/login", req.url);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    const db = supabaseAdmin();
-    const { data: member } = await db
-      .from("team_members")
-      .select("id, role")
-      .eq("id", teamMemberId)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (!member) {
-      const loginUrl = new URL("/login", req.url);
-      const res = NextResponse.redirect(loginUrl);
-      res.cookies.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
-      return res;
-    }
-
-    const showEverything = member.role === "owner" || member.role === "manager";
-    const isProtectedPath =
-      matchesAny(pathname, OWNER_MANAGER_ONLY_PATHS) ||
-      matchesAnyPattern(pathname, OWNER_MANAGER_ONLY_PATTERNS);
-    if (!showEverything && isProtectedPath) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-
-    return NextResponse.next();
-  } catch (e) {
-    console.error("Middleware error:", e);
-    const loginUrl = new URL("/login", req.url);
-    return NextResponse.redirect(loginUrl);
-  }
+export function canSeeClientDatabase(member) {
+  return canSeeEverything(member) || !!member?.can_see_client_database;
 }
 
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
-};
+export function canCreateQuote(member) {
+  return canSeeEverything(member) || !!member?.can_create_quote;
+}
+
+export function canCreateJob(member) {
+  return canSeeEverything(member) || !!member?.can_create_job;
+}
+
+export function canCreateRecurringJob(member) {
+  return canSeeEverything(member) || !!member?.can_create_recurring_job;
+}
+
+export function canReschedule(member) {
+  return canSeeEverything(member) || !!member?.can_reschedule;
+}
