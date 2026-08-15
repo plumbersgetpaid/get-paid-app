@@ -39,9 +39,19 @@ export async function POST(req) {
     return NextResponse.json({ error: "The owner's access can't be removed" }, { status: 400 });
   }
 
+  const updates = { is_active: isActive };
+  if (!isActive) {
+    updates.can_invoice = false;
+    updates.can_see_client_database = false;
+    updates.can_create_quote = false;
+    updates.can_create_job = false;
+    updates.can_create_recurring_job = false;
+    updates.can_reschedule = false;
+  }
+
   const { error } = await db
     .from("team_members")
-    .update({ is_active: isActive })
+    .update(updates)
     .eq("id", memberId);
 
   if (error) {
