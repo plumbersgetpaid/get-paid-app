@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { verifyPassword } from "../../../lib/password";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -22,7 +22,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "Enter your current password to confirm" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: freshMember } = await db
     .from("team_members")
