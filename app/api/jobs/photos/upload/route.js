@@ -1,7 +1,14 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
+import { getCurrentTeamMember } from "../../../../lib/auth";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const form = await req.formData();
   const jobId = form.get("jobId");
   const label = form.get("label") === "after" ? "after" : "before";
@@ -11,12 +18,14 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing job or photo" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
+
   const bytes = new Uint8Array(await photo.arrayBuffer());
   const ext = (photo.name.split(".").pop() || "jpg").toLowerCase();
   const path = `${jobId}/${label}-${Date.now()}.${ext}`;
 
-  const { error: uploadError } = await db.storage
+  const { error: uploadError } = await adminDb.storage
     .from("job-photos")
     .upload(path, bytes, { contentType: photo.type || "image/jpeg", upsert: true });
 
@@ -27,13 +36,14 @@ export async function POST(req) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  const { data: publicUrlData } = db.storage.from("job-photos").getPublicUrl(path);
+  const { data: publicUrlData } = adminDb.storage.from("job-photos").getPublicUrl(path);
 
   const { error: insertError } = await db.from("job_photos").insert({
     job_id: jobId,
     url: publicUrlData.publicUrl,
     storage_path: path,
     label,
+    business_id: currentMember.business_id,
   });
 
   if (insertError) {
