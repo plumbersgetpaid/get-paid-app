@@ -34,7 +34,7 @@ export default function LogoUploadForm() {
         return;
       }
 
-      window.location.href = "/settings?saved=1";
+      window.location.replace("/settings?saved=1");
     } catch (err) {
       console.error("Logo upload error:", err);
       setError("Couldn't reach the server. Check your connection and try again.");
