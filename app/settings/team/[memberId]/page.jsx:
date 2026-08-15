@@ -1,7 +1,6 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
-import { notFound } from "next/navigation";
 import BackButton from "../../../components/BackButton";
 import PermissionsForm from "./PermissionsForm";
 
@@ -12,12 +11,17 @@ export const revalidate = 0;
 export default async function TeamMemberPermissions({ params }) {
   const { memberId } = params;
   const currentMember = await getCurrentTeamMember();
+
   if (!canSeeEverything(currentMember)) {
-    console.error(
-      "Team member permissions: canSeeEverything failed for",
-      currentMember ? { id: currentMember.id, role: currentMember.role } : "null currentMember"
+    return (
+      <main>
+        <h1 style={{ fontSize: 18 }}>Diagnostic - not a real 404</h1>
+        <p>The canSeeEverything(currentMember) check failed. Here's what currentMember was:</p>
+        <pre style={{ background: "#f3f3f3", padding: 12, borderRadius: 8, whiteSpace: "pre-wrap" }}>
+          {JSON.stringify(currentMember, null, 2)}
+        </pre>
+      </main>
     );
-    notFound();
   }
 
   const db = supabaseAdmin();
@@ -29,22 +33,30 @@ export default async function TeamMemberPermissions({ params }) {
     .eq("id", memberId)
     .maybeSingle();
 
-  if (memberError) {
-    console.error("Team member permissions lookup error:", memberError);
-  }
-
-  if (!member) {
-    notFound();
+  if (memberError || !member) {
+    return (
+      <main>
+        <h1 style={{ fontSize: 18 }}>Diagnostic - not a real 404</h1>
+        <p>The member lookup for id "{memberId}" came back empty or errored.</p>
+        <p>Error:</p>
+        <pre style={{ background: "#f3f3f3", padding: 12, borderRadius: 8, whiteSpace: "pre-wrap" }}>
+          {JSON.stringify(memberError, null, 2)}
+        </pre>
+        <p>Member:</p>
+        <pre style={{ background: "#f3f3f3", padding: 12, borderRadius: 8, whiteSpace: "pre-wrap" }}>
+          {JSON.stringify(member, null, 2)}
+        </pre>
+      </main>
+    );
   }
 
   if (member.role !== "subcontractor") {
-    console.error(
-      "Team member permissions: wrong role for",
-      member.id,
-      "- role was",
-      member.role
+    return (
+      <main>
+        <h1 style={{ fontSize: 18 }}>Diagnostic - not a real 404</h1>
+        <p>Member was found, but role was "{member.role}", not "subcontractor".</p>
+      </main>
     );
-    notFound();
   }
 
   return (
