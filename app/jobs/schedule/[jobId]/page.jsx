@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
 import { getCurrentTeamMember } from "../../../lib/auth";
-import { canSeeEverything } from "../../../lib/permissions";
+import { canSeeEverything, canReschedule } from "../../../lib/permissions";
 import BackButton from "../../../components/BackButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -26,11 +26,9 @@ export default async function ScheduleJob({ params, searchParams }) {
     notFound();
   }
 
-  // Scheduling is now owner/manager only - a subcontractor no longer
-  // reschedules their own jobs, even the one they're assigned to
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
-  if (!showEverything) {
+  if (!canReschedule(currentMember)) {
     notFound();
   }
 
