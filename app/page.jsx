@@ -3,7 +3,7 @@ import { getBusinessSettings } from "./lib/getBusinessSettings";
 import { formatCurrency } from "./lib/formatCurrency";
 import { getTodayInLondon } from "./lib/today";
 import { getCurrentTeamMember } from "./lib/auth";
-import { canSeeEverything } from "./lib/permissions";
+import { canSeeEverything, canInvoice } from "./lib/permissions";
 import Greeting from "./components/Greeting";
 import Link from "next/link";
 
@@ -19,7 +19,7 @@ export default async function Today() {
 
   const todayStr = getTodayInLondon();
 
-  const { data: outstanding } = showEverything
+  const { data: outstanding } = canInvoice(currentMember)
     ? await db.from("outstanding_invoices").select("*")
     : { data: [] };
   const totalOwed = (outstanding || []).reduce((sum, i) => sum + Number(i.amount), 0);
@@ -91,13 +91,12 @@ export default async function Today() {
   const overdueCount = dueOrOverdueInvoices.length;
   const lateCount = lateJobs.length;
   const needsTimeCount = needsTimeJobs.length;
-  const allClear = showEverything
-    ? quotesCount === 0 &&
-      needsBookingCount === 0 &&
-      overdueCount === 0 &&
-      lateCount === 0 &&
-      needsTimeCount === 0
-    : needsBookingCount === 0 && lateCount === 0 && needsTimeCount === 0;
+  const allClear =
+    quotesCount === 0 &&
+    needsBookingCount === 0 &&
+    overdueCount === 0 &&
+    lateCount === 0 &&
+    needsTimeCount === 0;
 
   return (
     <main>
@@ -174,7 +173,7 @@ export default async function Today() {
               {needsBookingCount === 1 ? "s" : ""} booking in
             </Link>
           )}
-          {showEverything && overdueCount > 0 && (
+          {canInvoice(currentMember) && overdueCount > 0 && (
             <Link href="/work?tab=invoices" style={attentionRowStyle}>
               🔴 {overdueCount} invoice{overdueCount === 1 ? "" : "s"} due or overdue
             </Link>
