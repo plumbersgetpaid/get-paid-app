@@ -3,8 +3,9 @@ import { supabaseAdmin } from "../lib/supabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getCurrentTeamMember } from "../lib/auth";
-import { canSeeEverything } from "../lib/permissions";
+import { canSeeEverything, canSeeClientDatabase } from "../lib/permissions";
 import { getSharedJobIds } from "../lib/jobAccess";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -15,6 +16,11 @@ export default async function Clients({ searchParams }) {
   const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
+
+  if (!canSeeClientDatabase(currentMember)) {
+    notFound();
+  }
+
   const q = (searchParams?.q || "").trim().toLowerCase();
 
   const { data: rawCustomers } = await db
@@ -190,20 +196,6 @@ export default async function Clients({ searchParams }) {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const searchInputStyle = {
   flex: 1,
