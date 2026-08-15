@@ -8,6 +8,7 @@ import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -24,9 +25,10 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing invoiceId" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
 
-  const { data: inv, error: fetchErr } = await db
+  const { data: inv, error: fetchErr } = await adminDb
     .from("outstanding_invoices")
     .select("*")
     .eq("invoice_id", invoiceId)
@@ -120,6 +122,7 @@ export async function POST(req) {
         invoice_id: inv.invoice_id,
         message: bodyText,
         channel: "email",
+        business_id: currentMember.business_id,
       });
     } catch (e) {
       console.error("Manual chase send error:", e);
