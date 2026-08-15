@@ -1,7 +1,7 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canAccessJob } from "../../../lib/jobAccess";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import NotesSection from "./NotesSection";
 
@@ -11,7 +11,9 @@ export const revalidate = 0;
 
 export default async function JobNotes({ params }) {
   const { jobId } = params;
-  const db = supabaseAdmin();
+
+  const currentMember = await getCurrentTeamMember();
+  const db = await getScopedDb(currentMember);
 
   const { data: job, error } = await db
     .from("jobs")
@@ -23,12 +25,6 @@ export default async function JobNotes({ params }) {
     notFound();
   }
 
-  // Uses the same shared access check as Work → Jobs and the job details
-  // view - owner/manager, the direct assignee, or anyone it's been
-  // shared with. Was only checking assigned_to directly until now, which
-  // meant someone a job was shared with (rather than directly assigned)
-  // could see the Job notes button but got blocked the moment they tapped it.
-  const currentMember = await getCurrentTeamMember();
   const hasAccess = await canAccessJob(db, job, currentMember);
   if (!hasAccess) {
     notFound();
