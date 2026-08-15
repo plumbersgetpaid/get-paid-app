@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const PERMISSIONS = [
@@ -39,6 +39,16 @@ const PERMISSIONS = [
 
 export default function PermissionsForm({ member }) {
   const router = useRouter();
+
+  useEffect(() => {
+    function handlePageShow(event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    }
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
   const [initial, setInitial] = useState(() =>
     Object.fromEntries(PERMISSIONS.map((p) => [p.key, !!member[p.key]]))
   );
