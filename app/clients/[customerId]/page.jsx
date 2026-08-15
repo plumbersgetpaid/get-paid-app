@@ -3,12 +3,12 @@ import BackButton from "../../components/BackButton";
 import DuplicatesSection from "./DuplicatesSection";
 import DeleteClientButton from "../../components/DeleteClientButton";
 import { notFound } from "next/navigation";
-import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency } from "../../lib/formatCurrency";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeEverything, canSeeClientDatabase } from "../../lib/permissions";
 import { filterJobsForMember } from "../../lib/jobAccess";
+import { getScopedDb } from "../../lib/scopedSupabaseClient";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -16,7 +16,6 @@ export const revalidate = 0;
 
 export default async function ClientDetail({ params }) {
   const { customerId } = params;
-  const db = supabaseAdmin();
   const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
@@ -24,6 +23,8 @@ export default async function ClientDetail({ params }) {
   if (!canSeeClientDatabase(currentMember)) {
     notFound();
   }
+
+  const db = await getScopedDb(currentMember);
 
   const { data: customer, error } = await db
     .from("customers")
@@ -211,32 +212,4 @@ const jobCardStyle = {
   borderRadius: 10,
   padding: 14,
   marginBottom: 8,
-};
-
-const duplicateCardStyle = {
-  background: "#fef2f2",
-  border: "1px solid #fecaca",
-  borderRadius: 12,
-  padding: 16,
-  marginBottom: 16,
-};
-
-const mergeButtonStyle = {
-  background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
-  padding: "8px 12px",
-  borderRadius: 8,
-  fontWeight: 600,
-  fontSize: 13,
-};
-
-const ignoreButtonStyle = {
-  background: "none",
-  border: "none",
-  color: "#666",
-  fontSize: 12,
-  textDecoration: "underline",
-  cursor: "pointer",
-  padding: 0,
 };
