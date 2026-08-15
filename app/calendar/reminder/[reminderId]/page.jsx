@@ -1,8 +1,8 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
 import { canAccessReminder } from "../../../lib/reminderAccess";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import MultiAssignField from "../../../components/MultiAssignField";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
@@ -13,9 +13,9 @@ export const revalidate = 0;
 
 export default async function ReminderDetail({ params }) {
   const { reminderId } = params;
-  const db = supabaseAdmin();
 
   const currentMember = await getCurrentTeamMember();
+  const db = await getScopedDb(currentMember);
 
   const { data: reminder, error } = await db
     .from("personal_events")
@@ -146,20 +146,6 @@ const inputStyle = {
   flex: 1,
   width: "100%",
   boxSizing: "border-box",
-};
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
 };
 
 const cancelButtonStyle = {
