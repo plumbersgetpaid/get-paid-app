@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function TeamMemberRow({ member, isSelf }) {
   const [role, setRole] = useState(member.role);
@@ -100,6 +101,12 @@ export default function TeamMemberRow({ member, isSelf }) {
             {isActive ? "Deactivate" : "Reactivate"}
           </button>
         )}
+
+        {role === "subcontractor" && (
+          <Link href={`/settings/team/${member.id}`} style={permissionsLinkStyle}>
+            ⚙️ Permissions
+          </Link>
+        )}
       </div>
 
       {error && <div style={errorTextStyle}>{error}</div>}
@@ -157,4 +164,15 @@ const errorTextStyle = {
   fontSize: 12,
   color: "#dc2626",
   marginTop: 6,
+};
+
+const permissionsLinkStyle = {
+  fontSize: 12,
+  padding: "6px 10px",
+  borderRadius: 6,
+  border: "1px solid #ddd",
+  color: "#111",
+  background: "white",
+  fontWeight: 600,
+  textDecoration: "none",
 };
