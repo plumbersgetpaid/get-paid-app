@@ -5,12 +5,20 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { canInvoice } from "../../../lib/permissions";
+import { NextResponse } from "next/server";
 
 export async function GET(req) {
+  const currentMember = await getCurrentTeamMember();
+  if (!canInvoice(currentMember)) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(req.url);
-  const month = searchParams.get("month"); // format YYYY-MM, optional
-  const start = searchParams.get("start"); // format YYYY-MM-DD, optional
-  const end = searchParams.get("end"); // format YYYY-MM-DD, optional
+  const month = searchParams.get("month");
+  const start = searchParams.get("start");
+  const end = searchParams.get("end");
 
   const db = supabaseAdmin();
 
@@ -18,12 +26,10 @@ export async function GET(req) {
   let filenameSuffix = "all";
 
   if (start || end) {
-    // Custom date range takes priority over the month picker
     if (start) {
       query = query.gte("created_at", start);
     }
     if (end) {
-      // Include the whole end day by using the next day as an exclusive upper bound
       const endDate = new Date(end);
       endDate.setDate(endDate.getDate() + 1);
       query = query.lt("created_at", endDate.toISOString().slice(0, 10));
@@ -32,7 +38,7 @@ export async function GET(req) {
   } else if (month) {
     const [y, m] = month.split("-").map(Number);
     const monthStart = `${month}-01`;
-    const nextMonth = new Date(y, m, 1); // first day of the following month
+    const nextMonth = new Date(y, m, 1);
     const monthEnd = nextMonth.toISOString().slice(0, 10);
     query = query.gte("created_at", monthStart).lt("created_at", monthEnd);
     filenameSuffix = month;
