@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -17,7 +17,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing job or team member" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: job } = await db
     .from("jobs")
@@ -42,7 +42,7 @@ export async function POST(req) {
 
   const { error } = await db
     .from("job_shares")
-    .insert({ job_id: jobId, team_member_id: teamMemberId });
+    .insert({ job_id: jobId, team_member_id: teamMemberId, business_id: currentMember.business_id });
 
   if (error) {
     if (error.code === "23505") {
