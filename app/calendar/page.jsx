@@ -6,6 +6,8 @@ import { advanceDate } from "../lib/duration";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canCreateJob } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
+import { getScopedDb } from "../lib/scopedSupabaseClient";
+import { notFound } from "next/navigation";
 import DateJump from "./DateJump";
 import Link from "next/link";
 
@@ -78,11 +80,17 @@ function projectRecurringOccurrences(nextOccurrence, value, unit, rangeStartStr,
 }
 
 export default async function Calendar({ searchParams }) {
-  const db = supabaseAdmin();
+  const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    notFound();
+  }
+  const showEverything = canSeeEverything(currentMember);
+
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
+
   const settings = await getBusinessSettings();
   const todayStr = getTodayInLondon();
-  const currentMember = await getCurrentTeamMember();
-  const showEverything = canSeeEverything(currentMember);
 
   const range = ["today", "week", "month"].includes(searchParams?.range)
     ? searchParams.range
@@ -122,7 +130,7 @@ export default async function Calendar({ searchParams }) {
   const jobCustomerName = Object.fromEntries((jobCustomers || []).map((c) => [c.id, c.name]));
 
   const { data: outstandingInvoices } = showEverything
-    ? await db
+    ? await adminDb
         .from("outstanding_invoices")
         .select("*")
         .gte("due_date", rangeStartStr)
