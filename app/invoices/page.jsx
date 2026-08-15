@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../lib/supabaseClient";
 import { formatCurrency, formatInvoiceNumber } from "../lib/formatCurrency";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../lib/auth";
-import { canSeeEverything } from "../lib/permissions";
+import { canInvoice } from "../lib/permissions";
 import { notFound } from "next/navigation";
 import BackButton from "../components/BackButton";
 import DateFieldWithHint from "../components/DateFieldWithHint";
@@ -17,7 +17,7 @@ export default async function AllInvoices({ searchParams }) {
   const settings = await getBusinessSettings();
 
   const currentMember = await getCurrentTeamMember();
-  if (!canSeeEverything(currentMember)) {
+  if (!canInvoice(currentMember)) {
     notFound();
   }
 
@@ -281,20 +281,6 @@ export default async function AllInvoices({ searchParams }) {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const monthSelectStyle = {
   flex: 1,
