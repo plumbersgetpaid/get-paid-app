@@ -1,10 +1,10 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything, canReschedule, canInvoice } from "../../../lib/permissions";
 import { canAccessJob } from "../../../lib/jobAccess";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import AssignAndShareControl from "../../../components/AssignAndShareControl";
 import DeleteJobButton from "../../../components/DeleteJobButton";
@@ -60,14 +60,14 @@ function describeDuration(startIso, endIso) {
 
 export default async function ViewJob({ params }) {
   const { jobId } = params;
-  const db = supabaseAdmin();
+  const currentMember = await getCurrentTeamMember();
+  const db = await getScopedDb(currentMember);
 
   const { data: job, error } = await db.from("jobs").select("*").eq("id", jobId).single();
   if (error || !job) {
     notFound();
   }
 
-  const currentMember = await getCurrentTeamMember();
   const hasAccess = await canAccessJob(db, job, currentMember);
   if (!hasAccess) {
     notFound();
