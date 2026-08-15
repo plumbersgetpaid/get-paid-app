@@ -2,6 +2,7 @@ import CompleteJobForm from "./CompleteJobForm";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything, canInvoice } from "../../../lib/permissions";
+import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,11 @@ export default async function CompleteJob({ params, searchParams }) {
     .single();
 
   if (jobError || !job) {
+    notFound();
+  }
+
+  const hasAccess = await canAccessJob(db, job, currentMember);
+  if (!hasAccess) {
     notFound();
   }
 
