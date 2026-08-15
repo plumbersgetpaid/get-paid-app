@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const PERMISSIONS = [
   {
@@ -37,6 +38,7 @@ const PERMISSIONS = [
 ];
 
 export default function PermissionsForm({ member }) {
+  const router = useRouter();
   const [initial, setInitial] = useState(() =>
     Object.fromEntries(PERMISSIONS.map((p) => [p.key, !!member[p.key]]))
   );
@@ -80,6 +82,7 @@ export default function PermissionsForm({ member }) {
       setShowConfirm(false);
       setSaved(true);
       setBusy(false);
+      router.refresh();
     } catch (err) {
       console.error("Update permissions error:", err);
       setError("Couldn't reach the server");
