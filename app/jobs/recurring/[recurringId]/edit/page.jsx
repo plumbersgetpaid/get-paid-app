@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../../lib/auth";
-import { canSeeEverything } from "../../../../lib/permissions";
+import { canCreateRecurringJob } from "../../../../lib/permissions";
 import BackButton from "../../../../components/BackButton";
 import MultiAssignField from "../../../../components/MultiAssignField";
 import Link from "next/link";
@@ -12,7 +12,7 @@ export const revalidate = 0;
 
 export default async function EditRecurringJob({ params }) {
   const currentMember = await getCurrentTeamMember();
-  if (!canSeeEverything(currentMember)) {
+  if (!canCreateRecurringJob(currentMember)) {
     notFound();
   }
 
@@ -36,9 +36,6 @@ export default async function EditRecurringJob({ params }) {
     .order("name");
   const teamMembers = teamMembersData || [];
 
-  // Combines the legacy single assigned_to with recurring_job_shares
-  // into one starting set for the tick-box field - same pattern as
-  // regular jobs, so this form shows everyone currently on it
   const currentAssigneeIds = new Set();
   if (recurring.assigned_to) currentAssigneeIds.add(recurring.assigned_to);
   const { data: recurringShares } = await db
