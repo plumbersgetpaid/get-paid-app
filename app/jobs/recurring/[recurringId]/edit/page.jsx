@@ -1,7 +1,7 @@
-import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canCreateRecurringJob } from "../../../../lib/permissions";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import BackButton from "../../../../components/BackButton";
 import MultiAssignField from "../../../../components/MultiAssignField";
 import Link from "next/link";
@@ -17,7 +17,7 @@ export default async function EditRecurringJob({ params }) {
   }
 
   const { recurringId } = params;
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: recurring, error } = await db
     .from("recurring_jobs")
