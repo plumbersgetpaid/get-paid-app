@@ -23,7 +23,7 @@ export default function SettingsForm({ settings }) {
         return;
       }
 
-      window.location.href = "/settings?saved=1";
+      window.location.replace("/settings?saved=1");
     } catch (err) {
       console.error("Save settings error:", err);
       setError("Couldn't reach the server. Check your connection and try again.");
