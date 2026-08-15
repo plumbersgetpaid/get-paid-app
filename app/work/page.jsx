@@ -3,7 +3,7 @@ import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getTodayInLondon } from "../lib/today";
 import { getCurrentTeamMember } from "../lib/auth";
-import { canSeeEverything, canInvoice } from "../lib/permissions";
+import { canSeeEverything, canInvoice, canCreateRecurringJob } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
 import AssignAndShareControl from "../components/AssignAndShareControl";
 import Link from "next/link";
@@ -357,7 +357,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
         </button>
       </form>
 
-      {showEverything && (
+      {canCreateRecurringJob(currentMember) && (
         <Link href="/jobs/recurring" style={recurringButtonStyle}>
           🔁 Recurring jobs
         </Link>
