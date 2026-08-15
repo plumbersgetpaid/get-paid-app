@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeClientDatabase } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export default async function EditClient({ params }) {
   }
 
   const { customerId } = params;
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: customer, error } = await db
     .from("customers")
