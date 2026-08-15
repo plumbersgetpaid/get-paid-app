@@ -1,11 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AssignAndShareControl({ jobId, initialAssignees, teamMembers }) {
+  const router = useRouter();
   const [assignees, setAssignees] = useState(initialAssignees);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    function handlePageShow(event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    }
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
 
   const assignedIds = new Set(assignees.map((a) => a.id));
 
@@ -32,6 +44,8 @@ export default function AssignAndShareControl({ jobId, initialAssignees, teamMem
         setAssignees(previous);
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Couldn't update that");
+      } else {
+        router.refresh();
       }
     } catch (err) {
       console.error("Update assignment error:", err);
