@@ -1,4 +1,3 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
@@ -8,6 +7,7 @@ import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canCreateJob } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -45,7 +45,7 @@ export async function POST(req) {
   const start = new Date(`${startDate}T${startTime}:00`);
   const end = computeScheduleEnd(start, durationValue, durationUnit, includeWeekends);
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   if (!force) {
     const { data: others } = await db
@@ -125,7 +125,12 @@ export async function POST(req) {
   } else {
     const { data: newCustomer, error: custErr } = await db
       .from("customers")
-      .insert({ name: customerName, phone: phone || null, email: email || null })
+      .insert({
+        name: customerName,
+        phone: phone || null,
+        email: email || null,
+        business_id: currentMember.business_id,
+      })
       .select()
       .single();
 
@@ -149,6 +154,7 @@ export async function POST(req) {
       scheduled_end: end.toISOString(),
       created_by: currentMember?.id || null,
       assigned_to: null,
+      business_id: currentMember.business_id,
     })
     .select()
     .single();
@@ -159,9 +165,13 @@ export async function POST(req) {
   }
 
   if (assignedToIds.length > 0 && newJob) {
-    const { error: sharesErr } = await db
-      .from("job_shares")
-      .insert(assignedToIds.map((teamMemberId) => ({ job_id: newJob.id, team_member_id: teamMemberId })));
+    const { error: sharesErr } = await db.from("job_shares").insert(
+      assignedToIds.map((teamMemberId) => ({
+        job_id: newJob.id,
+        team_member_id: teamMemberId,
+        business_id: currentMember.business_id,
+      }))
+    );
     if (sharesErr) {
       console.error("Quick-book assign error:", sharesErr);
     }
