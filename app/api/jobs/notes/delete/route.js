@@ -1,10 +1,15 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canAccessJob } from "../../../../lib/jobAccess";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const form = await req.formData();
   const noteId = form.get("noteId");
 
@@ -12,7 +17,8 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing noteId" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
 
   const { data: existingNote } = await db
     .from("job_notes")
@@ -31,7 +37,7 @@ export async function POST(req) {
   }
 
   if (existingNote?.image_storage_path) {
-    await db.storage.from("job-note-images").remove([existingNote.image_storage_path]);
+    await adminDb.storage.from("job-note-images").remove([existingNote.image_storage_path]);
   }
 
   const { error } = await db.from("job_notes").delete().eq("id", noteId);
