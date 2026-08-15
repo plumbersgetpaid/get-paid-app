@@ -8,6 +8,7 @@ import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
+import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
@@ -197,6 +198,16 @@ export async function POST(req) {
 
   const db = await getScopedDb(currentMember);
   const adminDb = supabaseAdmin();
+
+  const { data: jobForCheck } = await db
+    .from("jobs")
+    .select("id, assigned_to")
+    .eq("id", jobId)
+    .maybeSingle();
+  const hasAccess = await canAccessJob(db, jobForCheck, currentMember);
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
 
   const { data: job, error: jobErr } = await db
     .from("jobs")
