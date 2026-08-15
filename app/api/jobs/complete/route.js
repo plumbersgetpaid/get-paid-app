@@ -8,10 +8,11 @@ import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
-async function uploadJobPhotos(db, jobId, files, label) {
+async function uploadJobPhotos(db, adminDb, jobId, files, label, businessId) {
   const validFiles = files.filter((f) => f && typeof f !== "string" && f.size > 0);
 
   await Promise.all(
@@ -22,7 +23,7 @@ async function uploadJobPhotos(db, jobId, files, label) {
         .toString(36)
         .slice(2, 8)}.${ext}`;
 
-      const { error: uploadError } = await db.storage
+      const { error: uploadError } = await adminDb.storage
         .from("job-photos")
         .upload(path, bytes, { contentType: file.type || "image/jpeg", upsert: true });
 
@@ -31,13 +32,14 @@ async function uploadJobPhotos(db, jobId, files, label) {
         return;
       }
 
-      const { data: publicUrlData } = db.storage.from("job-photos").getPublicUrl(path);
+      const { data: publicUrlData } = adminDb.storage.from("job-photos").getPublicUrl(path);
 
       await db.from("job_photos").insert({
         job_id: jobId,
         url: publicUrlData.publicUrl,
         storage_path: path,
         label,
+        business_id: businessId,
       });
     })
   );
@@ -45,6 +47,8 @@ async function uploadJobPhotos(db, jobId, files, label) {
 
 async function finishInvoice({
   db,
+  adminDb,
+  businessId,
   job,
   invoice,
   beforeFiles,
@@ -58,8 +62,8 @@ async function finishInvoice({
 }) {
   try {
     await Promise.all([
-      uploadJobPhotos(db, job.id, beforeFiles, "before"),
-      uploadJobPhotos(db, job.id, afterFiles, "after"),
+      uploadJobPhotos(db, adminDb, job.id, beforeFiles, "before", businessId),
+      uploadJobPhotos(db, adminDb, job.id, afterFiles, "after", businessId),
     ]);
 
     const { data: customer } = await db
@@ -186,12 +190,13 @@ export async function POST(req) {
   const beforeFiles = form.getAll("beforePhotos");
   const afterFiles = form.getAll("afterPhotos");
 
-  const db = supabaseAdmin();
-
   const currentMember = await getCurrentTeamMember();
   if (!canInvoice(currentMember)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
+
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
 
   const { data: job, error: jobErr } = await db
     .from("jobs")
@@ -226,6 +231,7 @@ export async function POST(req) {
       due_date: dueDate.toISOString().slice(0, 10),
       status: "unpaid",
       payment_link: paymentLinkInput || null,
+      business_id: currentMember.business_id,
     })
     .select()
     .single();
@@ -239,6 +245,8 @@ export async function POST(req) {
 
   await finishInvoice({
     db,
+    adminDb,
+    businessId: currentMember.business_id,
     job,
     invoice,
     beforeFiles,
