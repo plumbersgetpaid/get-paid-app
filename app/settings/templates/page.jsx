@@ -1,10 +1,10 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import TemplateForm from "./TemplateForm";
-import { supabaseAdmin } from "../../lib/supabaseClient";
 import { TEMPLATE_DEFAULTS } from "../../lib/getTemplate";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeEverything } from "../../lib/permissions";
+import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -89,7 +89,7 @@ export default async function TemplatesSettings() {
     notFound();
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const { data: rows } = await db.from("message_templates").select("*");
   const rowByKey = Object.fromEntries((rows || []).map((r) => [r.key, r]));
 
@@ -139,20 +139,6 @@ export default async function TemplatesSettings() {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const cardStyle = {
   background: "white",
