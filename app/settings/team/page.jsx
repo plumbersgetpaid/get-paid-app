@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeEverything } from "../../lib/permissions";
+import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import BackButton from "../../components/BackButton";
 import AddTeamMemberForm from "./AddTeamMemberForm";
@@ -16,7 +16,7 @@ export default async function Team() {
     notFound();
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const { data: members } = await db
     .from("team_members")
     .select("id, name, email, role, is_active, created_at")
