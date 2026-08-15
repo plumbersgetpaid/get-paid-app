@@ -11,7 +11,7 @@ const TABS = [
   { href: "/clients", icon: "👤", label: "Clients" },
 ];
 
-export default function BottomNav({ showEverything }) {
+export default function BottomNav({ canCreateQuote, canCreateJob, canCreateRecurringJob }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -40,12 +40,12 @@ export default function BottomNav({ showEverything }) {
         </button>
         {menuOpen && (
           <div style={fabMenuStyle}>
-            {showEverything && (
+            {canCreateQuote && (
               <Link href="/jobs/new" style={fabMenuItemStyle} onClick={() => setMenuOpen(false)}>
                 📝 New quote
               </Link>
             )}
-            {showEverything && (
+            {canCreateJob && (
               <Link
                 href="/calendar/quick-book"
                 style={fabMenuItemStyle}
@@ -61,7 +61,7 @@ export default function BottomNav({ showEverything }) {
             >
               📌 Personal reminder
             </Link>
-            {showEverything && (
+            {canCreateRecurringJob && (
               <Link
                 href="/jobs/recurring/new"
                 style={fabMenuItemStyle}
