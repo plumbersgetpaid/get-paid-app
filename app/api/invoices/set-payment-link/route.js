@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -17,7 +17,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing invoiceId" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const { error } = await db
     .from("invoices")
     .update({ payment_link: paymentLink || null })
