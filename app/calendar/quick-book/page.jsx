@@ -3,7 +3,7 @@ import BackButton from "../../components/BackButton";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canCreateJob } from "../../lib/permissions";
-import { supabaseAdmin } from "../../lib/supabaseClient";
+import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import MultiAssignField from "../../components/MultiAssignField";
 import VoiceQuickBookAssist from "./VoiceQuickBookAssist";
@@ -18,7 +18,7 @@ export default async function QuickBook({ searchParams }) {
     notFound();
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const { data: teamMembersData } = await db
     .from("team_members")
     .select("id, name")
