@@ -4,16 +4,21 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const TABS = [
-  { href: "/", icon: "🏠", label: "Today" },
-  { href: "/work", icon: "📋", label: "Work" },
-  { href: "/calendar", icon: "📅", label: "Calendar" },
-  { href: "/clients", icon: "👤", label: "Clients" },
-];
-
-export default function BottomNav({ canCreateQuote, canCreateJob, canCreateRecurringJob }) {
+export default function BottomNav({
+  canCreateQuote,
+  canCreateJob,
+  canCreateRecurringJob,
+  canSeeClientDatabase,
+}) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const TABS = [
+    { href: "/", icon: "🏠", label: "Today" },
+    { href: "/work", icon: "📋", label: "Work" },
+    { href: "/calendar", icon: "📅", label: "Calendar" },
+    ...(canSeeClientDatabase ? [{ href: "/clients", icon: "👤", label: "Clients" }] : []),
+  ];
 
   useEffect(() => {
     setMenuOpen(false);
