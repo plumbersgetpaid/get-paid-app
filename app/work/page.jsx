@@ -3,7 +3,7 @@ import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getTodayInLondon } from "../lib/today";
 import { getCurrentTeamMember } from "../lib/auth";
-import { canSeeEverything } from "../lib/permissions";
+import { canSeeEverything, canInvoice } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
 import AssignAndShareControl from "../components/AssignAndShareControl";
 import Link from "next/link";
@@ -32,7 +32,7 @@ export default async function Work({ searchParams }) {
         <Link href="/work?tab=jobs" style={tabStyle(tab === "jobs")}>
           Jobs
         </Link>
-        {showEverything && (
+        {canInvoice(currentMember) && (
           <Link href="/work?tab=invoices" style={tabStyle(tab === "invoices")}>
             Invoices
           </Link>
@@ -54,7 +54,7 @@ export default async function Work({ searchParams }) {
           showEverything={showEverything}
         />
       )}
-      {tab === "invoices" && showEverything && (
+      {tab === "invoices" && canInvoice(currentMember) && (
         <InvoicesTab db={db} settings={settings} sub={searchParams?.sub || "overdue"} />
       )}
       {tab === "reminders" && (
