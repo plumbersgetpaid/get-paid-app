@@ -9,10 +9,6 @@ import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
-// This route is designed to be called once a day by a scheduler
-// (Vercel Cron, or an n8n workflow). It finds overdue invoices and
-// sends an escalating reminder message.
-
 export async function GET(req) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -26,27 +22,13 @@ export async function GET(req) {
     .from("outstanding_invoices")
     .select("*");
 
-  const settings = await getBusinessSettings();
-  const business = {
-    businessName: settings.business_name,
-    accentColor: settings.accent_color,
-    logoUrl: settings.logo_url,
-    contactEmail: settings.contact_email,
-    contactPhone: settings.contact_phone,
-    invoiceNote: settings.invoice_note,
-    headerTagline: settings.header_tagline,
-    paymentTerms: settings.payment_terms,
-    bankDetails: settings.bank_details,
-    currency: settings.currency,
-  };
-
+  const settingsByBusiness = new Map();
   let sent = 0;
 
   for (const inv of outstanding || []) {
     const daysOverdue = inv.days_overdue;
     let templateKey = null;
 
-    // Escalating tone based on how overdue the invoice is
     if (daysOverdue === 3) {
       templateKey = "chase_3day";
     } else if (daysOverdue === 7) {
@@ -58,12 +40,38 @@ export async function GET(req) {
     if (templateKey && inv.email && resend) {
       const { data: invoiceRow } = await db
         .from("invoices")
-        .select("job_id, payment_link")
+        .select("job_id, payment_link, business_id")
         .eq("id", inv.invoice_id)
         .single();
+
+      if (!invoiceRow?.business_id) {
+        console.error("Chase skipped - invoice has no business_id:", inv.invoice_id);
+        continue;
+      }
+
+      if (!settingsByBusiness.has(invoiceRow.business_id)) {
+        settingsByBusiness.set(
+          invoiceRow.business_id,
+          await getBusinessSettings(invoiceRow.business_id)
+        );
+      }
+      const settings = settingsByBusiness.get(invoiceRow.business_id);
+      const business = {
+        businessName: settings.business_name,
+        accentColor: settings.accent_color,
+        logoUrl: settings.logo_url,
+        contactEmail: settings.contact_email,
+        contactPhone: settings.contact_phone,
+        invoiceNote: settings.invoice_note,
+        headerTagline: settings.header_tagline,
+        paymentTerms: settings.payment_terms,
+        bankDetails: settings.bank_details,
+        currency: settings.currency,
+      };
+
       const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, invoiceRow?.job_id);
 
-      const template = await getTemplate(templateKey);
+      const template = await getTemplate(templateKey, invoiceRow.business_id);
       const vars = {
         customer_name: inv.customer_name,
         amount: inv.amount,
@@ -73,7 +81,7 @@ export async function GET(req) {
 
       let paymentNote = "";
       if (invoiceRow?.payment_link) {
-        const paymentNoteTemplate = await getTemplate("payment_note");
+        const paymentNoteTemplate = await getTemplate("payment_note", invoiceRow.business_id);
         paymentNote = renderTemplate(paymentNoteTemplate.body, vars);
       }
 
@@ -105,8 +113,6 @@ export async function GET(req) {
       )}</div>`;
 
       await resend.emails.send({
-        // Using Resend's test sending address for now - swap this for your
-        // own verified domain once you're ready to send to real customers.
         from: getEmailFrom(settings.business_name),
         to: inv.email,
         subject,
@@ -123,12 +129,11 @@ export async function GET(req) {
         invoice_id: inv.invoice_id,
         message: bodyText,
         channel: "email",
+        business_id: invoiceRow.business_id,
       });
 
       sent++;
     }
-
-    // To also send via SMS/WhatsApp, add Twilio logic here using inv.phone
   }
 
   return NextResponse.json({ ok: true, sent });
