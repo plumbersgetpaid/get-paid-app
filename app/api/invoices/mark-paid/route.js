@@ -1,4 +1,3 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
@@ -6,6 +5,7 @@ import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -22,7 +22,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing invoiceId" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: invoice, error: invErr } = await db
     .from("invoices")
