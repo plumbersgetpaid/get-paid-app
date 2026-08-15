@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../lib/auth";
+import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import Link from "next/link";
@@ -25,6 +26,11 @@ export default async function JobPhotos({ params, searchParams }) {
     .single();
 
   if (error || !job) {
+    notFound();
+  }
+
+  const hasAccess = await canAccessJob(db, job, currentMember);
+  if (!hasAccess) {
     notFound();
   }
 
