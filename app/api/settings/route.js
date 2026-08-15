@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeEverything } from "../../lib/permissions";
+import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -23,23 +23,26 @@ export async function POST(req) {
   const currency = form.get("currency") || "GBP";
   const google_review_link = form.get("google_review_link") || null;
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
-  const { error } = await db.from("business_settings").upsert({
-    id: 1,
-    business_name,
-    contact_email,
-    contact_phone,
-    accent_color,
-    logo_url,
-    invoice_note,
-    header_tagline,
-    payment_terms,
-    bank_details,
-    currency,
-    google_review_link,
-    updated_at: new Date().toISOString(),
-  });
+  const { error } = await db.from("business_settings").upsert(
+    {
+      business_id: currentMember.business_id,
+      business_name,
+      contact_email,
+      contact_phone,
+      accent_color,
+      logo_url,
+      invoice_note,
+      header_tagline,
+      payment_terms,
+      bank_details,
+      currency,
+      google_review_link,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "business_id" }
+  );
 
   if (error) {
     console.error("Save settings error:", error);
