@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -18,13 +18,17 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing key or body" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
-  const { error } = await db.from("message_templates").upsert({
-    key,
-    subject,
-    body,
-    updated_at: new Date().toISOString(),
-  });
+  const db = await getScopedDb(currentMember);
+  const { error } = await db.from("message_templates").upsert(
+    {
+      key,
+      business_id: currentMember.business_id,
+      subject,
+      body,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "business_id,key" }
+  );
 
   if (error) {
     console.error("Save template error:", error);
