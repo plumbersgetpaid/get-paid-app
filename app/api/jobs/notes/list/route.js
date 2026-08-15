@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canAccessJob } from "../../../../lib/jobAccess";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function GET(req) {
@@ -11,9 +11,13 @@ export async function GET(req) {
     return NextResponse.json({ error: "Missing jobId" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
-
   const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
+  const db = await getScopedDb(currentMember);
+
   const { data: jobForCheck } = await db
     .from("jobs")
     .select("id, assigned_to")
