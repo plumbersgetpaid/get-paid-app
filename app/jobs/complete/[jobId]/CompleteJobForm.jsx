@@ -25,6 +25,26 @@ export default function CompleteJobForm({
   const [busyLabel, setBusyLabel] = useState("");
   const [error, setError] = useState(null);
 
+  function handleAddBeforeFiles(e) {
+    const newFiles = Array.from(e.target.files || []);
+    setBeforeFiles((prev) => [...prev, ...newFiles]);
+    e.target.value = "";
+  }
+
+  function handleAddAfterFiles(e) {
+    const newFiles = Array.from(e.target.files || []);
+    setAfterFiles((prev) => [...prev, ...newFiles]);
+    e.target.value = "";
+  }
+
+  function handleRemoveBeforeFile(index) {
+    setBeforeFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleRemoveAfterFile(index) {
+    setAfterFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function compressAll(files) {
     const compressed = [];
     for (const file of files) {
@@ -259,20 +279,56 @@ export default function CompleteJobForm({
               type="file"
               accept="image/*"
               multiple
-              onChange={(e) => setBeforeFiles(Array.from(e.target.files || []))}
-              style={{ display: "block", fontSize: 13, marginTop: 4, marginBottom: 10 }}
+              onChange={handleAddBeforeFiles}
+              style={{ display: "block", fontSize: 13, marginTop: 4 }}
             />
           </label>
-          <label style={{ fontSize: 12, color: "#666" }}>
+          {beforeFiles.length > 0 && (
+            <div style={fileListStyle}>
+              {beforeFiles.map((f, i) => (
+                <div key={`${f.name}-${i}`} style={fileRowStyle}>
+                  <span style={fileNameStyle}>{f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveBeforeFile(i)}
+                    style={removeFileButtonStyle}
+                    aria-label={`Remove ${f.name}`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <label style={{ fontSize: 12, color: "#666", marginTop: 14, display: "block" }}>
             After
             <input
               type="file"
               accept="image/*"
               multiple
-              onChange={(e) => setAfterFiles(Array.from(e.target.files || []))}
+              onChange={handleAddAfterFiles}
               style={{ display: "block", fontSize: 13, marginTop: 4 }}
             />
           </label>
+          {afterFiles.length > 0 && (
+            <div style={fileListStyle}>
+              {afterFiles.map((f, i) => (
+                <div key={`${f.name}-${i}`} style={fileRowStyle}>
+                  <span style={fileNameStyle}>{f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAfterFile(i)}
+                    style={removeFileButtonStyle}
+                    aria-label={`Remove ${f.name}`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <span style={{ fontSize: 11, color: "#888", display: "block", marginTop: 10 }}>
             Anything selected here becomes a permanent part of this invoice's
             PDF - you'll be able to find them again anytime you reopen or
@@ -389,4 +445,39 @@ const photosCardStyle = {
   border: "1px solid #ddd",
   borderRadius: 10,
   padding: 14,
+};
+
+const fileListStyle = {
+  marginTop: 6,
+  display: "grid",
+  gap: 4,
+};
+
+const fileRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 8,
+  background: "#f6f7f9",
+  borderRadius: 6,
+  padding: "6px 8px",
+};
+
+const fileNameStyle = {
+  fontSize: 12,
+  color: "#444",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const removeFileButtonStyle = {
+  background: "none",
+  border: "none",
+  color: "#b91c1c",
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
+  padding: "2px 6px",
+  flexShrink: 0,
 };
