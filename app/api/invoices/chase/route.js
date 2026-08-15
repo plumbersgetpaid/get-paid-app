@@ -7,13 +7,13 @@ import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { getCurrentTeamMember } from "../../../lib/auth";
-import { canSeeEverything } from "../../../lib/permissions";
+import { canInvoice } from "../../../lib/permissions";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
-  if (!canSeeEverything(currentMember)) {
+  if (!canInvoice(currentMember)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
