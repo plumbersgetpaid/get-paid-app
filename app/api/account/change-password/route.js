@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { hashPassword, verifyPassword } from "../../../lib/password";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -23,7 +23,7 @@ export async function POST(req) {
     );
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: freshMember } = await db
     .from("team_members")
