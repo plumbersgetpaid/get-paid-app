@@ -1,7 +1,7 @@
-import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { computeScheduleEnd } from "../../../../lib/duration";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canSeeEverything } from "../../../../lib/permissions";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -29,7 +29,7 @@ export async function POST(req) {
   const start = new Date(`${startDate}T${startTime}:00`);
   const end = computeScheduleEnd(start, durationValue, durationUnit, includeWeekends);
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const { data: newReminder, error } = await db
     .from("personal_events")
     .insert({
@@ -38,6 +38,7 @@ export async function POST(req) {
       scheduled_start: start.toISOString(),
       scheduled_end: end.toISOString(),
       created_by: currentMember.id,
+      business_id: currentMember.business_id,
     })
     .select()
     .single();
@@ -48,9 +49,13 @@ export async function POST(req) {
   }
 
   if (sharedWithIds.length > 0 && newReminder) {
-    const { error: sharesErr } = await db
-      .from("reminder_shares")
-      .insert(sharedWithIds.map((teamMemberId) => ({ reminder_id: newReminder.id, team_member_id: teamMemberId })));
+    const { error: sharesErr } = await db.from("reminder_shares").insert(
+      sharedWithIds.map((teamMemberId) => ({
+        reminder_id: newReminder.id,
+        team_member_id: teamMemberId,
+        business_id: currentMember.business_id,
+      }))
+    );
     if (sharesErr) {
       console.error("Reminder share error:", sharesErr);
     }
