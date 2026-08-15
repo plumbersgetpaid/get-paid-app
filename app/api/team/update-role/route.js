@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 const ALLOWED_ROLES = ["manager", "subcontractor"];
@@ -23,7 +23,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "You can't change your own role" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: target } = await db
     .from("team_members")
