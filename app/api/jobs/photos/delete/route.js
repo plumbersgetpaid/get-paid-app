@@ -1,7 +1,14 @@
 import { supabaseAdmin } from "../../../../lib/supabaseClient";
+import { getCurrentTeamMember } from "../../../../lib/auth";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
   const form = await req.formData();
   const photoId = form.get("photoId");
   const jobId = form.get("jobId");
@@ -10,7 +17,8 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing photoId" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
 
   const { data: photo } = await db
     .from("job_photos")
@@ -19,7 +27,7 @@ export async function POST(req) {
     .single();
 
   if (photo?.storage_path) {
-    await db.storage.from("job-photos").remove([photo.storage_path]);
+    await adminDb.storage.from("job-photos").remove([photo.storage_path]);
   }
 
   const { error } = await db.from("job_photos").delete().eq("id", photoId);
