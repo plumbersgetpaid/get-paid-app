@@ -1,6 +1,11 @@
 import BottomNav from "./components/BottomNav";
 import { getCurrentTeamMember } from "./lib/auth";
-import { canCreateQuote, canCreateJob, canCreateRecurringJob } from "./lib/permissions";
+import {
+  canCreateQuote,
+  canCreateJob,
+  canCreateRecurringJob,
+  canSeeClientDatabase,
+} from "./lib/permissions";
 
 export const metadata = {
   title: "Get Paid",
@@ -27,6 +32,7 @@ export default async function RootLayout({ children }) {
           canCreateQuote={canCreateQuote(currentMember)}
           canCreateJob={canCreateJob(currentMember)}
           canCreateRecurringJob={canCreateRecurringJob(currentMember)}
+          canSeeClientDatabase={canSeeClientDatabase(currentMember)}
         />
       </body>
     </html>
