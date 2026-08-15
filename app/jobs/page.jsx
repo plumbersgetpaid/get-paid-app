@@ -1,9 +1,9 @@
-import { supabaseAdmin } from "../lib/supabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canReschedule, canInvoice } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
+import { getScopedDb } from "../lib/scopedSupabaseClient";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
 
@@ -22,10 +22,10 @@ const STATUS_COLORS = {
 };
 
 export default async function AllJobs({ searchParams }) {
-  const db = supabaseAdmin();
   const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
+  const db = await getScopedDb(currentMember);
   const q = (searchParams?.q || "").trim().toLowerCase();
   const status = searchParams?.status;
 
