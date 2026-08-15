@@ -1,13 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 
-function getJwtSecret() {
-  const secret = process.env.SUPABASE_JWT_SECRET;
-  if (!secret) {
+function getSigningJwk() {
+  const raw = process.env.SUPABASE_JWT_SIGNING_KEY;
+  if (!raw) {
     throw new Error(
-      "SUPABASE_JWT_SECRET environment variable is not set. Find it in Supabase under Settings -> API -> JWT Secret, and add it in Vercel under Settings -> Environment Variables."
+      "SUPABASE_JWT_SIGNING_KEY environment variable is not set - required for RLS-scoped queries to work. Add it in Vercel under Settings -> Environment Variables."
     );
   }
-  return secret;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    throw new Error("SUPABASE_JWT_SIGNING_KEY is not valid JSON - check it was pasted in full.");
+  }
 }
 
 function base64url(input) {
@@ -17,19 +21,19 @@ function base64url(input) {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-async function importSigningKey(secret) {
-  const enc = new TextEncoder();
+async function importPrivateKey(jwk) {
   return crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
+    "jwk",
+    { ...jwk, key_ops: ["sign"], ext: true },
+    { name: "ECDSA", namedCurve: "P-256" },
     false,
     ["sign"]
   );
 }
 
 async function signScopedJwt({ teamMemberId, businessId }) {
-  const header = { alg: "HS256", typ: "JWT" };
+  const jwk = getSigningJwk();
+  const header = { alg: "ES256", kid: jwk.kid, typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     role: "authenticated",
@@ -43,9 +47,12 @@ async function signScopedJwt({ teamMemberId, businessId }) {
   const encodedPayload = base64url(JSON.stringify(payload));
   const signingInput = `${encodedHeader}.${encodedPayload}`;
 
-  const key = await importSigningKey(getJwtSecret());
-  const enc = new TextEncoder();
-  const signatureBuffer = await crypto.subtle.sign("HMAC", key, enc.encode(signingInput));
+  const privateKey = await importPrivateKey(jwk);
+  const signatureBuffer = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    privateKey,
+    new TextEncoder().encode(signingInput)
+  );
   const encodedSignature = base64url(new Uint8Array(signatureBuffer));
 
   return `${signingInput}.${encodedSignature}`;
