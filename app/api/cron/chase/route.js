@@ -11,18 +11,6 @@ import { NextResponse } from "next/server";
 
 export async function GET(req) {
   const authHeader = req.headers.get("authorization");
-
-  console.log("CRON_SECRET diagnostic - received:", {
-    length: authHeader?.length,
-    start: authHeader?.slice(0, 11),
-    end: authHeader?.slice(-4),
-  });
-  console.log("CRON_SECRET diagnostic - expected:", {
-    length: process.env.CRON_SECRET?.length,
-    start: process.env.CRON_SECRET?.slice(0, 4),
-    end: process.env.CRON_SECRET?.slice(-4),
-  });
-
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
