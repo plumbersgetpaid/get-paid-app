@@ -1,8 +1,8 @@
-import { supabaseAdmin } from "../lib/supabaseClient";
 import { formatCurrency, formatInvoiceNumber } from "../lib/formatCurrency";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canInvoice } from "../lib/permissions";
+import { getScopedDb } from "../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import BackButton from "../components/BackButton";
 import DateFieldWithHint from "../components/DateFieldWithHint";
@@ -13,13 +13,14 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function AllInvoices({ searchParams }) {
-  const db = supabaseAdmin();
   const settings = await getBusinessSettings();
 
   const currentMember = await getCurrentTeamMember();
   if (!canInvoice(currentMember)) {
     notFound();
   }
+
+  const db = await getScopedDb(currentMember);
 
   const rangeStart = searchParams?.start || "";
   const rangeEnd = searchParams?.end || "";
