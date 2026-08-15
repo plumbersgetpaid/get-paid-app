@@ -1,6 +1,6 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const { data } = await db
     .from("team_members")
     .select("id, name")
