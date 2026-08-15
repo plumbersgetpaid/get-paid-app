@@ -1,13 +1,24 @@
-import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../../lib/getTemplate";
 import { formatInvoiceNumber } from "../../../../lib/formatCurrency";
 import { getJobPhotosForPdf } from "../../../../lib/getJobPhotosForPdf";
+import { getCurrentTeamMember } from "../../../../lib/auth";
+import { canInvoice } from "../../../../lib/permissions";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 
 export async function GET(req, { params }) {
   const { invoiceId } = params;
-  const db = supabaseAdmin();
+
+  const currentMember = await getCurrentTeamMember();
+  if (!canInvoice(currentMember)) {
+    return new Response(JSON.stringify({ error: "Not allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const db = await getScopedDb(currentMember);
 
   const { data: invoice, error } = await db
     .from("invoices")
