@@ -1,5 +1,5 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -15,7 +15,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "Name can't be empty" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const { error } = await db
     .from("team_members")
     .update({ name })
