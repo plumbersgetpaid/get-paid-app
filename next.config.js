@@ -19,6 +19,19 @@ const nextConfig = {
           },
         ],
       },
+      {
+        // Same bfcache issue, now showing up on the team permissions
+        // screen - a confirmed, successful save followed by pressing back
+        // was showing the pre-save state, exactly the same symptom as the
+        // Clients pages above and almost certainly the same cause.
+        source: "/settings/team/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, must-revalidate",
+          },
+        ],
+      },
     ];
   },
 };
