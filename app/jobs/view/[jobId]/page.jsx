@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../lib/auth";
-import { canSeeEverything } from "../../../lib/permissions";
+import { canSeeEverything, canReschedule, canInvoice } from "../../../lib/permissions";
 import { canAccessJob } from "../../../lib/jobAccess";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
@@ -230,15 +230,15 @@ export default async function ViewJob({ params }) {
         <a href={`/jobs/notes/${job.id}`} style={secondaryButtonStyle}>
           📝 Job notes
         </a>
-        {showEverything && job.status === "in_progress" && (
-          <>
-            <a href={`/jobs/schedule/${job.id}`} style={secondaryButtonStyle}>
-              {job.scheduled_start ? "Reschedule" : "Book in"}
-            </a>
-            <a href={`/jobs/complete/${job.id}?from=work`} style={primaryButtonStyle}>
-              Mark done
-            </a>
-          </>
+        {canReschedule(currentMember) && job.status === "in_progress" && (
+          <a href={`/jobs/schedule/${job.id}`} style={secondaryButtonStyle}>
+            {job.scheduled_start ? "Reschedule" : "Book in"}
+          </a>
+        )}
+        {canInvoice(currentMember) && job.status === "in_progress" && (
+          <a href={`/jobs/complete/${job.id}?from=work`} style={primaryButtonStyle}>
+            Mark done
+          </a>
         )}
 
         {showEverything && !existingInvoice && <DeleteJobButton jobId={job.id} />}
