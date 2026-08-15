@@ -1,9 +1,8 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import CompleteJobForm from "./CompleteJobForm";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything, canInvoice } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -11,7 +10,15 @@ export const revalidate = 0;
 
 export default async function CompleteJob({ params, searchParams }) {
   const { jobId } = params;
-  const db = supabaseAdmin();
+
+  const currentMember = await getCurrentTeamMember();
+
+  const showEverything = canSeeEverything(currentMember);
+  if (!canInvoice(currentMember)) {
+    notFound();
+  }
+
+  const db = await getScopedDb(currentMember);
 
   const { data: job, error: jobError } = await db
     .from("jobs")
@@ -20,12 +27,6 @@ export default async function CompleteJob({ params, searchParams }) {
     .single();
 
   if (jobError || !job) {
-    notFound();
-  }
-
-  const currentMember = await getCurrentTeamMember();
-  const showEverything = canSeeEverything(currentMember);
-  if (!canInvoice(currentMember)) {
     notFound();
   }
 
