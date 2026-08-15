@@ -1,7 +1,7 @@
-import { supabaseAdmin } from "../../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canSeeEverything } from "../../../../lib/permissions";
 import { canAccessReminder } from "../../../../lib/reminderAccess";
+import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -22,7 +22,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
 
   const { data: existing } = await db
     .from("personal_events")
@@ -77,9 +77,13 @@ export async function POST(req) {
         .in("team_member_id", toRemove);
     }
     if (toAdd.length > 0) {
-      const { error: addErr } = await db
-        .from("reminder_shares")
-        .insert(toAdd.map((teamMemberId) => ({ reminder_id: reminderId, team_member_id: teamMemberId })));
+      const { error: addErr } = await db.from("reminder_shares").insert(
+        toAdd.map((teamMemberId) => ({
+          reminder_id: reminderId,
+          team_member_id: teamMemberId,
+          business_id: currentMember.business_id,
+        }))
+      );
       if (addErr) {
         console.error("Reminder share update error:", addErr);
       }
