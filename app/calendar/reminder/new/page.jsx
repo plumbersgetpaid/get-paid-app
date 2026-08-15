@@ -3,7 +3,7 @@ import BackButton from "../../../components/BackButton";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
-import { supabaseAdmin } from "../../../lib/supabaseClient";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import MultiAssignField from "../../../components/MultiAssignField";
 import VoiceReminderAssist from "./VoiceReminderAssist";
 
@@ -19,7 +19,7 @@ export default async function NewReminder() {
 
   let teamMembers = [];
   if (showEverything) {
-    const db = supabaseAdmin();
+    const db = await getScopedDb(currentMember);
     const { data } = await db
       .from("team_members")
       .select("id, name")
@@ -89,20 +89,6 @@ export default async function NewReminder() {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const cancelButtonStyle = {
   background: "white",
