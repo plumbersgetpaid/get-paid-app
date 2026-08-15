@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency } from "../../lib/formatCurrency";
 import { getCurrentTeamMember } from "../../lib/auth";
-import { canSeeEverything } from "../../lib/permissions";
+import { canCreateRecurringJob } from "../../lib/permissions";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
@@ -13,7 +13,7 @@ export const revalidate = 0;
 
 export default async function RecurringJobs() {
   const currentMember = await getCurrentTeamMember();
-  if (!canSeeEverything(currentMember)) {
+  if (!canCreateRecurringJob(currentMember)) {
     notFound();
   }
 
@@ -102,20 +102,6 @@ export default async function RecurringJobs() {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const newButtonStyle = {
   display: "block",
