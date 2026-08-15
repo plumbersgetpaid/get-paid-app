@@ -3,7 +3,7 @@ import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency, formatInvoiceNumber } from "../../lib/formatCurrency";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../lib/auth";
-import { canSeeEverything } from "../../lib/permissions";
+import { canInvoice } from "../../lib/permissions";
 import BackButton from "../../components/BackButton";
 import Link from "next/link";
 
@@ -17,7 +17,7 @@ export default async function InvoiceDetail({ params }) {
   const settings = await getBusinessSettings();
 
   const currentMember = await getCurrentTeamMember();
-  if (!canSeeEverything(currentMember)) {
+  if (!canInvoice(currentMember)) {
     notFound();
   }
 
@@ -245,18 +245,4 @@ const downloadButtonStyle = {
   fontWeight: 600,
   fontSize: 15,
   textDecoration: "none",
-};
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
 };
