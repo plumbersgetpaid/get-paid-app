@@ -4,7 +4,7 @@ import { formatCurrency } from "../lib/formatCurrency";
 import { getTodayInLondon } from "../lib/today";
 import { advanceDate } from "../lib/duration";
 import { getCurrentTeamMember } from "../lib/auth";
-import { canSeeEverything } from "../lib/permissions";
+import { canSeeEverything, canCreateJob } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
 import DateJump from "./DateJump";
 import Link from "next/link";
@@ -291,7 +291,7 @@ export default async function Calendar({ searchParams }) {
       <h1 style={{ fontSize: 20, margin: 0 }}>Calendar</h1>
 
       <div style={{ display: "flex", gap: 10, margin: "16px 0" }}>
-        {showEverything && (
+        {canCreateJob(currentMember) && (
           <Link href="/calendar/quick-book" style={quickBookButtonStyle}>
             + Quick book
           </Link>
@@ -382,20 +382,6 @@ export default async function Calendar({ searchParams }) {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const quickBookButtonStyle = {
   flex: 1,
