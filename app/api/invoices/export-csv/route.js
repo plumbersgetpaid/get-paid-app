@@ -1,8 +1,8 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 function csvCell(value) {
@@ -24,7 +24,7 @@ export async function GET(req) {
   const end = searchParams.get("end");
   const invoiceId = searchParams.get("invoiceId");
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const settings = await getBusinessSettings();
 
   let query = db.from("invoices").select("*").order("created_at", { ascending: true });
