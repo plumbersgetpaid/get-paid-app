@@ -1,5 +1,6 @@
-import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { notFound } from "next/navigation";
+import { getCurrentTeamMember } from "../../../lib/auth";
+import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import Link from "next/link";
 
@@ -9,7 +10,13 @@ export const revalidate = 0;
 
 export default async function JobPhotos({ params, searchParams }) {
   const { jobId } = params;
-  const db = supabaseAdmin();
+
+  const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    notFound();
+  }
+
+  const db = await getScopedDb(currentMember);
 
   const { data: job, error } = await db
     .from("jobs")
@@ -135,20 +142,6 @@ export default async function JobPhotos({ params, searchParams }) {
     </main>
   );
 }
-
-const backButtonStyle = {
-  background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  color: "#111",
-};
 
 const summaryCardStyle = {
   background: "white",
