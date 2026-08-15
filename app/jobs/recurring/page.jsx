@@ -1,8 +1,8 @@
-import { supabaseAdmin } from "../../lib/supabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency } from "../../lib/formatCurrency";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canCreateRecurringJob } from "../../lib/permissions";
+import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
@@ -17,7 +17,7 @@ export default async function RecurringJobs() {
     notFound();
   }
 
-  const db = supabaseAdmin();
+  const db = await getScopedDb(currentMember);
   const settings = await getBusinessSettings();
 
   const { data: rawRecurring } = await db
