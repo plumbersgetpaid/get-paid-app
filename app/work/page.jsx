@@ -397,8 +397,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
             </div>
           );
         }
-
-        const isLate =
+ const isLate =
           job.time_confirmed !== false &&
           job.scheduled_end &&
           new Date(job.scheduled_end) < new Date() &&
