@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../lib/supabaseClient";
+import { getScopedDb } from "../lib/scopedSupabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getTodayInLondon } from "../lib/today";
@@ -14,18 +15,16 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function Work({ searchParams }) {
-  const db = supabaseAdmin();
-  const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
+  const db = await getScopedDb(currentMember);
+  const adminDb = supabaseAdmin();
+  const settings = await getBusinessSettings();
   const showEverything = canSeeEverything(currentMember);
-  // Subcontractors can't see Quotes, so defaulting to it for them would
-  // land on a blank screen - default to Jobs instead, the one tab
-  // they're guaranteed to have something in
   const tab = searchParams?.tab || (showEverything ? "quotes" : "jobs");
 
   return (
     <main>
-            <ReloadOnBack />
+      <ReloadOnBack />
       <h1 style={{ fontSize: 20, margin: "0 0 16px" }}>Work</h1>
 
       <div style={tabRowStyle}>
@@ -60,7 +59,7 @@ export default async function Work({ searchParams }) {
         />
       )}
       {tab === "invoices" && canInvoice(currentMember) && (
-        <InvoicesTab db={db} settings={settings} sub={searchParams?.sub || "overdue"} />
+        <InvoicesTab db={db} adminDb={adminDb} settings={settings} sub={searchParams?.sub || "overdue"} />
       )}
       {tab === "reminders" && (
         <RemindersTab
@@ -89,8 +88,6 @@ async function QuotesTab({ db, settings, sub }) {
     : { data: [] };
   const nameById = Object.fromEntries((customers || []).map((c) => [c.id, c.name]));
 
-  // Only owner/manager ever see this tab at all, so no visibility check
-  // needed here - just look up names for whoever created each quote
   const creatorIds = [...new Set(quotes.map((q) => q.created_by).filter(Boolean))];
   const { data: creators } = creatorIds.length
     ? await db.from("team_members").select("id, name").in("id", creatorIds)
@@ -210,8 +207,6 @@ async function QuotesTab({ db, settings, sub }) {
   );
 }
 
-// Formats how overdue a job is in plain language, e.g. "2 hours late" or
-// "3 days late" - a bare "Running late" didn't give any sense of scale
 function formatLateness(scheduledEnd) {
   const diffMs = new Date() - new Date(scheduledEnd);
   const diffHours = diffMs / (1000 * 60 * 60);
@@ -231,9 +226,6 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     : "today";
 
   let jobsQuery = db.from("jobs").select("*").eq("status", "in_progress");
-  // A subcontractor sees jobs they're directly assigned to, plus any
-  // job someone's shared with them - this filter runs on the server, in
-  // the query itself, not as a UI hide
   if (!showEverything) {
     jobsQuery = await filterJobsForMember(db, jobsQuery, currentMember?.id);
   }
@@ -245,9 +237,6 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     : { data: [] };
   const nameById = Object.fromEntries((customers || []).map((c) => [c.id, c.name]));
 
-  // Fetched for everyone, not just owner/manager - a subcontractor still
-  // benefits from seeing who booked a job even though only owner/manager
-  // get the reassignment dropdown further down
   const { data: teamMembersData } = await db
     .from("team_members")
     .select("id, name")
@@ -256,19 +245,10 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   const teamMembers = teamMembersData || [];
   const teamMemberNameById = Object.fromEntries(teamMembers.map((m) => [m.id, m.name]));
 
-  // One query for every job's shares, grouped by job - avoids a separate
-  // query per card
   const jobIdsForShares = jobs.map((j) => j.id);
   const { data: allShares } = jobIdsForShares.length
     ? await db.from("job_shares").select("job_id, team_member_id").in("job_id", jobIdsForShares)
     : { data: [] };
-  // Combines the legacy single assigned_to column with job_shares into
-  // one list per job - from here on, assignment and sharing are the
-  // same thing: everyone in this list has full access to the job, no
-  // distinction between "the" assignee and "shared with" anyone else.
-  // Each entry is a fresh copy of the member object, not a shared
-  // reference to the same object reused across multiple jobs - matters
-  // for how this data gets serialized when passed to client components.
   const assigneesByJob = {};
   for (const j of jobs) {
     const primary = teamMembers.find((m) => m.id === j.assigned_to);
@@ -288,10 +268,6 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   }));
 
   const todayStr = getTodayInLondon();
-  // "Today" includes anything overdue too - a job scheduled for a day that's
-  // already passed and still not marked done was previously falling through
-  // every bucket (not today, not upcoming, not unscheduled) and vanishing
-  // from this screen entirely, even though it was still fully active
   const todayJobs = jobs
     .filter((j) => j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr)
     .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start));
@@ -305,8 +281,6 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
     .select("id", { count: "exact", head: true })
     .in("status", ["complete", "invoiced", "paid"]);
 
-  // Only fetch the completed preview list when that sub-tab is actually
-  // being viewed - no point loading it every time
   let completedJobs = [];
   if (activeSub === "completed") {
     const { data: rawCompleted } = await db
@@ -498,10 +472,10 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   );
 }
 
-async function InvoicesTab({ db, settings, sub }) {
+async function InvoicesTab({ db, adminDb, settings, sub }) {
   const activeSub = ["overdue", "awaiting", "paid"].includes(sub) ? sub : "overdue";
 
-  const { data: outstanding } = await db
+  const { data: outstanding } = await adminDb
     .from("outstanding_invoices")
     .select("*")
     .order("due_date", { ascending: true });
@@ -517,8 +491,6 @@ async function InvoicesTab({ db, settings, sub }) {
   const paidInvoices = paidInvoicesRaw || [];
   const paidTotal = paidInvoices.reduce((s, i) => s + Number(i.amount), 0);
 
-  // Only fetch customer/job details for paid invoices when that sub-tab is
-  // actually being viewed - no point loading it every time
   let paidPreview = [];
   if (activeSub === "paid") {
     const jobIds = [...new Set(paidInvoices.map((i) => i.job_id))];
@@ -650,18 +622,10 @@ async function InvoicesTab({ db, settings, sub }) {
   );
 }
 
-// Visible to every role, unlike Quotes/Invoices - a reminder is
-// personal-or-shared, never an owner/manager-only financial concern.
-// Split into just two sub-tabs (upcoming/past) deliberately, not the
-// four-way split Jobs uses - reminders don't have a completion workflow
-// or an "unscheduled" state the way jobs do, so more sub-tabs here would
-// just be empty scaffolding, not real organisation
 async function RemindersTab({ db, currentMember, sub }) {
   const activeSub = ["upcoming", "past"].includes(sub) ? sub : "upcoming";
   const meId = currentMember?.id || "__none__";
 
-  // Same ownership rule as Calendar - a reminder shows up here if this
-  // person created it, or if an owner/manager shared it with them
   const { data: sharedReminderRows } = await db
     .from("reminder_shares")
     .select("reminder_id")
@@ -679,8 +643,6 @@ async function RemindersTab({ db, currentMember, sub }) {
   const { data: rawReminders } = await remindersQuery;
   const reminders = rawReminders || [];
 
-  // For labelling shared reminders - who else is on each one, and who
-  // set it if it wasn't this person - same pattern as Calendar
   const { data: allTeamMembers } = await db.from("team_members").select("id, name");
   const teamMemberNameById = Object.fromEntries((allTeamMembers || []).map((m) => [m.id, m.name]));
   const reminderIds = reminders.map((r) => r.id);
@@ -701,7 +663,7 @@ async function RemindersTab({ db, currentMember, sub }) {
   const upcomingReminders = reminders.filter((r) => new Date(r.scheduled_start) >= now);
   const pastReminders = reminders
     .filter((r) => new Date(r.scheduled_start) < now)
-    .reverse(); // most recently passed first, not the oldest ones from years ago
+    .reverse();
 
   const activeList = activeSub === "upcoming" ? upcomingReminders : pastReminders;
 
@@ -845,11 +807,6 @@ const cardStyle = (color) => ({
   borderLeft: `4px solid ${color}`,
 });
 
-// Paid invoice cards have no other interactive elements inside them, so
-// the whole card can safely be the link - unlike the unpaid cards below,
-// which have Chase/Mark-as-paid buttons and need a separate link instead
-// (a link can't wrap a form/button without breaking, since both are
-// interactive elements)
 const paidInvoiceCardLinkStyle = {
   ...cardStyle("#16a34a"),
   display: "block",
@@ -857,8 +814,6 @@ const paidInvoiceCardLinkStyle = {
   color: "inherit",
 };
 
-// Same purple used for reminder entries on Calendar, so a reminder
-// reads as the same "thing" wherever it shows up in the app
 const reminderCardLinkStyle = {
   ...cardStyle("#9333ea"),
   display: "block",
@@ -913,11 +868,6 @@ const declineLinkStyle = {
   padding: 0,
 };
 
-// The single entry point into a job's full details (job description,
-// contact info, schedule, and from there Reschedule/Mark done/Notes) -
-// replaces what used to be three or four separate buttons crowding each
-// card. Carries the important-note warning itself now, since Notes is
-// no longer a separate button on the card to carry it.
 const viewJobButtonStyle = {
   display: "block",
   textAlign: "center",
