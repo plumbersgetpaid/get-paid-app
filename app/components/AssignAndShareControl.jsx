@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AssignAndShareControl({ jobId, initialAssignees, teamMembers }) {
@@ -8,16 +8,6 @@ export default function AssignAndShareControl({ jobId, initialAssignees, teamMem
   const [assignees, setAssignees] = useState(initialAssignees);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    function handlePageShow(event) {
-      if (event.persisted) {
-        router.refresh();
-      }
-    }
-    window.addEventListener("pageshow", handlePageShow);
-    return () => window.removeEventListener("pageshow", handlePageShow);
-  }, [router]);
 
   const assignedIds = new Set(assignees.map((a) => a.id));
 
