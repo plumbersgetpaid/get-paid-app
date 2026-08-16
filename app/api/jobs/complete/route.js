@@ -163,6 +163,7 @@ async function finishInvoice({
     const result = await resend.emails.send({
       from: getEmailFrom(settings.business_name),
       to: customer.email,
+      replyTo: settings.contact_email || undefined,
       subject,
       html,
       attachments: [
