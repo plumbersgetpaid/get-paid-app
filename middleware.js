@@ -45,7 +45,6 @@ function matchesAny(pathname, list) {
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
-  const uaShort = (req.headers.get("user-agent") || "unknown").slice(0, 50);
 
   if (matchesAny(pathname, PUBLIC_PATHS)) {
     return NextResponse.next();
@@ -53,15 +52,9 @@ export async function middleware(req) {
 
   try {
     const token = req.cookies.get(SESSION_COOKIE)?.value;
-    console.log(`[mw] ${pathname} | UA: ${uaShort} | token present: ${!!token}`);
     const teamMemberId = token ? await verifySessionToken(token) : null;
 
     if (!teamMemberId) {
-      console.log(
-        `[mw] REDIRECT ${pathname} -> /login | reason: ${
-          token ? "token present but verifySessionToken failed" : "no session cookie at all"
-        } | UA: ${uaShort}`
-      );
       const loginUrl = new URL("/login", req.url);
       return NextResponse.redirect(loginUrl);
     }
@@ -77,9 +70,6 @@ export async function middleware(req) {
       .maybeSingle();
 
     if (!member) {
-      console.log(
-        `[mw] REDIRECT ${pathname} -> /login | reason: token verified (teamMemberId=${teamMemberId}) but no matching active team_members row | UA: ${uaShort}`
-      );
       const loginUrl = new URL("/login", req.url);
       const res = NextResponse.redirect(loginUrl);
       res.cookies.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
@@ -100,5 +90,5 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|.*\\.(?:ico|png|svg|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
