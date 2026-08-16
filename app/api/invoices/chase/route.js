@@ -108,6 +108,7 @@ export async function POST(req) {
       await resend.emails.send({
         from: getEmailFrom(settings.business_name),
         to: inv.email,
+        replyTo: settings.contact_email || undefined,
         subject,
         html,
         attachments: [
