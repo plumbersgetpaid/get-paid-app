@@ -8,7 +8,6 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import AssignAndShareControl from "../../../components/AssignAndShareControl";
 import DeleteJobButton from "../../../components/DeleteJobButton";
-import ReloadOnBack from "../../../components/ReloadOnBack";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -113,7 +112,6 @@ export default async function ViewJob({ params }) {
 
   return (
     <main>
-      <ReloadOnBack />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/work?tab=jobs" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Job details</h1>
