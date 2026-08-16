@@ -26,10 +26,6 @@ body {
   display: none;
 }
 
-.desktop-wordmark .wordmark-accent {
-  color: #d97706;
-}
-
 @media (min-width: 720px) {
   body {
     background: #111111;
@@ -40,10 +36,6 @@ body {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: #f6f7f9;
-    font-weight: 800;
-    font-size: 20px;
-    letter-spacing: -0.02em;
     padding: 28px 0 4px;
   }
 
