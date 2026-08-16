@@ -5,12 +5,6 @@ import { sendWhatsAppMessage } from "./sendWhatsApp";
 import { advanceDate } from "./duration";
 import { Resend } from "resend";
 
-// Creates one real job from a recurring job template's current due
-// occurrence: books it in, warns about any genuine scheduling clash,
-// notifies the client if the time is real and that's turned on, then
-// advances the template to its next occurrence. Never invoices
-// automatically - that always happens the normal way, when the tradie
-// marks the job done.
 export async function createRecurringOccurrence(db, settings, r) {
   const { data: customer } = await db
     .from("customers")
@@ -141,6 +135,7 @@ export async function createRecurringOccurrence(db, settings, r) {
         await resend.emails.send({
           from: getEmailFrom(settings.business_name),
           to: customer.email,
+          replyTo: settings.contact_email || undefined,
           subject,
           html,
         });
