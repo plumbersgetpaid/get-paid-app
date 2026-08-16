@@ -203,6 +203,7 @@ export async function POST(req) {
         await resend.emails.send({
           from: getEmailFrom(settings.business_name),
           to: customerEmail,
+          replyTo: settings.contact_email || undefined,
           subject,
           html,
         });
