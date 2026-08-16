@@ -6,7 +6,6 @@ import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canInvoice, canCreateRecurringJob } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
 import AssignAndShareControl from "../components/AssignAndShareControl";
-import ReloadOnBack from "../components/ReloadOnBack";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +24,6 @@ export default async function Work({ searchParams }) {
 
   return (
     <main>
-      <ReloadOnBack />
       <h1 style={{ fontSize: 20, margin: "0 0 16px" }}>Work</h1>
 
       <div style={tabRowStyle}>
