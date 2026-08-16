@@ -45,7 +45,10 @@ function matchesAny(pathname, list) {
 
 function redirectNoCache(url) {
   const res = NextResponse.redirect(url);
-  res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.headers.set("Pragma", "no-cache");
+  res.headers.set("Expires", "0");
+  res.headers.set("x-middleware-cache", "no-cache");
   return res;
 }
 
@@ -96,5 +99,5 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|.*\\.(?:ico|png|svg|jpg|jpeg|gif|webp)$).*)"],
 };
