@@ -26,30 +26,25 @@ body {
   display: none;
 }
 
+.desktop-wordmark .wordmark-accent {
+  color: #d97706;
+}
+
 @media (min-width: 720px) {
-  /* On anything wider than a phone, the 480px column starts looking
-     like an unfinished mobile site stretched into a big empty page
-     rather than a deliberate choice - this gives it a dark backdrop
-     (the app's own #111 already used for the logo and primary
-     buttons, not a new colour) so the column reads as an intentional
-     "screen" sitting on a surface, the same way the logo mark itself
-     works as light-on-dark. */
   body {
     background: #111111;
   }
 
   .desktop-wordmark {
-    display: block;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     color: #f6f7f9;
     font-weight: 800;
     font-size: 20px;
     letter-spacing: -0.02em;
     padding: 28px 0 4px;
-  }
-
-  .desktop-wordmark span {
-    color: #d97706;
   }
 
   .app-shell {
