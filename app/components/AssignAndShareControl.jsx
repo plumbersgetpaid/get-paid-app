@@ -12,12 +12,12 @@ export default function AssignAndShareControl({ jobId, initialAssignees, teamMem
   useEffect(() => {
     function handlePageShow(event) {
       if (event.persisted) {
-        window.location.reload();
+        router.refresh();
       }
     }
     window.addEventListener("pageshow", handlePageShow);
     return () => window.removeEventListener("pageshow", handlePageShow);
-  }, []);
+  }, [router]);
 
   const assignedIds = new Set(assignees.map((a) => a.id));
 
