@@ -13,14 +13,6 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
-// TEMPORARY DIAGNOSTIC - logs elapsed time (since the request started)
-// at each major checkpoint through this route, to find out where the
-// reported 10-15 second delay actually goes, rather than guessing.
-// Remove once the real bottleneck is identified and addressed.
-function logTiming(t0, label) {
-  console.log(`[timing] ${label}: ${Date.now() - t0}ms since request start`);
-}
-
 async function uploadJobPhotos(db, adminDb, jobId, files, label, businessId) {
   const validFiles = files.filter((f) => f && typeof f !== "string" && f.size > 0);
 
@@ -68,21 +60,18 @@ async function finishInvoice({
   quotedAmount,
   finalAmount,
   dueDate,
-  t0,
 }) {
   try {
     await Promise.all([
       uploadJobPhotos(db, adminDb, job.id, beforeFiles, "before", businessId),
       uploadJobPhotos(db, adminDb, job.id, afterFiles, "after", businessId),
     ]);
-    logTiming(t0, "photos uploaded");
 
     const { data: customer } = await db
       .from("customers")
       .select("*")
       .eq("id", job.customer_id)
       .single();
-    logTiming(t0, "customer fetched");
 
     if (!customer?.email || !process.env.RESEND_API_KEY) {
       console.log("Skipped sending email - customer email or Resend key missing", {
@@ -94,9 +83,7 @@ async function finishInvoice({
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     const settings = await getBusinessSettings();
-    logTiming(t0, "business settings fetched");
     const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, job.id);
-    logTiming(t0, "photos re-fetched for PDF");
     const business = {
       businessName: settings.business_name,
       accentColor: settings.accent_color,
@@ -113,7 +100,6 @@ async function finishInvoice({
     };
 
     const invoiceTemplate = await getTemplate("invoice");
-    logTiming(t0, "invoice template fetched");
     const invoiceVars = {
       customer_name: customer.name,
       job_type: job.job_type || "Plumbing work",
@@ -126,7 +112,6 @@ async function finishInvoice({
     if (paymentLinkInput) {
       const paymentNoteTemplate = await getTemplate("payment_note");
       paymentNote = renderTemplate(paymentNoteTemplate.body, invoiceVars);
-      logTiming(t0, "payment note template fetched");
     }
 
     const pdfBytes = await generateInvoicePdfBytes({
@@ -146,7 +131,6 @@ async function finishInvoice({
       paymentNote: paymentNote || undefined,
       business,
     });
-    logTiming(t0, "PDF generated");
 
     const subject =
       renderTemplate(invoiceTemplate.subject, invoiceVars) ||
@@ -189,19 +173,15 @@ async function finishInvoice({
         },
       ],
     });
-    logTiming(t0, "email sent via Resend");
     console.log("Resend result:", result);
 
     await db.from("invoices").update({ sent_at: new Date().toISOString() }).eq("id", invoice.id);
-    logTiming(t0, "sent_at saved - finishInvoice complete");
   } catch (e) {
     console.error("Finish invoice error:", e);
   }
 }
 
 export async function POST(req) {
-  const t0 = Date.now();
-
   const form = await req.formData();
   const jobId = form.get("jobId");
   let dueDateInput = form.get("dueDate");
@@ -211,13 +191,11 @@ export async function POST(req) {
   const from = (form.get("from") || "").toString();
   const beforeFiles = form.getAll("beforePhotos");
   const afterFiles = form.getAll("afterPhotos");
-  logTiming(t0, "form parsed");
 
   const currentMember = await getCurrentTeamMember();
   if (!canInvoice(currentMember)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
-  logTiming(t0, "current member + permission checked");
 
   const db = await getScopedDb(currentMember);
   const adminDb = supabaseAdmin();
@@ -231,7 +209,6 @@ export async function POST(req) {
   if (!hasAccess) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
-  logTiming(t0, "job access checked");
 
   const { data: job, error: jobErr } = await db
     .from("jobs")
@@ -243,7 +220,6 @@ export async function POST(req) {
     .eq("id", jobId)
     .select("*")
     .single();
-  logTiming(t0, "job marked complete");
 
   if (jobErr || !job) {
     console.error("Job update error:", jobErr);
@@ -271,7 +247,6 @@ export async function POST(req) {
     })
     .select()
     .single();
-  logTiming(t0, "invoice created");
 
   if (invErr) {
     console.error("Invoice insert error:", invErr);
@@ -279,7 +254,6 @@ export async function POST(req) {
   }
 
   await db.from("jobs").update({ status: "invoiced" }).eq("id", job.id);
-  logTiming(t0, "job status set to invoiced");
 
   await finishInvoice({
     db,
@@ -295,9 +269,7 @@ export async function POST(req) {
     quotedAmount,
     finalAmount,
     dueDate,
-    t0,
   });
-  logTiming(t0, "finishInvoice returned - about to redirect");
 
   const returnPath = from === "work" ? "/work?tab=jobs" : "/";
   return NextResponse.redirect(new URL(returnPath, req.url));
