@@ -43,9 +43,14 @@ function matchesAny(pathname, list) {
   return list.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
+function redirectNoCache(url) {
+  const res = NextResponse.redirect(url);
+  res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  return res;
+}
+
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
-  const uaShort = (req.headers.get("user-agent") || "unknown").slice(0, 50);
 
   if (matchesAny(pathname, PUBLIC_PATHS)) {
     return NextResponse.next();
@@ -53,17 +58,11 @@ export async function middleware(req) {
 
   try {
     const token = req.cookies.get(SESSION_COOKIE)?.value;
-    console.log(`[mw] ${pathname} | UA: ${uaShort} | token present: ${!!token}`);
     const teamMemberId = token ? await verifySessionToken(token) : null;
 
     if (!teamMemberId) {
-      console.log(
-        `[mw] REDIRECT ${pathname} -> /login | reason: ${
-          token ? "token present but verifySessionToken failed" : "no session cookie at all"
-        } | UA: ${uaShort}`
-      );
       const loginUrl = new URL("/login", req.url);
-      return NextResponse.redirect(loginUrl);
+      return redirectNoCache(loginUrl);
     }
 
     const db = supabaseAdmin();
@@ -77,26 +76,22 @@ export async function middleware(req) {
       .maybeSingle();
 
     if (!member) {
-      console.log(
-        `[mw] REDIRECT ${pathname} -> /login | reason: token verified (teamMemberId=${teamMemberId}) but no matching active team_members row | UA: ${uaShort}`
-      );
       const loginUrl = new URL("/login", req.url);
-      const res = NextResponse.redirect(loginUrl);
+      const res = redirectNoCache(loginUrl);
       res.cookies.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
       return res;
     }
 
     const matchedGate = PERMISSION_GATED_PATHS.find((g) => g.test(pathname));
     if (matchedGate && !matchedGate.check(member)) {
-      console.log(`[mw] REDIRECT ${pathname} -> / | reason: permission gate failed | UA: ${uaShort}`);
-      return NextResponse.redirect(new URL("/", req.url));
+      return redirectNoCache(new URL("/", req.url));
     }
 
     return NextResponse.next();
   } catch (e) {
     console.error("Middleware error:", e);
     const loginUrl = new URL("/login", req.url);
-    return NextResponse.redirect(loginUrl);
+    return redirectNoCache(loginUrl);
   }
 }
 
