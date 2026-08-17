@@ -196,11 +196,25 @@ export default async function Today() {
               {formatCurrency(overdueAmount, settings.currency)} overdue
             </div>
           )}
-          <Link href="/work?tab=invoices" style={cardLinkStyle}>
+                   <Link href="/work?tab=invoices" style={cardLinkStyle}>
             View invoices →
           </Link>
         </section>
       )}
+
+      <div style={{ textAlign: "center", padding: "24px 0 8px", opacity: 0.35 }}>
+        <svg width="20" height="20" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="5" y="5" width="80" height="80" rx="40" fill="#111" />
+          <path
+            d="M32 24 L32 66 M32 24 L50 24 A13 13 0 0 1 50 50 L32 50"
+            stroke="#d97706"
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </svg>
+      </div>
     </main>
   );
 }
