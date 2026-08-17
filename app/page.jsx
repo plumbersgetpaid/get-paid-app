@@ -7,6 +7,7 @@ import { getCurrentTeamMember } from "./lib/auth";
 import { canSeeEverything, canInvoice } from "./lib/permissions";
 import { getScopedDb } from "./lib/scopedSupabaseClient";
 import Greeting from "./components/Greeting";
+import TrialBanner from "./components/TrialBanner";
 import Icon from "./components/Icon";
 import {
   c,
@@ -165,6 +166,8 @@ export default async function Today() {
           )}
         </div>
       </div>
+
+      <TrialBanner />
 
       <section style={cardStyle}>
         <div style={sectionTitleStyle}>Today's schedule</div>
