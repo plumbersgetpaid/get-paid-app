@@ -14,49 +14,28 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function Today() {
-  // Fetched ahead of the scoped client - it needs to know who's logged
-  // in (and their business) before it can even be constructed, so this
-  // can no longer come after db the way it originally did.
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
   const platformSettings = await getPlatformSettings();
 
   const db = await getScopedDb(currentMember);
-  // outstanding_invoices is a database view, not a direct table - kept
-  // on the service-role client until its own RLS behaviour through the
-  // view has been specifically verified, same reasoning as Calendar and
-  // Work → Invoices
   const adminDb = supabaseAdmin();
 
   const settings = await getBusinessSettings();
   const todayStr = getTodayInLondon();
 
-  // Outstanding payments are financial information - fetched for
-  // canInvoice, not just showEverything, since someone granted the
-  // specific can_invoice permission can already see individual overdue
-  // invoices via the Invoices tab itself - not surfacing that same
-  // information as an actionable alert here would be an inconsistency,
-  // not extra protection. The full £-total summary card further down
-  // stays showEverything-only regardless - that's a broader financial
-  // overview, not a specific invoicing action.
   const { data: outstanding } = canInvoice(currentMember)
     ? await adminDb.from("outstanding_invoices").select("*")
     : { data: [] };
   const totalOwed = (outstanding || []).reduce((sum, i) => sum + Number(i.amount), 0);
-  // "Needs attention" for invoices due today or already overdue - not just
-  // strictly overdue, so a payment due today doesn't get missed
   const dueOrOverdueInvoices = (outstanding || []).filter((i) => i.days_overdue >= 0);
   const overdueAmount = dueOrOverdueInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
 
-  // Quotes are unbooked, price-centric items - same treatment as
-  // invoices, skipped entirely for a subcontractor
   const { data: quotes } = showEverything
     ? await db.from("jobs").select("id").eq("status", "quote_sent")
     : { data: [] };
 
   let activeJobsQuery = db.from("jobs").select("*").eq("status", "in_progress");
-  // Same rule as everywhere else - a subcontractor's view of the
-  // dashboard only ever reflects jobs specifically assigned to them
   if (!showEverything) {
     activeJobsQuery = activeJobsQuery.eq("assigned_to", currentMember?.id || "__none__");
   }
@@ -70,9 +49,6 @@ export default async function Today() {
   const lateJobs = (activeJobs || []).filter(
     (j) => j.time_confirmed !== false && j.scheduled_end && new Date(j.scheduled_end) < now
   );
-  // Jobs whose date has arrived (today or already passed) but the actual
-  // time was never confirmed - these need an active nudge, not just a
-  // passive "TBC" sitting quietly on the calendar
   const needsTimeJobs = (activeJobs || []).filter(
     (j) =>
       j.time_confirmed === false && j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr
@@ -86,7 +62,6 @@ export default async function Today() {
     (jobCustomers || []).map((c) => [c.id, c.name])
   );
 
-  // Reminders are private to whoever made them, same rule as Calendar
   const { data: remindersToday } = await db
     .from("personal_events")
     .select("*")
@@ -102,8 +77,6 @@ export default async function Today() {
         timeConfirmed,
         icon: "🔧",
         label: `${jobCustomerNameById[j.customer_id] || "Customer"} · ${j.job_type || "Job"}`,
-        // If the time still needs setting, take them to set it - only once
-        // it's confirmed does tapping the job mean "mark it done"
         href: timeConfirmed
           ? `/jobs/complete/${j.id}?from=today`
           : `/jobs/schedule/${j.id}`,
@@ -123,13 +96,6 @@ export default async function Today() {
   const overdueCount = dueOrOverdueInvoices.length;
   const lateCount = lateJobs.length;
   const needsTimeCount = needsTimeJobs.length;
-  // No separate visibility branching needed here - quotesCount is
-  // already guaranteed 0 for anyone without showEverything (the quotes
-  // query itself is gated), and overdueCount is already guaranteed 0
-  // for anyone without canInvoice (the outstanding-invoices query is
-  // gated the same way) - so a plain AND-chain across all five already
-  // does the right thing for every permission combination automatically,
-  // without this calculation needing its own copy of that same logic.
   const allClear =
     quotesCount === 0 &&
     needsBookingCount === 0 &&
@@ -239,15 +205,15 @@ export default async function Today() {
       )}
 
       <div style={{ textAlign: "center", padding: "24px 0 8px", opacity: 0.35 }}>
-        {platformSettings.app_logo_url ? (
+        {platformSettings.sign_off_logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={platformSettings.app_logo_url}
+            src={platformSettings.sign_off_logo_url}
             alt=""
-            style={{ maxHeight: 24, maxWidth: 120 }}
+            style={{ maxHeight: 40, maxWidth: 180 }}
           />
         ) : (
-          <svg width="20" height="20" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="32" height="32" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="5" y="5" width="80" height="80" rx="40" fill="#111" />
             <path
               d="M32 24 L32 66 M32 24 L50 24 A13 13 0 0 1 50 50 L32 50"
