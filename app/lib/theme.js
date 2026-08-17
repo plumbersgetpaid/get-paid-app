@@ -12,9 +12,13 @@ import { Poppins, IBM_Plex_Mono } from "next/font/google";
 
 // Poppins is the brand guide's documented match for the logo wordmark.
 // 300 for large display text, 400/500 for everything else.
+// Every weight the app actually uses has to be listed here. Miss one
+// and the browser fakes it, which renders inconsistently between
+// screens and is exactly what makes two headings in the same typeface
+// look like two different fonts.
 export const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
   variable: "--font-poppins",
 });
