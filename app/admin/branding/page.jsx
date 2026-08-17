@@ -10,17 +10,14 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function AdminBranding({ searchParams }) {
-  // A 404, not a redirect to login - someone without this specific
-  // flag shouldn't even learn this page exists, the same reasoning
-  // used for Settings but one level more restrictive, since this
-  // affects every business on the platform rather than just one
   const currentMember = await getCurrentTeamMember();
   if (!isPlatformAdmin(currentMember)) {
     notFound();
   }
 
   const settings = await getPlatformSettings();
-  const saved = searchParams?.saved === "1";
+  const savedApp = searchParams?.saved === "app";
+  const savedSignoff = searchParams?.saved === "signoff";
 
   return (
     <main>
@@ -30,16 +27,10 @@ export default async function AdminBranding({ searchParams }) {
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 8, marginBottom: 16 }}>
-        This is the app&apos;s own logo, shown on the login and setup
-        screens before anyone&apos;s signed in to a business yet, and as
-        a small sign-off at the bottom of the Today page once someone
-        is. It&apos;s separate from any individual business&apos;s own
-        logo in Business settings, and only visible to platform admins.
+        Two separate logos for the app itself, independent of any
+        individual business&apos;s own logo in Business settings, and
+        only visible to platform admins.
       </p>
-
-      {saved && (
-        <div style={successBannerStyle}>Logo updated - now live on the login screen.</div>
-      )}
 
       <section style={cardStyle}>
         <h2 style={{ fontSize: 15, margin: "0 0 10px" }}>App logo</h2>
@@ -47,6 +38,10 @@ export default async function AdminBranding({ searchParams }) {
           Shown on the login and setup screens. Best as a PNG with a
           transparent or white background.
         </p>
+
+        {savedApp && (
+          <div style={successBannerStyle}>Logo updated - now live on the login screen.</div>
+        )}
 
         {settings.app_logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -62,7 +57,37 @@ export default async function AdminBranding({ searchParams }) {
           </p>
         )}
 
-        <AppLogoUploadForm />
+        <AppLogoUploadForm uploadEndpoint="/api/admin/upload-app-logo" savedParam="app" />
+      </section>
+
+      <section style={cardStyle}>
+        <h2 style={{ fontSize: 15, margin: "0 0 10px" }}>Sign-off logo</h2>
+        <p style={{ fontSize: 12, color: "#888", marginTop: 0, marginBottom: 12 }}>
+          The small, subtle mark shown at the bottom of the Today page.
+          Independent of the app logo above - can be the same image or
+          a different one, e.g. just the icon on its own rather than
+          the full logo with wordmark.
+        </p>
+
+        {savedSignoff && (
+          <div style={successBannerStyle}>Logo updated - now live on the Today page.</div>
+        )}
+
+        {settings.sign_off_logo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={settings.sign_off_logo_url}
+            alt="Current sign-off logo"
+            style={{ maxWidth: 160, maxHeight: 80, display: "block", marginBottom: 12 }}
+          />
+        ) : (
+          <p style={{ fontSize: 12, color: "#b45309", marginBottom: 12 }}>
+            No logo uploaded yet - the Today page currently shows the
+            built-in icon mark instead.
+          </p>
+        )}
+
+        <AppLogoUploadForm uploadEndpoint="/api/admin/upload-signoff-logo" savedParam="signoff" />
       </section>
     </main>
   );
