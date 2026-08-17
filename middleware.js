@@ -8,6 +8,7 @@ import {
   canCreateJob,
   canCreateRecurringJob,
   canReschedule,
+  isPlatformAdmin,
 } from "./app/lib/permissions";
 
 const PUBLIC_PATHS = [
@@ -37,6 +38,7 @@ const PERMISSION_GATED_PATHS = [
   { test: (p) => /^\/jobs\/complete\/[^/]+$/.test(p), check: canInvoice },
   { test: (p) => p === "/clients/new" || p.startsWith("/clients/new/"), check: canSeeClientDatabase },
   { test: (p) => /^\/clients\/[^/]+\/edit$/.test(p), check: canSeeClientDatabase },
+  { test: (p) => p === "/admin" || p.startsWith("/admin/"), check: isPlatformAdmin },
 ];
 
 function matchesAny(pathname, list) {
@@ -72,7 +74,7 @@ export async function middleware(req) {
     const { data: member } = await db
       .from("team_members")
       .select(
-        "id, role, can_invoice, can_see_client_database, can_create_quote, can_create_job, can_create_recurring_job, can_reschedule"
+        "id, role, can_invoice, can_see_client_database, can_create_quote, can_create_job, can_create_recurring_job, can_reschedule, is_platform_admin"
       )
       .eq("id", teamMemberId)
       .eq("is_active", true)
