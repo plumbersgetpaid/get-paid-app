@@ -25,16 +25,16 @@ export async function POST(req) {
     );
   }
 
-  const origin = new URL(req.url).origin;
-
   try {
-    // Returns to Settings rather than /billing. Sending it back to the
-    // page it was launched from puts billing either side of the portal
-    // in browser history, so pressing back bounces between the two
-    // instead of leaving the section.
+    // No return_url on purpose.
+    //
+    // Stripe only renders its "return to..." link when a return URL is
+    // set, so omitting it removes the button entirely. That's what we
+    // want here: the portal opens in its own tab, so the way back is
+    // to close it. Offering a link that navigates the tab to the app
+    // instead just recreates the back-button mess in the new tab.
     const session = await getStripe().billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
-      return_url: `${origin}/settings`,
     });
     return NextResponse.json({ url: session.url });
   } catch (e) {
