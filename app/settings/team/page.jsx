@@ -26,7 +26,7 @@ export default async function Team() {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/settings" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>Team</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Team</h1>
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
@@ -34,12 +34,12 @@ export default async function Team() {
         assigned to them, with no money or client list beyond that.
       </p>
 
-      <h2 style={{ fontSize: 15, marginTop: 20 }}>Current team</h2>
+      <h2 style={{ fontSize: 15, fontWeight: 500, marginTop: 20 }}>Current team</h2>
       {(members || []).map((m) => (
         <TeamMemberRow key={m.id} member={m} isSelf={m.id === currentMember.id} />
       ))}
 
-      <h2 style={{ fontSize: 15, marginTop: 24 }}>Add someone new</h2>
+      <h2 style={{ fontSize: 15, fontWeight: 500, marginTop: 24 }}>Add someone new</h2>
       <AddTeamMemberForm />
     </main>
   );

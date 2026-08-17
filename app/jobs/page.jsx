@@ -1,4 +1,5 @@
 import { getBusinessSettings } from "../lib/getBusinessSettings";
+import Icon from "../components/Icon";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canReschedule, canInvoice } from "../lib/permissions";
@@ -97,7 +98,7 @@ export default async function AllJobs({ searchParams }) {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/work" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>
           {status === "unscheduled"
             ? "Jobs needing booked in"
             : status === "late"
@@ -154,7 +155,7 @@ export default async function AllJobs({ searchParams }) {
             · {new Date(job.created_at).toLocaleDateString("en-GB")}
           </div>
           {job.location && (
-            <div style={{ fontSize: 12, color: "#888" }}>📍 {job.location}</div>
+            <div style={locationRowStyle}><Icon name="location" size={13} strokeWidth={1.6} />{job.location}</div>
           )}
           {job.status === "in_progress" && job.time_confirmed === false && (
             <div style={{ fontSize: 12, color: "#b45309", fontWeight: 500 }}>
@@ -219,4 +220,12 @@ const jobLinkStyle = {
   fontSize: 12,
   color: "#000",
   textDecoration: "underline",
+};
+
+const locationRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  fontSize: 12,
+  color: "#6b6b6b",
 };

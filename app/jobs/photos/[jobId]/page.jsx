@@ -62,7 +62,7 @@ export default async function JobPhotos({ params, searchParams }) {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/work?tab=jobs" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>Job photos</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Job photos</h1>
       </div>
 
       <section style={summaryCardStyle}>
@@ -115,7 +115,7 @@ export default async function JobPhotos({ params, searchParams }) {
         </button>
       </form>
 
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>Before ({beforePhotos.length})</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 500, marginTop: 24 }}>Before ({beforePhotos.length})</h2>
       {beforePhotos.length === 0 && (
         <p style={{ color: "#888", fontSize: 13 }}>No before photos yet.</p>
       )}
@@ -135,7 +135,7 @@ export default async function JobPhotos({ params, searchParams }) {
         ))}
       </div>
 
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>After ({afterPhotos.length})</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 500, marginTop: 24 }}>After ({afterPhotos.length})</h2>
       {afterPhotos.length === 0 && (
         <p style={{ color: "#888", fontSize: 13 }}>No after photos yet.</p>
       )}

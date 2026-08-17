@@ -62,6 +62,44 @@ const paths = {
     </>
   ),
   warning: <path d="M12 4.2 2.8 19.6h18.4zM12 10v4M12 16.6v.4" />,
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" />
+    </>
+  ),
+  // For the AI tidy-up actions - a wand reads as "improve this"
+  // more clearly than a star at small sizes
+  wand: (
+    <>
+      <path d="M15 4.5 19.5 9 8 20.5 3.5 16z" />
+      <path d="M14.5 8.5 15.5 9.5M17.5 3v3M19 4.5h-3M20 8v2M21 9h-2" />
+    </>
+  ),
+  location: (
+    <>
+      <path d="M12 21s6-5.7 6-10.2A6 6 0 0 0 6 10.8C6 15.3 12 21 12 21z" />
+      <circle cx="12" cy="10.6" r="2.2" />
+    </>
+  ),
+  phone: (
+    <path d="M7.5 3.5h-3a1.6 1.6 0 0 0-1.6 1.8c.7 6.6 6.2 12.1 12.8 12.8a1.6 1.6 0 0 0 1.8-1.6v-3a1.6 1.6 0 0 0-1.3-1.6l-2.4-.5a1.6 1.6 0 0 0-1.6.7l-.8 1.2a12 12 0 0 1-4.2-4.2l1.2-.8a1.6 1.6 0 0 0 .7-1.6l-.5-2.4a1.6 1.6 0 0 0-1.6-1.3z" />
+  ),
+  mail: (
+    <>
+      <rect x="2.8" y="5" width="18.4" height="14" rx="1.6" />
+      <path d="m3.4 6.4 8.6 6.2 8.6-6.2" />
+    </>
+  ),
+  flag: <path d="M5 21V4.5M5 5.2h11l-2 3.4 2 3.4H5" />,
+  card: (
+    <>
+      <rect x="2.8" y="5.2" width="18.4" height="13.6" rx="1.8" />
+      <path d="M2.8 9.6h18.4M6.4 14.6h3.4" />
+    </>
+  ),
+  chart: <path d="M4 20V4M4 20h16M8 17v-5M12.5 17V8M17 17v-7" />,
+  chevron: <path d="m8 10 4 4 4-4" />,
   plus: <path d="M12 5.5v13M5.5 12h13" />,
 };
 

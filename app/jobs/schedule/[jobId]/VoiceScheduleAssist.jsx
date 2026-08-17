@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Icon from "../../../components/Icon";
 
 export default function VoiceScheduleAssist({
   initialDate = "",
@@ -97,11 +98,19 @@ export default function VoiceScheduleAssist({
         disabled={processing}
         style={recording ? recordingButtonStyle : recordButtonStyle}
       >
-        {processing
-          ? "Processing recording..."
-          : recording
-          ? "⏺ Stop recording"
-          : "🎙️ Book by voice"}
+        {processing ? (
+          "Processing recording..."
+        ) : recording ? (
+          <>
+            <span style={{ width: 9, height: 9, borderRadius: 5, background: "#dc2626", display: "inline-block" }} />
+            Stop recording
+          </>
+        ) : (
+          <>
+            <Icon name="mic" size={15} strokeWidth={1.6} />
+            Book by voice
+          </>
+        )}
       </button>
 
       {error && <div style={errorBoxStyle}>{error}</div>}
@@ -178,6 +187,10 @@ const inputStyle = {
 };
 
 const recordButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
   background: "white",
   color: "#000",
   border: "1px solid #e2e2e2",
@@ -188,6 +201,10 @@ const recordButtonStyle = {
 };
 
 const recordingButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
   background: "#fee2e2",
   color: "#991b1b",
   border: "1px solid #fca5a5",

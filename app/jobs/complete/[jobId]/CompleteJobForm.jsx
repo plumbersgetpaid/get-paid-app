@@ -146,7 +146,7 @@ export default function CompleteJobForm({
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/work?tab=jobs" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>Complete job</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Complete job</h1>
       </div>
 
       <section
@@ -281,7 +281,7 @@ export default function CompleteJobForm({
           disabled={busy}
           style={enhanceButtonStyle}
         >
-          ✨ Enhance note with AI
+          Enhance note with AI
         </button>
 
         <div style={photosCardStyle}>

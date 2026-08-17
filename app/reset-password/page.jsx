@@ -10,7 +10,7 @@ export default function ResetPassword({ searchParams }) {
 
   return (
     <main style={{ maxWidth: 400, margin: "60px auto", padding: "0 20px" }}>
-      <h1 style={{ fontSize: 22, marginBottom: 24, textAlign: "center" }}>
+      <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", marginBottom: 24, textAlign: "center" }}>
         Choose a new password
       </h1>
 

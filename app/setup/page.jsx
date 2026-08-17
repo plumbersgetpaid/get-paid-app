@@ -30,7 +30,7 @@ export default async function Setup() {
             style={{ maxWidth: "55%", maxHeight: 70 }}
           />
         ) : (
-          <h1 style={{ fontSize: 22, margin: 0 }}>Patch Up</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Patch Up</h1>
         )}
       </div>
       <p style={{ fontSize: 14, color: "#666", textAlign: "center", marginBottom: 24 }}>

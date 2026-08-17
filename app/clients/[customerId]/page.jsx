@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Icon from "../../components/Icon";
 import BackButton from "../../components/BackButton";
 import DuplicatesSection from "./DuplicatesSection";
 import DeleteClientButton from "../../components/DeleteClientButton";
@@ -134,7 +135,7 @@ export default async function ClientDetail({ params }) {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/clients" forceFresh />
-        <h1 style={{ fontSize: 20, margin: 0 }}>{customer.name}</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>{customer.name}</h1>
       </div>
 
       <section style={cardStyle}>
@@ -165,7 +166,7 @@ export default async function ClientDetail({ params }) {
         />
       )}
 
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>Job history</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 500, marginTop: 24 }}>Job history</h2>
       {(!jobs || jobs.length === 0) && (
         <p style={{ color: "#888" }}>No jobs for this client yet.</p>
       )}
@@ -187,7 +188,7 @@ export default async function ClientDetail({ params }) {
               )}
             </div>
             {job.location && (
-              <div style={{ fontSize: 12, color: "#888" }}>📍 {job.location}</div>
+              <div style={locationRowStyle}><Icon name="location" size={13} strokeWidth={1.6} />{job.location}</div>
             )}
             {job.completion_note && (
               <div style={{ fontSize: 12, color: "#666", marginTop: 4, fontStyle: "italic" }}>
@@ -240,4 +241,12 @@ const jobCardStyle = {
   borderRadius: 2,
   padding: 14,
   marginBottom: 8,
+};
+
+const locationRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  fontSize: 12,
+  color: "#6b6b6b",
 };

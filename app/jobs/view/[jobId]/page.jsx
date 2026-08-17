@@ -143,19 +143,19 @@ export default async function ViewJob({ params }) {
       <ReloadOnBack />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/work?tab=jobs" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>Job details</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Job details</h1>
       </div>
 
       <section style={cardStyle}>
         <div style={{ fontWeight: 500, fontSize: 17 }}>{customer?.name || "Customer"}</div>
         {customer?.phone && (
           <a href={`tel:${customer.phone}`} style={contactLinkStyle}>
-            📞 {customer.phone}
+            {customer.phone}
           </a>
         )}
         {customer?.email && (
           <a href={`mailto:${customer.email}`} style={contactLinkStyle}>
-            ✉️ {customer.email}
+            {customer.email}
           </a>
         )}
         {!customer?.phone && !customer?.email && (
@@ -177,7 +177,7 @@ export default async function ViewJob({ params }) {
 
         {job.location && (
           <div style={rowStyle}>
-            <span style={rowLabelStyle}>📍 Location</span>
+            <span style={rowLabelStyle}>Location</span>
             <span style={rowValueStyle}>{job.location}</span>
           </div>
         )}
@@ -217,7 +217,7 @@ export default async function ViewJob({ params }) {
 
         {completionLabel && (
           <div style={rowStyle}>
-            <span style={rowLabelStyle}>🏁 Expected completion</span>
+            <span style={rowLabelStyle}>Expected completion</span>
             <span style={rowValueStyle}>{completionLabel}</span>
           </div>
         )}
@@ -242,7 +242,7 @@ export default async function ViewJob({ params }) {
 
         {showEverything && (
           <div style={rowStyle}>
-            <span style={rowLabelStyle}>💷 Price</span>
+            <span style={rowLabelStyle}>Price</span>
             <span style={rowValueStyle}>{formatCurrency(job.amount, settings.currency)}</span>
           </div>
         )}
@@ -277,7 +277,7 @@ export default async function ViewJob({ params }) {
             <input type="hidden" name="jobId" value={job.id} />
             <input type="hidden" name="from" value="work" />
             <button type="submit" style={cancelButtonStyle}>
-              📦 Cancel this job
+              Cancel this job
             </button>
           </form>
         )}

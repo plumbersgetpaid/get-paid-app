@@ -24,7 +24,7 @@ export default function ForgotPassword({ searchParams }) {
 
   return (
     <main style={{ maxWidth: 400, margin: "60px auto", padding: "0 20px" }}>
-      <h1 style={{ fontSize: 22, marginBottom: 8, textAlign: "center" }}>
+      <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", marginBottom: 8, textAlign: "center" }}>
         Reset your password
       </h1>
       <p style={{ fontSize: 14, color: "#666", textAlign: "center", marginBottom: 24 }}>

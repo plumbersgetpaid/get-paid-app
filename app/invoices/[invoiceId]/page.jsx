@@ -59,7 +59,7 @@ export default async function InvoiceDetail({ params }) {
         }}
       >
         <BackButton fallbackHref="/invoices" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>Invoice</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Invoice</h1>
       </div>
 
       <section
@@ -70,7 +70,7 @@ export default async function InvoiceDetail({ params }) {
           border: "1px solid #e2e2e2",
         }}
       >
-        <h2 style={{ fontSize: 22, marginBottom: 4 }}>Invoice</h2>
+        <h2 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", marginBottom: 4 }}>Invoice</h2>
         <div style={{ color: "#888", marginBottom: 20, fontSize: 13 }}>
           {formatInvoiceNumber(invoice.invoice_number)} ·{" "}
           {new Date(invoice.created_at).toLocaleDateString("en-GB")}
@@ -161,7 +161,7 @@ export default async function InvoiceDetail({ params }) {
 
         <section style={paymentLinkCardStyle}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
-            💳 Payment link
+            Payment link
           </div>
           {invoice.payment_link && (
             <div style={{ marginBottom: 10 }}>
@@ -208,7 +208,7 @@ export default async function InvoiceDetail({ params }) {
           download
           style={downloadButtonStyle}
         >
-          📊 Download CSV
+          Download CSV
         </a>
       </div>
     </main>

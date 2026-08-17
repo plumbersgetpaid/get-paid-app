@@ -18,7 +18,7 @@ export default async function Account() {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>My account</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>My account</h1>
       </div>
 
       <section style={cardStyle}>

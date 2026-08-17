@@ -32,7 +32,7 @@ export default async function EditClient({ params }) {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref={`/clients/${customerId}`} />
-        <h1 style={{ fontSize: 20, margin: 0 }}>Edit client</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Edit client</h1>
       </div>
 
       <form

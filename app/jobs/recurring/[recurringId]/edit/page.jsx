@@ -59,7 +59,7 @@ export default async function EditRecurringJob({ params }) {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/jobs/recurring" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>Edit recurring job</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Edit recurring job</h1>
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>

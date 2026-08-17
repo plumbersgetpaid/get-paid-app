@@ -146,7 +146,7 @@ export default function NotesSection({ jobId }) {
         </label>
       </form>
 
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>Notes ({notes.length})</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 500, marginTop: 24 }}>Notes ({notes.length})</h2>
 
       {loading && <p style={{ color: "#888", fontSize: 13 }}>Loading...</p>}
       {loadError && <div style={errorBoxStyle}>{loadError}</div>}

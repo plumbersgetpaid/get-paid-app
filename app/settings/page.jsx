@@ -30,7 +30,7 @@ export default async function Settings({ searchParams }) {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>Business settings</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Business settings</h1>
       </div>
 
       {currentMember && (

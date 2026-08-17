@@ -27,7 +27,7 @@ export default async function AdminBranding({ searchParams }) {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/settings" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>Platform branding</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Platform branding</h1>
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 8, marginBottom: 16 }}>
@@ -37,7 +37,7 @@ export default async function AdminBranding({ searchParams }) {
       </p>
 
       <section style={cardStyle}>
-        <h2 style={{ fontSize: 15, margin: "0 0 10px" }}>App logo</h2>
+        <h2 style={{ fontSize: 15, fontWeight: 500, margin: "0 0 10px" }}>App logo</h2>
         <p style={{ fontSize: 12, color: "#888", marginTop: 0, marginBottom: 12 }}>
           Shown on the login and setup screens. Best as a PNG with a
           transparent or white background.
@@ -65,7 +65,7 @@ export default async function AdminBranding({ searchParams }) {
       </section>
 
       <section style={cardStyle}>
-        <h2 style={{ fontSize: 15, margin: "0 0 10px" }}>Sign-off logo</h2>
+        <h2 style={{ fontSize: 15, fontWeight: 500, margin: "0 0 10px" }}>Sign-off logo</h2>
         <p style={{ fontSize: 12, color: "#888", marginTop: 0, marginBottom: 12 }}>
           The small, subtle mark shown at the bottom of the Today page.
           Independent of the app logo above - can be the same image or

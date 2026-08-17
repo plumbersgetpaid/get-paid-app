@@ -32,7 +32,7 @@ export default async function NewQuote() {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/" />
-        <h1 style={{ fontSize: 20, margin: 0 }}>New quote</h1>
+        <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>New quote</h1>
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
@@ -55,7 +55,7 @@ export default async function NewQuote() {
 
         <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
           Speak the job details instead of typing - AI will fill these in for
-          you, and you can edit before sending. Tap ✨ to tidy up what you've
+          you, and you can edit before sending. Tap the wand to tidy up what you've
           typed.
         </div>
         <VoiceQuoteAssist />
