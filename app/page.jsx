@@ -50,7 +50,10 @@ export default async function Today() {
   // stays showEverything-only regardless - that's a broader financial
   // overview, not a specific invoicing action.
   const { data: outstanding } = canInvoice(currentMember)
-    ? await adminDb.from("outstanding_invoices").select("*")
+    ? await adminDb
+        .from("outstanding_invoices")
+        .select("*")
+        .eq("business_id", currentMember.business_id)
     : { data: [] };
   const totalOwed = (outstanding || []).reduce((sum, i) => sum + Number(i.amount), 0);
   // "Needs attention" for invoices due today or already overdue - not just
