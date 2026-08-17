@@ -42,7 +42,7 @@ export default async function Work({ searchParams }) {
       <ReloadOnBack />
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
         <div style={{ width: 6, height: 26, borderRadius: 2, flexShrink: 0, ...silverAccentStyle }} />
-        <h1 className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 20, margin: 0 }}>
+        <h1 className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>
           Work
         </h1>
       </div>
