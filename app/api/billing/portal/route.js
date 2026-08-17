@@ -28,9 +28,13 @@ export async function POST(req) {
   const origin = new URL(req.url).origin;
 
   try {
+    // Returns to Settings rather than /billing. Sending it back to the
+    // page it was launched from puts billing either side of the portal
+    // in browser history, so pressing back bounces between the two
+    // instead of leaving the section.
     const session = await getStripe().billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
-      return_url: `${origin}/billing`,
+      return_url: `${origin}/settings`,
     });
     return NextResponse.json({ url: session.url });
   } catch (e) {
