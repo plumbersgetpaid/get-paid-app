@@ -3,6 +3,7 @@ import { getScopedDb } from "../lib/scopedSupabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getTodayInLondon } from "../lib/today";
+import { poppins, metallicTitleStyle } from "../lib/fonts";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canInvoice, canCreateRecurringJob } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
@@ -25,10 +26,12 @@ export default async function Work({ searchParams }) {
   return (
     <main>
       <ReloadOnBack />
-     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-  <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
-  <h1 style={{ fontSize: 20, margin: 0 }}>Work</h1>
-</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
+        <h1 className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 20, margin: 0 }}>
+          Work
+        </h1>
+      </div>
 
       <div style={tabRowStyle}>
         {showEverything && (
