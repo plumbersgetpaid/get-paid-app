@@ -166,23 +166,9 @@ export default async function ScheduleJob({ params, searchParams }) {
               defaultChecked={!!customer?.email}
               disabled={!customer?.email}
             />
-                       Email
+            Email
             {!customer?.email && (
               <span style={{ color: "#888", fontSize: 12 }}>(no email on file)</span>
-            )}
-          </label>
-        </div>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-            <input
-              type="checkbox"
-              name="notifyWhatsapp"
-              value="1"
-              defaultChecked={!!customer?.phone}
-              disabled={!customer?.phone}
-            />
-            WhatsApp
-            {!customer?.phone && (
-              <span style={{ color: "#888", fontSize: 12 }}>(no phone on file)</span>
             )}
           </label>
         </div>
