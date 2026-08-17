@@ -1,3 +1,4 @@
+import Link from "next/link";
 import LoginForm from "./LoginForm";
 import { getPlatformSettings } from "../lib/getPlatformSettings";
 
@@ -15,16 +16,22 @@ export default async function Login() {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={settings.app_logo_url}
-            alt="Patch Up"
+            alt="PatchUp"
             style={{ maxWidth: "60%", maxHeight: 80 }}
           />
         ) : (
-          <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Patch Up</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>PatchUp</h1>
         )}
       </div>
       <div style={cardStyle}>
         <LoginForm />
       </div>
+      <p style={footerStyle}>
+        New here?{" "}
+        <Link href="/signup" style={{ color: "#000" }}>
+          Start a free trial
+        </Link>
+      </p>
     </main>
   );
 }
@@ -33,6 +40,12 @@ const cardStyle = {
   background: "white",
   borderRadius: 3,
   padding: 24,
-  boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-  border: "1px solid #eee",
+  border: "1px solid #e2e2e2",
+};
+
+const footerStyle = {
+  textAlign: "center",
+  fontSize: 13,
+  color: "#6b6b6b",
+  marginTop: 20,
 };
