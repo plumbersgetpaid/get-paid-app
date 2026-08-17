@@ -38,7 +38,11 @@ export default function BottomNav({
   // navigation at all - seeing "Work", "Calendar" etc still reachable
   // from what's meant to be a logged-out screen is confusing, even though
   // those pages aren't actually behind any login check yet themselves
-  if (pathname.startsWith("/login") || pathname.startsWith("/setup")) {
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/setup") ||
+    pathname.startsWith("/signup")
+  ) {
     return null;
   }
 
