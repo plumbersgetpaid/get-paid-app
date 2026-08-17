@@ -331,7 +331,7 @@ export default async function Calendar({ searchParams }) {
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ width: 6, height: 26, borderRadius: 2, flexShrink: 0, ...silverAccentStyle }} />
-        <h1 className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 20, margin: 0 }}>
+        <h1 className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>
           Calendar
         </h1>
       </div>
@@ -533,7 +533,7 @@ const todayBadgeStyle = {
   background: "white",
   color: "#111",
   fontSize: 10,
-  fontWeight: 800,
+  fontWeight: 700,
   padding: "2px 6px",
   borderRadius: 4,
   letterSpacing: 0.5,
