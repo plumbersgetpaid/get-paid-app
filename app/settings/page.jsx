@@ -81,6 +81,25 @@ export default async function Settings({ searchParams }) {
       </Link>
 
       <Link
+        href="/billing"
+        style={{
+          display: "block",
+          background: "white",
+          borderRadius: 3,
+          padding: 16,
+          margin: "16px 0",
+          textDecoration: "none",
+          color: "#000",
+          border: "1px solid #e2e2e2",
+        }}
+      >
+        <div style={{ fontWeight: 500, fontSize: 14 }}>Billing →</div>
+        <div style={{ fontSize: 12, color: "#6b6b6b", marginTop: 2 }}>
+          Your plan, payment details and invoices
+        </div>
+      </Link>
+
+      <Link
         href="/settings/team"
         style={{
           display: "block",
