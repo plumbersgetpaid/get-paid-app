@@ -296,7 +296,10 @@ export default async function Calendar({ searchParams }) {
 
   return (
     <main>
-      <h1 style={{ fontSize: 20, margin: 0 }}>Calendar</h1>
+     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+  <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
+  <h1 style={{ fontSize: 20, margin: 0 }}>Calendar</h1>
+</div>
 
       <div style={{ display: "flex", gap: 10, margin: "16px 0" }}>
         {canCreateJob(currentMember) && (
