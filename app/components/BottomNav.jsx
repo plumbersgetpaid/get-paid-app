@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Icon from "./Icon";
+import { c, silverAccentStyle, silverSurfaceStyle } from "../lib/theme";
 
 export default function BottomNav({
   canCreateQuote,
@@ -13,17 +15,29 @@ export default function BottomNav({
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Built here, not as a static module-level constant, since Clients
+  // needs to disappear entirely for anyone without can_see_client_database
+  // - a specific subcontractor can now have this turned off, and leaving
+  // the tab visible but leading to a dead end (a bare "page not found")
+  // is worse than not showing it as an option at all
   const TABS = [
-    { href: "/", icon: "🏠", label: "Today" },
-    { href: "/work", icon: "📋", label: "Work" },
-    { href: "/calendar", icon: "📅", label: "Calendar" },
-    ...(canSeeClientDatabase ? [{ href: "/clients", icon: "👤", label: "Clients" }] : []),
+    { href: "/", icon: "home", label: "Today" },
+    { href: "/work", icon: "work", label: "Work" },
+    { href: "/calendar", icon: "calendar", label: "Calendar" },
+    ...(canSeeClientDatabase ? [{ href: "/clients", icon: "person", label: "Clients" }] : []),
   ];
 
+  // The nav lives in the shared layout, which doesn't unmount between page
+  // navigations - so close the menu explicitly whenever the route changes,
+  // as a safety net alongside the explicit close-on-click handlers below.
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
 
+  // The login and setup pages shouldn't show the rest of the app's
+  // navigation at all - seeing "Work", "Calendar" etc still reachable
+  // from what's meant to be a logged-out screen is confusing, even though
+  // those pages aren't actually behind any login check yet themselves
   if (pathname.startsWith("/login") || pathname.startsWith("/setup")) {
     return null;
   }
@@ -41,13 +55,14 @@ export default function BottomNav({
           style={fabButtonStyle}
           aria-label="Create new"
         >
-          +
+          <Icon name="plus" size={26} color="#000" strokeWidth={1.6} />
         </button>
         {menuOpen && (
           <div style={fabMenuStyle}>
             {canCreateQuote && (
               <Link href="/jobs/new" style={fabMenuItemStyle} onClick={() => setMenuOpen(false)}>
-                📝 New quote
+                <Icon name="doc" size={17} />
+                New quote
               </Link>
             )}
             {canCreateJob && (
@@ -56,7 +71,8 @@ export default function BottomNav({
                 style={fabMenuItemStyle}
                 onClick={() => setMenuOpen(false)}
               >
-                🔧 Quick book a job
+                <Icon name="job" size={17} />
+                Quick book a job
               </Link>
             )}
             <Link
@@ -64,7 +80,8 @@ export default function BottomNav({
               style={fabMenuItemStyle}
               onClick={() => setMenuOpen(false)}
             >
-              📌 Personal reminder
+              <Icon name="pin" size={17} />
+              Personal reminder
             </Link>
             {canCreateRecurringJob && (
               <Link
@@ -72,7 +89,8 @@ export default function BottomNav({
                 style={fabMenuItemStyle}
                 onClick={() => setMenuOpen(false)}
               >
-                🔁 Recurring job
+                <Icon name="repeat" size={17} />
+                Recurring job
               </Link>
             )}
           </div>
@@ -88,12 +106,21 @@ export default function BottomNav({
               href={tab.href}
               style={{
                 ...navItemStyle,
-                color: active ? "#111" : "#999",
-                fontWeight: active ? 700 : 500,
+                color: active ? c.ink : "#9a9a9a",
+                fontWeight: active ? 500 : 400,
               }}
             >
-              <span style={{ fontSize: 20 }}>{tab.icon}</span>
-              <span style={{ fontSize: 11 }}>{tab.label}</span>
+              <Icon name={tab.icon} size={19} strokeWidth={active ? 1.9 : 1.6} />
+              <span style={{ fontSize: 10.5 }}>{tab.label}</span>
+              {/* Silver only marks where you are - it never carries
+                  status or data anywhere in the app */}
+              <span
+                style={{
+                  ...tabMarkStyle,
+                  ...(active ? silverAccentStyle : {}),
+                  visibility: active ? "visible" : "hidden",
+                }}
+              />
             </Link>
           );
         })}
@@ -115,10 +142,10 @@ const navStyle = {
   left: 0,
   right: 0,
   background: "white",
-  borderTop: "1px solid #eee",
+  borderTop: `1px solid ${c.hairline}`,
   display: "flex",
   justifyContent: "space-around",
-  padding: "10px 0",
+  padding: "9px 0 11px",
   zIndex: 10,
 };
 
@@ -126,14 +153,21 @@ const navItemStyle = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: 2,
+  gap: 3,
   textDecoration: "none",
   minWidth: 60,
 };
 
+const tabMarkStyle = {
+  width: 20,
+  height: 3,
+  borderRadius: 2,
+  marginTop: 2,
+};
+
 const fabWrapperStyle = {
   position: "fixed",
-  bottom: 62,
+  bottom: 60,
   left: "50%",
   transform: "translateX(-50%)",
   zIndex: 20,
@@ -141,17 +175,15 @@ const fabWrapperStyle = {
 
 const fabButtonStyle = {
   cursor: "pointer",
-  width: 56,
-  height: 56,
-  borderRadius: 28,
-  background: "#111",
-  color: "white",
-  fontSize: 30,
+  width: 54,
+  height: 54,
+  borderRadius: 27,
+  ...silverSurfaceStyle,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
-  border: "3px solid #f6f7f9",
+  boxShadow: "0 4px 14px rgba(0,0,0,0.3)",
+  border: `3px solid ${c.surface}`,
   boxSizing: "border-box",
   padding: 0,
 };
@@ -162,22 +194,25 @@ const fabMenuStyle = {
   left: "50%",
   transform: "translateX(-50%)",
   background: "white",
-  borderRadius: 12,
-  boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
-  padding: 8,
+  border: `1px solid ${c.line}`,
+  borderRadius: 3,
+  boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
+  padding: 6,
   display: "flex",
   flexDirection: "column",
   gap: 2,
-  width: 220,
+  width: 230,
 };
 
 const fabMenuItemStyle = {
-  display: "block",
-  padding: "10px 12px",
-  borderRadius: 8,
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  padding: "11px 12px",
+  borderRadius: 2,
   textDecoration: "none",
-  color: "#111",
+  color: c.ink,
   fontSize: 14,
-  fontWeight: 600,
+  fontWeight: 400,
   whiteSpace: "nowrap",
 };
