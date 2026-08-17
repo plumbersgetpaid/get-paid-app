@@ -22,7 +22,17 @@ export default async function Login() {
           <h1 style={{ fontSize: 22, margin: 0 }}>Patch Up</h1>
         )}
       </div>
-      <LoginForm />
+      <div style={cardStyle}>
+        <LoginForm />
+      </div>
     </main>
   );
 }
+
+const cardStyle = {
+  background: "white",
+  borderRadius: 16,
+  padding: 24,
+  boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+  border: "1px solid #eee",
+};
