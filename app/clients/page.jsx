@@ -3,6 +3,7 @@ import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canSeeClientDatabase } from "../lib/permissions";
+import { poppins, metallicTitleStyle } from "../lib/fonts";
 import { getSharedJobIds } from "../lib/jobAccess";
 import { getScopedDb } from "../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
@@ -16,10 +17,25 @@ export default async function Clients({ searchParams }) {
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
 
+  // A specific subcontractor can have the client database turned off
+  // entirely (default: on, matching current behaviour) - this is a hard
+  // block on the whole section, not filtering, since the point of
+  // turning it off is that this person shouldn't be able to browse
+  // clients as their own section at all, only see a client's details
+  // inline within a job they're actually assigned to.
+  //
+  // This check staying ahead of the scoped client below matters: it
+  // guarantees currentMember is a real, valid record before that client
+  // is ever constructed, since getScopedDb() requires one.
   if (!canSeeClientDatabase(currentMember)) {
     notFound();
   }
 
+  // Now backed by Row Level Security at the database level, not just
+  // this file remembering to filter by business - everything below is
+  // otherwise unchanged. RLS only adds business-level isolation; it
+  // doesn't replace the subcontractor-level filtering further down,
+  // which still needs to run exactly as it did before.
   const db = await getScopedDb(currentMember);
 
   const q = (searchParams?.q || "").trim().toLowerCase();
@@ -31,6 +47,10 @@ export default async function Clients({ searchParams }) {
 
   let customers = rawCustomers || [];
 
+  // A subcontractor only ever sees clients tied to a job specifically
+  // assigned to them or shared with them - not the full customer list,
+  // and not clients from jobs assigned to someone else or booked before
+  // they had an account
   if (!showEverything) {
     const { data: assignedJobs } = await db
       .from("jobs")
@@ -46,6 +66,9 @@ export default async function Clients({ searchParams }) {
     customers = customers.filter((c) => allowedCustomerIds.has(c.id));
   }
 
+  // Duplicate detection and merging is a data-management concern for
+  // whoever runs the business, not something a subcontractor needs -
+  // skip the queries entirely for them rather than compute and hide it
   let isDuplicate = () => false;
   if (showEverything) {
     const byEmail = {};
@@ -98,6 +121,9 @@ export default async function Clients({ searchParams }) {
     );
   }
 
+  // Work out how much each customer currently owes, without relying on the
+  // outstanding_invoices view (it doesn't expose customer_id) - skipped
+  // entirely for a subcontractor, since this is financial information
   let owedByCustomer = {};
   if (showEverything) {
     const { data: jobs } = await db.from("jobs").select("id, customer_id");
@@ -124,10 +150,12 @@ export default async function Clients({ searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-  <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
-  <h1 style={{ fontSize: 20, margin: 0 }}>Clients</h1>
-</div>
-      
+        <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
+        <h1 className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 20, margin: 0 }}>
+          Clients
+        </h1>
+      </div>
+
       {showEverything && (
         <Link
           href="/clients/new"
