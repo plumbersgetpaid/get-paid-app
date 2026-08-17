@@ -7,6 +7,16 @@ import { getCurrentTeamMember } from "./lib/auth";
 import { canSeeEverything, canInvoice } from "./lib/permissions";
 import { getScopedDb } from "./lib/scopedSupabaseClient";
 import Greeting from "./components/Greeting";
+import Icon from "./components/Icon";
+import {
+  c,
+  cardStyle as sharedCard,
+  sectionLabelStyle,
+  bigNumberStyle,
+  statusBarStyle,
+  silverSurfaceStyle,
+  mono,
+} from "./lib/theme";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -14,28 +24,49 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function Today() {
+  // Fetched ahead of the scoped client - it needs to know who's logged
+  // in (and their business) before it can even be constructed, so this
+  // can no longer come after db the way it originally did.
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
   const platformSettings = await getPlatformSettings();
 
   const db = await getScopedDb(currentMember);
+  // outstanding_invoices is a database view, not a direct table - kept
+  // on the service-role client until its own RLS behaviour through the
+  // view has been specifically verified, same reasoning as Calendar and
+  // Work → Invoices
   const adminDb = supabaseAdmin();
 
   const settings = await getBusinessSettings();
   const todayStr = getTodayInLondon();
 
+  // Outstanding payments are financial information - fetched for
+  // canInvoice, not just showEverything, since someone granted the
+  // specific can_invoice permission can already see individual overdue
+  // invoices via the Invoices tab itself - not surfacing that same
+  // information as an actionable alert here would be an inconsistency,
+  // not extra protection. The full £-total summary card further down
+  // stays showEverything-only regardless - that's a broader financial
+  // overview, not a specific invoicing action.
   const { data: outstanding } = canInvoice(currentMember)
     ? await adminDb.from("outstanding_invoices").select("*")
     : { data: [] };
   const totalOwed = (outstanding || []).reduce((sum, i) => sum + Number(i.amount), 0);
+  // "Needs attention" for invoices due today or already overdue - not just
+  // strictly overdue, so a payment due today doesn't get missed
   const dueOrOverdueInvoices = (outstanding || []).filter((i) => i.days_overdue >= 0);
   const overdueAmount = dueOrOverdueInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
 
+  // Quotes are unbooked, price-centric items - same treatment as
+  // invoices, skipped entirely for a subcontractor
   const { data: quotes } = showEverything
     ? await db.from("jobs").select("id").eq("status", "quote_sent")
     : { data: [] };
 
   let activeJobsQuery = db.from("jobs").select("*").eq("status", "in_progress");
+  // Same rule as everywhere else - a subcontractor's view of the
+  // dashboard only ever reflects jobs specifically assigned to them
   if (!showEverything) {
     activeJobsQuery = activeJobsQuery.eq("assigned_to", currentMember?.id || "__none__");
   }
@@ -49,6 +80,9 @@ export default async function Today() {
   const lateJobs = (activeJobs || []).filter(
     (j) => j.time_confirmed !== false && j.scheduled_end && new Date(j.scheduled_end) < now
   );
+  // Jobs whose date has arrived (today or already passed) but the actual
+  // time was never confirmed - these need an active nudge, not just a
+  // passive "TBC" sitting quietly on the calendar
   const needsTimeJobs = (activeJobs || []).filter(
     (j) =>
       j.time_confirmed === false && j.scheduled_start && j.scheduled_start.slice(0, 10) <= todayStr
@@ -62,6 +96,7 @@ export default async function Today() {
     (jobCustomers || []).map((c) => [c.id, c.name])
   );
 
+  // Reminders are private to whoever made them, same rule as Calendar
   const { data: remindersToday } = await db
     .from("personal_events")
     .select("*")
@@ -75,8 +110,10 @@ export default async function Today() {
       return {
         time: j.scheduled_start,
         timeConfirmed,
-        icon: "🔧",
+        icon: "job",
         label: `${jobCustomerNameById[j.customer_id] || "Customer"} · ${j.job_type || "Job"}`,
+        // If the time still needs setting, take them to set it - only once
+        // it's confirmed does tapping the job mean "mark it done"
         href: timeConfirmed
           ? `/jobs/complete/${j.id}?from=today`
           : `/jobs/schedule/${j.id}`,
@@ -85,7 +122,7 @@ export default async function Today() {
     ...(remindersToday || []).map((r) => ({
       time: r.scheduled_start,
       timeConfirmed: true,
-      icon: "📌",
+      icon: "pin",
       label: r.title,
       href: `/calendar/reminder/${r.id}`,
     })),
@@ -96,6 +133,13 @@ export default async function Today() {
   const overdueCount = dueOrOverdueInvoices.length;
   const lateCount = lateJobs.length;
   const needsTimeCount = needsTimeJobs.length;
+  // No separate visibility branching needed here - quotesCount is
+  // already guaranteed 0 for anyone without showEverything (the quotes
+  // query itself is gated), and overdueCount is already guaranteed 0
+  // for anyone without canInvoice (the outstanding-invoices query is
+  // gated the same way) - so a plain AND-chain across all five already
+  // does the right thing for every permission combination automatically,
+  // without this calculation needing its own copy of that same logic.
   const allClear =
     quotesCount === 0 &&
     needsBookingCount === 0 &&
@@ -109,11 +153,11 @@ export default async function Today() {
         <Greeting />
         <div style={{ display: "flex", gap: 8 }}>
           <Link href="/account" aria-label="My account" style={settingsIconStyle}>
-            👤
+            <Icon name="person" size={16} color="#000" strokeWidth={1.6} />
           </Link>
           {showEverything && (
             <Link href="/settings" aria-label="Settings" style={settingsIconStyle}>
-              ⚙️
+              <Icon name="settings" size={16} color="#000" strokeWidth={1.6} />
             </Link>
           )}
         </div>
@@ -128,17 +172,16 @@ export default async function Today() {
         )}
         {agenda.map((item, i) => (
           <Link key={i} href={item.href} style={agendaRowStyle}>
-            <span style={{ fontWeight: 700, minWidth: 54 }}>
+            <span className={mono.className} style={timeStyle}>
               {item.timeConfirmed
                 ? new Date(item.time).toLocaleTimeString("en-GB", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })
-                : "⏰ TBC"}
+                : "TBC"}
             </span>
-            <span>
-              {item.icon} {item.label}
-            </span>
+            <Icon name={item.icon} size={15} strokeWidth={1.6} />
+            <span>{item.label}</span>
           </Link>
         ))}
         <Link href="/calendar" style={cardLinkStyle}>
@@ -149,38 +192,53 @@ export default async function Today() {
       {allClear ? (
         <section style={allClearCardStyle}>
           {showEverything
-            ? "✓ Quotes, jobs, and invoices are all up to date"
-            : "✓ You're all caught up"}
+            ? "Quotes, jobs and invoices are all up to date"
+            : "You're all caught up"}
         </section>
       ) : (
         <section style={cardStyle}>
           <div style={sectionTitleStyle}>Action needed</div>
           {showEverything && quotesCount > 0 && (
             <Link href="/work?tab=quotes" style={attentionRowStyle}>
-              🟠 {quotesCount} quote{quotesCount === 1 ? "" : "s"} need
-              {quotesCount === 1 ? "s" : ""} a reply or chase
+              <span style={statusBarStyle(c.amber)} />
+              <span>
+                {quotesCount} quote{quotesCount === 1 ? "" : "s"} need
+                {quotesCount === 1 ? "s" : ""} a reply or chase
+              </span>
             </Link>
           )}
           {lateCount > 0 && (
             <Link href="/jobs?status=late" style={attentionRowStyle}>
-              🔴 {lateCount} job{lateCount === 1 ? "" : "s"} running late
+              <span style={statusBarStyle(c.red)} />
+              <span>
+                {lateCount} job{lateCount === 1 ? "" : "s"} running late
+              </span>
             </Link>
           )}
           {needsTimeCount > 0 && (
             <Link href="/jobs?status=needs-time" style={attentionRowStyle}>
-              🟡 {needsTimeCount} job{needsTimeCount === 1 ? "" : "s"} still need
-              {needsTimeCount === 1 ? "s" : ""} a time set
+              <span style={statusBarStyle("#eab308")} />
+              <span>
+                {needsTimeCount} job{needsTimeCount === 1 ? "" : "s"} still need
+                {needsTimeCount === 1 ? "s" : ""} a time set
+              </span>
             </Link>
           )}
           {needsBookingCount > 0 && (
             <Link href="/jobs?status=unscheduled" style={attentionRowStyle}>
-              🔵 {needsBookingCount} job{needsBookingCount === 1 ? "" : "s"} need
-              {needsBookingCount === 1 ? "s" : ""} booking in
+              <span style={statusBarStyle(c.blue)} />
+              <span>
+                {needsBookingCount} job{needsBookingCount === 1 ? "" : "s"} need
+                {needsBookingCount === 1 ? "s" : ""} booking in
+              </span>
             </Link>
           )}
           {canInvoice(currentMember) && overdueCount > 0 && (
             <Link href="/work?tab=invoices" style={attentionRowStyle}>
-              🔴 {overdueCount} invoice{overdueCount === 1 ? "" : "s"} due or overdue
+              <span style={statusBarStyle(c.red)} />
+              <span>
+                {overdueCount} invoice{overdueCount === 1 ? "" : "s"} due or overdue
+              </span>
             </Link>
           )}
         </section>
@@ -189,13 +247,15 @@ export default async function Today() {
       {showEverything && (
         <section style={cardStyle}>
           <div style={sectionTitleStyle}>Outstanding payments</div>
-          <div style={{ fontSize: 26, fontWeight: 700, marginTop: 6 }}>
-            {formatCurrency(totalOwed, settings.currency)}{" "}
-            <span style={{ fontSize: 14, fontWeight: 400, color: "#888" }}>awaiting</span>
+          <div style={{ ...bigNumberStyle, marginTop: 10 }}>
+            {formatCurrency(totalOwed, settings.currency)}
+          </div>
+          <div className={mono.className} style={awaitingStyle}>
+            AWAITING PAYMENT
           </div>
           {overdueAmount > 0 && (
-            <div style={{ fontSize: 14, color: "#dc2626", marginTop: 2 }}>
-              {formatCurrency(overdueAmount, settings.currency)} overdue
+            <div className={mono.className} style={overdueStyle}>
+              {formatCurrency(overdueAmount, settings.currency)} OVERDUE
             </div>
           )}
           <Link href="/work?tab=invoices" style={cardLinkStyle}>
@@ -233,65 +293,77 @@ export default async function Today() {
 const settingsIconStyle = {
   width: 36,
   height: 36,
-  borderRadius: 18,
-  background: "white",
+  borderRadius: 2,
+  ...silverSurfaceStyle,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   textDecoration: "none",
-  fontSize: 16,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.16)",
 };
 
-const sectionTitleStyle = {
-  fontSize: 15,
-  fontWeight: 700,
-};
+const sectionTitleStyle = sectionLabelStyle;
 
-const cardStyle = {
-  background: "white",
-  borderRadius: 12,
-  padding: 16,
-  marginTop: 16,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+const cardStyle = sharedCard;
+
+const timeStyle = {
+  fontSize: 12,
+  fontWeight: 500,
+  minWidth: 48,
+  letterSpacing: "0.03em",
 };
 
 const agendaRowStyle = {
   display: "flex",
-  gap: 10,
-  padding: "10px 0",
-  borderTop: "1px solid #f3f3f3",
+  alignItems: "center",
+  gap: 11,
+  padding: "12px 0",
+  borderTop: `1px solid ${c.hairline}`,
   textDecoration: "none",
-  color: "#111",
-  fontSize: 14,
+  color: c.ink,
+  fontSize: 14.5,
 };
 
 const cardLinkStyle = {
-  display: "block",
-  fontSize: 12,
-  color: "#666",
-  textDecoration: "underline",
-  marginTop: 10,
+  display: "inline-block",
+  fontSize: 11,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  color: c.mid,
+  textDecoration: "none",
+  marginTop: 14,
 };
 
 const attentionRowStyle = {
-  display: "block",
-  padding: "10px 0",
-  borderTop: "1px solid #f3f3f3",
+  display: "flex",
+  alignItems: "center",
+  gap: 11,
+  padding: "12px 0",
+  borderTop: `1px solid ${c.hairline}`,
   textDecoration: "none",
-  color: "#111",
-  fontSize: 15,
-  fontWeight: 600,
+  color: c.ink,
+  fontSize: 14.5,
+};
+
+const awaitingStyle = {
+  fontSize: 11.5,
+  color: c.mid,
+  marginTop: 9,
+  letterSpacing: "0.04em",
+};
+
+const overdueStyle = {
+  fontSize: 12,
+  color: c.red,
+  marginTop: 7,
+  letterSpacing: "0.03em",
 };
 
 const allClearCardStyle = {
-  background: "white",
-  borderRadius: 12,
+  ...sharedCard,
   padding: 20,
-  marginTop: 16,
   textAlign: "center",
-  color: "#16a34a",
-  fontWeight: 700,
-  fontSize: 15,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  color: c.green,
+  fontWeight: 500,
+  fontSize: 14.5,
 };
