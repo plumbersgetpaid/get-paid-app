@@ -123,8 +123,11 @@ export default async function Clients({ searchParams }) {
 
   return (
     <main>
-      <h1 style={{ fontSize: 20, margin: 0 }}>Clients</h1>
-
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+  <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
+  <h1 style={{ fontSize: 20, margin: 0 }}>Clients</h1>
+</div>
+      
       {showEverything && (
         <Link
           href="/clients/new"
