@@ -1,5 +1,6 @@
 import BackButton from "../components/BackButton";
 import BillingActions from "./BillingActions";
+import PostCheckout from "./PostCheckout";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
 import { getSubscription, countActiveSeats } from "../lib/getSubscription";
@@ -41,12 +42,14 @@ export default async function Billing({ searchParams }) {
         </h1>
       </div>
 
-      {justPaid && (
-        <div style={successStyle}>
-          That&apos;s sorted - your subscription is set up. It can take a few
-          seconds to show below.
-        </div>
-      )}
+      {justPaid &&
+        (subscription?.stripe_subscription_id ? (
+          <div style={successStyle}>
+            That&apos;s sorted - your subscription is set up.
+          </div>
+        ) : (
+          <PostCheckout alreadyActive={false} />
+        ))}
 
       <section style={cardStyle}>
         <div className={mono.className} style={labelStyle}>
