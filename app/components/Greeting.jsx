@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { poppins, metallicTitleStyle } from "../lib/fonts";
+import { poppins, metallicTitleStyle, silverAccentStyle } from "../lib/fonts";
 
 // Reads the device's own clock (not the server's), so the greeting always
 // matches whatever time it actually is for the person looking at the screen
@@ -22,7 +22,7 @@ export default function Greeting() {
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
+      <div style={{ width: 6, height: 24, borderRadius: 3, flexShrink: 0, ...silverAccentStyle }} />
       <div>
         <span className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 22 }}>
           {info ? info.text : "Hello"}
