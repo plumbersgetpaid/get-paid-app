@@ -43,3 +43,14 @@ export function canCreateRecurringJob(member) {
 export function canReschedule(member) {
   return canSeeEverything(member) || !!member?.can_reschedule;
 }
+
+// Deliberately NOT based on canSeeEverything() or any business role - a
+// business owner has full control over their own business, but that's
+// not the same thing as being trusted with the platform's own branding,
+// which is shared across every business using the app. Only someone
+// with is_platform_admin explicitly set true on their team_members row
+// gets this - granted by hand via SQL, not through any UI, since it's
+// meant to stay rare.
+export function isPlatformAdmin(member) {
+  return !!member?.is_platform_admin;
+}
