@@ -363,7 +363,7 @@ export default async function Calendar({ searchParams }) {
         <Link href={`/calendar?range=${range}&offset=${offset - 1}`} style={stepButtonStyle}>
           ‹
         </Link>
-        <div style={{ fontWeight: 700, fontSize: 15 }}>{rangeLabel}</div>
+        <div style={{ fontWeight: 500, fontSize: 15 }}>{rangeLabel}</div>
         <Link href={`/calendar?range=${range}&offset=${offset + 1}`} style={stepButtonStyle}>
           ›
         </Link>
@@ -490,7 +490,7 @@ const stepButtonStyle = {
   background: "white",
   color: "#111",
   fontSize: 18,
-  fontWeight: 700,
+  fontWeight: 500,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -521,8 +521,8 @@ const dayCardStyle = (isToday, isPast) => ({
 const dayHeaderStyle = (isToday, isPast) => ({
   background: isToday ? "#111" : isPast ? "#ececea" : "#eef0f3",
   color: isToday ? "white" : isPast ? "#888" : "#111",
-  fontSize: 15,
-  fontWeight: 700,
+  fontSize: 14.5,
+  fontWeight: 500,
   padding: "10px 12px",
   display: "flex",
   alignItems: "center",
