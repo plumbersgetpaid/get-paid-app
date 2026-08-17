@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE } from "./app/lib/auth";
 import { supabaseAdmin } from "./app/lib/supabaseClient";
+import { hasAccess } from "./app/lib/stripe";
 import {
   canInvoice,
   canSeeClientDatabase,
@@ -24,6 +25,7 @@ const PUBLIC_PATHS = [
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/cron",
+  "/api/billing/webhook",
 ];
 
 const PERMISSION_GATED_PATHS = [
@@ -92,7 +94,7 @@ export async function middleware(req) {
     const { data: member } = await db
       .from("team_members")
       .select(
-        "id, role, can_invoice, can_see_client_database, can_create_quote, can_create_job, can_create_recurring_job, can_reschedule, is_platform_admin"
+        "id, role, business_id, can_invoice, can_see_client_database, can_create_quote, can_create_job, can_create_recurring_job, can_reschedule, is_platform_admin"
       )
       .eq("id", teamMemberId)
       .eq("is_active", true)
@@ -108,6 +110,32 @@ export async function middleware(req) {
     const matchedGate = PERMISSION_GATED_PATHS.find((g) => g.test(pathname));
     if (matchedGate && !matchedGate.check(member)) {
       return redirectNoCache(new URL("/", req.url));
+    }
+
+    // Billing gate. Once a trial has run out with nothing set up, the
+    // app stops - but only for the screens that do the work. Billing,
+    // settings, the account page and logging out all stay reachable,
+    // because locking someone out of the page where they'd pay is a
+    // good way to never get paid.
+    const billingExempt =
+      pathname.startsWith("/billing") ||
+      pathname.startsWith("/settings") ||
+      pathname.startsWith("/account") ||
+      pathname.startsWith("/api/billing") ||
+      pathname.startsWith("/api/auth");
+
+    if (!billingExempt) {
+      const { data: sub } = await db
+        .from("subscriptions")
+        .select("status, trial_ends_at")
+        .eq("business_id", member.business_id)
+        .maybeSingle();
+
+      // No row at all means a business created before billing existed -
+      // those keep working rather than being locked out by a migration.
+      if (sub && !hasAccess(sub)) {
+        return redirectNoCache(new URL("/billing", req.url));
+      }
     }
 
     return NextResponse.next();
