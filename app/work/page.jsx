@@ -79,7 +79,13 @@ export default async function Work({ searchParams }) {
         />
       )}
       {tab === "invoices" && canInvoice(currentMember) && (
-        <InvoicesTab db={db} adminDb={adminDb} settings={settings} sub={searchParams?.sub || "overdue"} />
+        <InvoicesTab
+          db={db}
+          adminDb={adminDb}
+          settings={settings}
+          sub={searchParams?.sub || "overdue"}
+          businessId={currentMember.business_id}
+        />
       )}
       {tab === "reminders" && (
         <RemindersTab
@@ -522,12 +528,13 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   );
 }
 
-async function InvoicesTab({ db, adminDb, settings, sub }) {
+async function InvoicesTab({ db, adminDb, settings, sub, businessId }) {
   const activeSub = ["overdue", "awaiting", "paid"].includes(sub) ? sub : "overdue";
 
   const { data: outstanding } = await adminDb
     .from("outstanding_invoices")
     .select("*")
+    .eq("business_id", businessId)
     .order("due_date", { ascending: true });
 
   const overdue = (outstanding || []).filter((i) => i.days_overdue > 0);
