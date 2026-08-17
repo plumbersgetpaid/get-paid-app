@@ -1,35 +1,5 @@
-import { Poppins } from "next/font/google";
-
-// Loaded once, shared by every page title that wants the branded
-// treatment (Work, Calendar, Clients, Good Morning) - Poppins Light is
-// the brand guide's own documented match for the logo's wordmark
-// typeface, so Bold here is the same family, just a heavier cut
-// specifically because a thin stroke doesn't give the gradient below
-// enough surface area to actually read as a sheen at this text size.
-export const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["700"],
-  display: "swap",
-});
-
-// The metallic/brushed-steel effect used on branded titles. Spread
-// across a real range of tones (not just two colours) so the gradient
-// reads as a sheen rather than a flat colour - visually confirmed
-// against three other variants before landing on this one specifically
-// for actually looking metallic at a 20-22px title size, where subtler
-// gradients just read as slightly-textured black.
-export const metallicTitleStyle = {
-  backgroundImage: "linear-gradient(120deg, #2b2b2b, #6b6b6b, #1a1a1a, #555555, #111111)",
-  WebkitBackgroundClip: "text",
-  backgroundClip: "text",
-  color: "transparent",
-};
-
-// The accent bar beside each branded title - was a flat amber, now a
-// brushed-silver gradient to match. Vertical, multi-band, visually
-// confirmed against two other variants for actually reading as shiny
-// metal rather than flat grey at this small a size.
-export const silverAccentStyle = {
-  backgroundImage:
-    "linear-gradient(180deg, #f4f4f4 0%, #b8b8b8 25%, #e8e8e8 50%, #909090 75%, #d4d4d4 100%)",
-};
+// Superseded by theme.js, which holds the app's full shared visual
+// language rather than just fonts. Kept as a re-export so screens not
+// yet migrated keep working - once every import points at theme.js
+// this file can be deleted.
+export { poppins, metallicTitleStyle, silverAccentStyle } from "./theme";
