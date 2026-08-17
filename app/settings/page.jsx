@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BackButton from "../components/BackButton";
+import StripeReturnCleanup from "../components/StripeReturnCleanup";
 import LogoUploadForm from "../components/LogoUploadForm";
 import SettingsForm from "../components/SettingsForm";
 import LogoutButton from "../components/LogoutButton";
@@ -28,6 +29,7 @@ export default async function Settings({ searchParams }) {
 
   return (
     <main>
+      <StripeReturnCleanup to="/" />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/" />
         <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Business settings</h1>
