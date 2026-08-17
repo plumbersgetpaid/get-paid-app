@@ -140,15 +140,15 @@ export default function NewRecurringJob() {
           </span>
         </label>
 
-        <div style={{ display: "grid", gap: 8 }}>
+               <div style={{ display: "grid", gap: 8 }}>
           <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
-            Let the client know each time (if you've added their email/phone
-            above)
+            Let the client know each time (if you've added their email above)
           </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
             <input type="checkbox" name="notifyEmail" value="1" defaultChecked />
             Email
           </label>
+        </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
             <input type="checkbox" name="notifyWhatsapp" value="1" defaultChecked />
             WhatsApp
