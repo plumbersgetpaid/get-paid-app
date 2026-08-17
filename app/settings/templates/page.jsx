@@ -57,7 +57,7 @@ const TEMPLATE_INFO = [
   {
     key: "booking_confirmation",
     label: "Booking confirmation",
-    description: "Sent when you book a job in, by email and/or WhatsApp.",
+    description: "Sent when you book a job in, by email.",
     placeholders: [
       "customer_name",
       "job_type",
