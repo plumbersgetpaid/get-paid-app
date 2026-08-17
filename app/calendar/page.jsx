@@ -156,6 +156,7 @@ export default async function Calendar({ searchParams }) {
     ? await adminDb
         .from("outstanding_invoices")
         .select("*")
+        .eq("business_id", currentMember.business_id)
         .gte("due_date", rangeStartStr)
         .lte("due_date", rangeEndStr)
         .order("due_date", { ascending: true })
