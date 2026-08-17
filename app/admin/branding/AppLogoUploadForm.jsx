@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { compressImage } from "../../lib/compressImage";
 
-export default function AppLogoUploadForm() {
+// Reused for both the app logo and the sign-off logo - only the upload
+// destination and the confirmation redirect differ between the two.
+export default function AppLogoUploadForm({ uploadEndpoint, savedParam }) {
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -25,7 +27,7 @@ export default function AppLogoUploadForm() {
       const formData = new FormData();
       formData.append("logo", uploadFile);
 
-      const res = await fetch("/api/admin/upload-app-logo", { method: "POST", body: formData });
+      const res = await fetch(uploadEndpoint, { method: "POST", body: formData });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -34,9 +36,9 @@ export default function AppLogoUploadForm() {
         return;
       }
 
-      window.location.replace("/admin/branding?saved=1");
+      window.location.replace(`/admin/branding?saved=${savedParam}`);
     } catch (err) {
-      console.error("App logo upload error:", err);
+      console.error("Logo upload error:", err);
       setError("Couldn't reach the server. Check your connection and try again.");
       setBusy(false);
     }
