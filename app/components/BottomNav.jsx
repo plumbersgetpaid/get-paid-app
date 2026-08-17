@@ -79,7 +79,7 @@ export default function BottomNav({
         )}
       </div>
 
-      <nav className="bottom-nav" style={navStyle}>
+      <nav style={navStyle}>
         {TABS.map((tab) => {
           const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
           return (
@@ -112,6 +112,8 @@ const backdropStyle = {
 const navStyle = {
   position: "fixed",
   bottom: 0,
+  left: 0,
+  right: 0,
   background: "white",
   borderTop: "1px solid #eee",
   display: "flex",
