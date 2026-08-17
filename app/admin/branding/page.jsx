@@ -10,6 +10,10 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function AdminBranding({ searchParams }) {
+  // A 404, not a redirect to login - someone without this specific
+  // flag shouldn't even learn this page exists, the same reasoning
+  // used for Settings but one level more restrictive, since this
+  // affects every business on the platform rather than just one
   const currentMember = await getCurrentTeamMember();
   if (!isPlatformAdmin(currentMember)) {
     notFound();
@@ -27,9 +31,10 @@ export default async function AdminBranding({ searchParams }) {
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 8, marginBottom: 16 }}>
         This is the app&apos;s own logo, shown on the login and setup
-        screens before anyone&apos;s signed in to a business yet.
-        It&apos;s separate from any individual business&apos;s own logo
-        in Business settings, and only visible to platform admins.
+        screens before anyone&apos;s signed in to a business yet, and as
+        a small sign-off at the bottom of the Today page once someone
+        is. It&apos;s separate from any individual business&apos;s own
+        logo in Business settings, and only visible to platform admins.
       </p>
 
       {saved && (
