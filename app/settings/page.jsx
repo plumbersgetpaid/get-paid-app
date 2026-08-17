@@ -64,25 +64,6 @@ export default async function Settings({ searchParams }) {
       </p>
 
       <Link
-        href="/settings/templates"
-        style={{
-          display: "block",
-          background: "white",
-          borderRadius: 3,
-          padding: 16,
-          margin: "16px 0",
-          textDecoration: "none",
-          color: "#000",
-          border: "1px solid #e2e2e2",
-        }}
-      >
-        <div style={{ fontWeight: 500, fontSize: 14 }}>Message templates →</div>
-        <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
-          Edit the wording of every automated quote, invoice, and reminder
-        </div>
-      </Link>
-
-      <Link
         href="/billing"
         style={{
           display: "block",
@@ -117,6 +98,25 @@ export default async function Settings({ searchParams }) {
         <div style={{ fontWeight: 500, fontSize: 14 }}>Team →</div>
         <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
           Add people, set their role, or remove access
+        </div>
+      </Link>
+
+      <Link
+        href="/settings/templates"
+        style={{
+          display: "block",
+          background: "white",
+          borderRadius: 3,
+          padding: 16,
+          margin: "16px 0",
+          textDecoration: "none",
+          color: "#000",
+          border: "1px solid #e2e2e2",
+        }}
+      >
+        <div style={{ fontWeight: 500, fontSize: 14 }}>Message templates →</div>
+        <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+          Edit the wording of every automated quote, invoice, and reminder
         </div>
       </Link>
 
