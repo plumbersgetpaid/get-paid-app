@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../lib/supabaseClient";
+import { getPlatformSettings } from "../lib/getPlatformSettings";
 import { redirect } from "next/navigation";
 import SetupForm from "./SetupForm";
 
@@ -16,11 +17,22 @@ export default async function Setup() {
     redirect("/login");
   }
 
+  const settings = await getPlatformSettings();
+
   return (
     <main style={{ maxWidth: 400, margin: "60px auto", padding: "0 20px" }}>
-      <h1 style={{ fontSize: 22, marginBottom: 4, textAlign: "center" }}>
-        Patch Up
-      </h1>
+      <div style={{ textAlign: "center", marginBottom: 4 }}>
+        {settings.app_logo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={settings.app_logo_url}
+            alt="Patch Up"
+            style={{ maxWidth: "55%", maxHeight: 70 }}
+          />
+        ) : (
+          <h1 style={{ fontSize: 22, margin: 0 }}>Patch Up</h1>
+        )}
+      </div>
       <p style={{ fontSize: 14, color: "#666", textAlign: "center", marginBottom: 24 }}>
         Set up your owner account to get started
       </p>
