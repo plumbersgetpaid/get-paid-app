@@ -176,7 +176,7 @@ async function QuotesTab({ db, settings, sub }) {
 
         return (
           <div key={q.id} style={cardStyle("#f59e0b")}>
-            <div style={{ fontWeight: 600 }}>{q.customer_name}</div>
+            <div style={{ fontWeight: 500, fontSize: 15 }}>{q.customer_name}</div>
             <div style={{ fontSize: 13, color: "#888", marginBottom: 4 }}>
               {q.job_type || "Job"} · {formatCurrency(q.amount, settings.currency)}
               {q.creator_name && <> · quoted by {q.creator_name}</>}
@@ -426,7 +426,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
         if (activeSub === "completed") {
           return (
             <div key={job.id} style={cardStyle("#16a34a")}>
-              <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
+              <div style={{ fontWeight: 500, fontSize: 15 }}>{job.customer_name}</div>
               <div style={{ fontSize: 13, color: "#888" }}>
                 {job.job_type}
                 {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>} ·{" "}
@@ -459,18 +459,18 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
 
         return (
           <div key={job.id} style={cardStyle(isLate ? "#dc2626" : "#2563eb")}>
-            <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
+            <div style={{ fontWeight: 500, fontSize: 15 }}>{job.customer_name}</div>
             <div style={{ fontSize: 13, color: "#888" }}>
               {job.job_type}
               {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>}
               {job.creator_name && <> · booked by {job.creator_name}</>}
             </div>
             {isLate ? (
-              <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 500, marginTop: 3 }}>
                 Running {formatLateness(job.scheduled_end)}
               </div>
             ) : job.time_confirmed === false ? (
-              <div style={{ fontSize: 12, color: "#b45309", fontWeight: 700, marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "#b45309", fontWeight: 500, marginTop: 3 }}>
                 {new Date(job.scheduled_start).toLocaleDateString("en-GB", {
                   weekday: "short",
                   day: "numeric",
@@ -619,8 +619,8 @@ async function InvoicesTab({ db, adminDb, settings, sub }) {
         ? activeList.map((inv) => (
             <Link key={inv.id} href={`/invoices/${inv.id}`} style={paidInvoiceCardLinkStyle}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
-                <div style={{ fontWeight: 600 }}>
+                <div style={{ fontWeight: 500, fontSize: 15 }}>{inv.customer_name}</div>
+                <div style={{ fontWeight: 500, fontSize: 15 }}>
                   {formatCurrency(inv.amount, settings.currency)}
                 </div>
               </div>
@@ -632,7 +632,7 @@ async function InvoicesTab({ db, adminDb, settings, sub }) {
           ))
         : activeList.slice(0, 8).map((inv) => (
             <div key={inv.invoice_id} style={cardStyle("#dc2626")}>
-              <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
+              <div style={{ fontWeight: 500, fontSize: 15 }}>{inv.customer_name}</div>
               <div style={{ fontSize: 13, color: "#888", marginBottom: 6 }}>
                 {formatCurrency(inv.amount, settings.currency)} · due {inv.due_date} ·{" "}
                 {inv.days_overdue > 0 ? `${inv.days_overdue} days overdue` : "not yet due"}
@@ -774,7 +774,7 @@ async function RemindersTab({ db, currentMember, sub }) {
             href={`/calendar/reminder/${reminder.id}`}
             style={reminderCardLinkStyle}
           >
-            <div style={{ fontWeight: 600 }}>{reminder.title}</div>
+            <div style={{ fontWeight: 500, fontSize: 15 }}>{reminder.title}</div>
             <div style={{ fontSize: 13, color: "#888" }}>
               {new Date(reminder.scheduled_start).toLocaleString("en-GB", {
                 weekday: "short",
@@ -838,7 +838,7 @@ const jobLinkStyle = {
 const importantNoteLinkStyle = {
   ...jobLinkStyle,
   color: "#92400e",
-  fontWeight: 700,
+  fontWeight: 500,
 };
 
 const searchFormStyle = { display: "flex", gap: 8, marginBottom: 16 };
