@@ -17,7 +17,7 @@ export default function AppLogoUploadForm() {
     try {
       let uploadFile = file;
       try {
-        uploadFile = await compressImage(file, 800, 0.9);
+        uploadFile = await compressImage(file, 800, 0.9, true);
       } catch (err) {
         console.error("Logo compression failed, using original:", err);
       }
