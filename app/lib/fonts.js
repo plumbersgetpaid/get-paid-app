@@ -24,3 +24,12 @@ export const metallicTitleStyle = {
   backgroundClip: "text",
   color: "transparent",
 };
+
+// The accent bar beside each branded title - was a flat amber, now a
+// brushed-silver gradient to match. Vertical, multi-band, visually
+// confirmed against two other variants for actually reading as shiny
+// metal rather than flat grey at this small a size.
+export const silverAccentStyle = {
+  backgroundImage:
+    "linear-gradient(180deg, #f4f4f4 0%, #b8b8b8 25%, #e8e8e8 50%, #909090 75%, #d4d4d4 100%)",
+};
