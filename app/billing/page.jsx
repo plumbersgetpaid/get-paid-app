@@ -1,7 +1,6 @@
 import BackButton from "../components/BackButton";
 import BillingActions from "./BillingActions";
 import PostCheckout from "./PostCheckout";
-import StripeReturnCleanup from "../components/StripeReturnCleanup";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything } from "../lib/permissions";
 import { getSubscription, countActiveSeats } from "../lib/getSubscription";
@@ -36,7 +35,6 @@ export default async function Billing({ searchParams }) {
 
   return (
     <main>
-      <StripeReturnCleanup to="/settings" />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/settings" />
         <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>
