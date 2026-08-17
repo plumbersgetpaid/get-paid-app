@@ -14,10 +14,12 @@ import {
 const PUBLIC_PATHS = [
   "/login",
   "/setup",
+  "/signup",
   "/forgot-password",
   "/reset-password",
   "/api/auth/login",
   "/api/auth/setup",
+  "/api/auth/signup",
   "/api/auth/logout",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
@@ -45,6 +47,22 @@ function matchesAny(pathname, list) {
   return list.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
+// Every redirect this middleware issues goes through here, so none of
+// them can ever be cached by a browser. A single Cache-Control header
+// alone turned out not to be enough - this is a known, documented
+// difficulty with Next.js middleware redirects specifically, not
+// something unique to this app. Several redundant signals are set
+// together for the best chance of actually being respected: the
+// standard modern header, the classic legacy pair many caches still
+// honour even when they don't fully respect Cache-Control alone, and
+// Next.js/Vercel's own internal signal for this exact situation.
+//
+// This closes a real, hours-long bug: a genuinely correct redirect to
+// /login (from an actual, temporary session problem earlier) got
+// cached by a browser, and kept being silently replayed afterwards
+// straight from disk cache - even once the real problem was long fixed
+// and the live session was completely valid again, since the browser
+// never asked the server a second time to find that out.
 function redirectNoCache(url) {
   const res = NextResponse.redirect(url);
   res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
@@ -101,5 +119,8 @@ export async function middleware(req) {
 }
 
 export const config = {
+  // Excludes Next's own static/image internals, plus any request that's
+  // clearly a static asset by its file extension (icons, images) -
+  // these should never need a session check at all.
   matcher: ["/((?!_next/static|_next/image|.*\\.(?:ico|png|svg|jpg|jpeg|gif|webp)$).*)"],
 };
