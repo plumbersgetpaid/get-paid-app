@@ -54,6 +54,37 @@ export async function POST(req) {
   const businessId = crypto.randomUUID();
   const passwordHash = await hashPassword(password);
 
+  // team_members.business_id is a foreign key onto a `businesses`
+  // table, so the business itself has to exist before anyone can be
+  // attached to it. Nothing in the app code reads this table - it's
+  // purely a schema-level constraint - which is why it's easy to miss.
+  //
+  // Tries with a name column first and falls back to just the id,
+  // since the table's shape isn't referenced anywhere else to check
+  // against.
+  let businessCreated = false;
+  const { error: bizErr } = await db
+    .from("businesses")
+    .insert({ id: businessId, name: businessName });
+
+  if (bizErr) {
+    const { error: bareErr } = await db.from("businesses").insert({ id: businessId });
+    if (bareErr) {
+      console.error("Signup business create error:", bizErr, bareErr);
+      return NextResponse.json(
+        { error: "Couldn't set up your business - try again" },
+        { status: 500 }
+      );
+    }
+    businessCreated = true;
+  } else {
+    businessCreated = true;
+  }
+
+  if (!businessCreated) {
+    return NextResponse.json({ error: "Couldn't set up your business" }, { status: 500 });
+  }
+
   const { data: newMember, error: insertErr } = await db
     .from("team_members")
     .insert({
@@ -69,6 +100,8 @@ export async function POST(req) {
 
   if (insertErr) {
     console.error("Signup insert error:", insertErr);
+    // Don't leave a business row with nobody in it
+    await db.from("businesses").delete().eq("id", businessId);
     if (insertErr.code === "23505") {
       return NextResponse.json(
         { error: "There's already an account with that email" },
