@@ -3,7 +3,10 @@ import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canSeeClientDatabase } from "../lib/permissions";
-import { poppins, metallicTitleStyle, silverAccentStyle } from "../lib/fonts";
+// Colours imported as `ui` rather than `c`: this file already maps over
+// customers using `c`, which would shadow the import inside the loop and
+// silently render the cards unstyled.
+import { poppins, mono, metallicTitleStyle, silverAccentStyle, c as ui } from "../lib/theme";
 import { getSharedJobIds } from "../lib/jobAccess";
 import { getScopedDb } from "../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
@@ -17,10 +20,25 @@ export default async function Clients({ searchParams }) {
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
 
+  // A specific subcontractor can have the client database turned off
+  // entirely (default: on, matching current behaviour) - this is a hard
+  // block on the whole section, not filtering, since the point of
+  // turning it off is that this person shouldn't be able to browse
+  // clients as their own section at all, only see a client's details
+  // inline within a job they're actually assigned to.
+  //
+  // This check staying ahead of the scoped client below matters: it
+  // guarantees currentMember is a real, valid record before that client
+  // is ever constructed, since getScopedDb() requires one.
   if (!canSeeClientDatabase(currentMember)) {
     notFound();
   }
 
+  // Now backed by Row Level Security at the database level, not just
+  // this file remembering to filter by business - everything below is
+  // otherwise unchanged. RLS only adds business-level isolation; it
+  // doesn't replace the subcontractor-level filtering further down,
+  // which still needs to run exactly as it did before.
   const db = await getScopedDb(currentMember);
 
   const q = (searchParams?.q || "").trim().toLowerCase();
@@ -32,6 +50,10 @@ export default async function Clients({ searchParams }) {
 
   let customers = rawCustomers || [];
 
+  // A subcontractor only ever sees clients tied to a job specifically
+  // assigned to them or shared with them - not the full customer list,
+  // and not clients from jobs assigned to someone else or booked before
+  // they had an account
   if (!showEverything) {
     const { data: assignedJobs } = await db
       .from("jobs")
@@ -47,6 +69,9 @@ export default async function Clients({ searchParams }) {
     customers = customers.filter((c) => allowedCustomerIds.has(c.id));
   }
 
+  // Duplicate detection and merging is a data-management concern for
+  // whoever runs the business, not something a subcontractor needs -
+  // skip the queries entirely for them rather than compute and hide it
   let isDuplicate = () => false;
   if (showEverything) {
     const byEmail = {};
@@ -99,6 +124,9 @@ export default async function Clients({ searchParams }) {
     );
   }
 
+  // Work out how much each customer currently owes, without relying on the
+  // outstanding_invoices view (it doesn't expose customer_id) - skipped
+  // entirely for a subcontractor, since this is financial information
   let owedByCustomer = {};
   if (showEverything) {
     const { data: jobs } = await db.from("jobs").select("id, customer_id");
@@ -125,7 +153,7 @@ export default async function Clients({ searchParams }) {
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 6, height: 24, borderRadius: 3, flexShrink: 0, ...silverAccentStyle }} />
+        <div style={{ width: 6, height: 26, borderRadius: 2, flexShrink: 0, ...silverAccentStyle }} />
         <h1 className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 20, margin: 0 }}>
           Clients
         </h1>
@@ -137,12 +165,13 @@ export default async function Clients({ searchParams }) {
           style={{
             display: "block",
             textAlign: "center",
-            background: "#111",
-            color: "white",
-            padding: "12px",
-            borderRadius: 10,
+            background: ui.ink,
+            color: ui.paper,
+            padding: "13px",
+            borderRadius: 2,
             textDecoration: "none",
-            fontWeight: 600,
+            fontWeight: 500,
+            fontSize: 13.5,
             margin: "16px 0",
           }}
         >
@@ -176,26 +205,28 @@ export default async function Clients({ searchParams }) {
           href={`/clients/${c.id}`}
           style={{
             display: "block",
-            background: "white",
-            borderRadius: 10,
+            background: ui.paper,
+            border: `1px solid ${ui.line}`,
+            borderRadius: 3,
             padding: 14,
             marginBottom: 8,
             textDecoration: "none",
-            color: "#111",
+            color: ui.ink,
           }}
         >
-          <div style={{ fontWeight: 600 }}>{c.name}</div>
-          <div style={{ fontSize: 13, color: "#888" }}>
+          <div style={{ fontWeight: 500, fontSize: 15 }}>{c.name}</div>
+          <div className={mono.className} style={contactStyle}>
             {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact details on file"}
           </div>
           {isDuplicate(c) && (
-            <div style={{ fontSize: 12, color: "#b91c1c", marginTop: 4, fontWeight: 600 }}>
-              ⚠️ Possible duplicate - tap to review
+            <div style={dupWarnStyle}>
+              <span style={{ width: 3, height: 14, borderRadius: 2, background: "#b91c1c", flexShrink: 0 }} />
+              Possible duplicate - tap to review
             </div>
           )}
           {owedByCustomer[c.id] > 0 && showEverything && (
-            <div style={{ fontSize: 12, color: "#b45309", marginTop: 4 }}>
-              {formatCurrency(owedByCustomer[c.id], settings.currency)} outstanding
+            <div className={mono.className} style={owedStyle}>
+              {formatCurrency(owedByCustomer[c.id], settings.currency)} OUTSTANDING
             </div>
           )}
         </a>
@@ -207,17 +238,41 @@ export default async function Clients({ searchParams }) {
 const searchInputStyle = {
   flex: 1,
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: `1px solid ${ui.line}`,
   fontSize: 15,
 };
 
 const searchButtonStyle = {
-  background: "#111",
-  color: "white",
+  background: ui.ink,
+  color: ui.paper,
   border: "none",
   padding: "12px 16px",
-  borderRadius: 8,
-  fontWeight: 600,
-  fontSize: 14,
+  borderRadius: 2,
+  fontWeight: 500,
+  fontSize: 13.5,
+};
+
+const contactStyle = {
+  fontSize: 11.5,
+  color: ui.mid,
+  marginTop: 5,
+  letterSpacing: "0.02em",
+};
+
+const dupWarnStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: 7,
+  fontSize: 12.5,
+  color: "#b91c1c",
+  marginTop: 7,
+  fontWeight: 500,
+};
+
+const owedStyle = {
+  fontSize: 11.5,
+  color: "#b45309",
+  marginTop: 6,
+  letterSpacing: "0.03em",
 };
