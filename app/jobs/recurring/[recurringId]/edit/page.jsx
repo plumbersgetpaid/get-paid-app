@@ -146,7 +146,7 @@ export default async function EditRecurringJob({ params }) {
           </div>
         </label>
 
-        <div style={{ display: "grid", gap: 8 }}>
+                <div style={{ display: "grid", gap: 8 }}>
           <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
             Let the client know each time
           </div>
@@ -159,6 +159,7 @@ export default async function EditRecurringJob({ params }) {
             />
             Email
           </label>
+        </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
             <input
               type="checkbox"
