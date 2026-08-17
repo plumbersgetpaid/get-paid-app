@@ -25,7 +25,10 @@ export default async function Work({ searchParams }) {
   return (
     <main>
       <ReloadOnBack />
-      <h1 style={{ fontSize: 20, margin: "0 0 16px" }}>Work</h1>
+     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+  <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
+  <h1 style={{ fontSize: 20, margin: 0 }}>Work</h1>
+</div>
 
       <div style={tabRowStyle}>
         {showEverything && (
