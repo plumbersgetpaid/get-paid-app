@@ -3,7 +3,8 @@ import { getScopedDb } from "../lib/scopedSupabaseClient";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getTodayInLondon } from "../lib/today";
-import { poppins, metallicTitleStyle, silverAccentStyle } from "../lib/fonts";
+import { poppins, mono, metallicTitleStyle, silverAccentStyle, c } from "../lib/theme";
+import Icon from "../components/Icon";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canInvoice, canCreateRecurringJob } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
@@ -40,7 +41,7 @@ export default async function Work({ searchParams }) {
     <main>
       <ReloadOnBack />
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-        <div style={{ width: 6, height: 24, borderRadius: 3, flexShrink: 0, ...silverAccentStyle }} />
+        <div style={{ width: 6, height: 26, borderRadius: 2, flexShrink: 0, ...silverAccentStyle }} />
         <h1 className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 20, margin: 0 }}>
           Work
         </h1>
@@ -189,7 +190,7 @@ async function QuotesTab({ db, settings, sub }) {
                   marginBottom: 10,
                 }}
               >
-                {worthChasing ? "⏰ " : ""}
+                
                 {sentLabel}
                 {q.quote_chased_at ? " · already chased" : ""}
                 {worthChasing ? " · worth chasing" : ""}
@@ -412,7 +413,8 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
 
       {canCreateRecurringJob(currentMember) && (
         <Link href="/jobs/recurring" style={recurringButtonStyle}>
-          🔁 Recurring jobs
+          <Icon name="repeat" size={15} strokeWidth={1.7} />
+          Recurring jobs
         </Link>
       )}
 
@@ -441,7 +443,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
                   href={`/jobs/view/${job.id}`}
                   style={hasImportantNoteByJob[job.id] ? importantNoteLinkStyle : jobLinkStyle}
                 >
-                  {hasImportantNoteByJob[job.id] ? "⚠️ " : ""}View job
+                  {hasImportantNoteByJob[job.id] ? "! " : ""}View job
                   {noteCountByJob[job.id] ? ` · ${noteCountByJob[job.id]} note${noteCountByJob[job.id] === 1 ? "" : "s"}` : ""}
                 </a>
               </div>
@@ -465,22 +467,21 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
             </div>
             {isLate ? (
               <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 2 }}>
-                ⚠️ Running {formatLateness(job.scheduled_end)}
+                Running {formatLateness(job.scheduled_end)}
               </div>
             ) : job.time_confirmed === false ? (
               <div style={{ fontSize: 12, color: "#b45309", fontWeight: 700, marginTop: 2 }}>
-                📅{" "}
                 {new Date(job.scheduled_start).toLocaleDateString("en-GB", {
                   weekday: "short",
                   day: "numeric",
                   month: "short",
                 })}{" "}
-                · ⏰ time to be confirmed
+                · time to be confirmed
               </div>
             ) : (
               job.scheduled_start && (
                 <div style={{ fontSize: 12, color: "#16a34a", marginTop: 2 }}>
-                  📅 Due{" "}
+                  Due{" "}
                   {new Date(job.scheduled_start).toLocaleString("en-GB", {
                     weekday: "short",
                     day: "numeric",
@@ -495,7 +496,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
               href={`/jobs/view/${job.id}`}
               style={hasImportantNoteByJob[job.id] ? importantViewJobButtonStyle : viewJobButtonStyle}
             >
-              {hasImportantNoteByJob[job.id] ? "⚠️ " : ""}View job
+              {hasImportantNoteByJob[job.id] ? "! " : ""}View job
               {noteCountByJob[job.id] ? ` · ${noteCountByJob[job.id]} note${noteCountByJob[job.id] === 1 ? "" : "s"}` : ""}
             </a>
             {showEverything && (
@@ -577,7 +578,7 @@ async function InvoicesTab({ db, adminDb, settings, sub }) {
   return (
     <div>
       <Link href="/invoices" style={accountantLinkStyle}>
-        📄 Full invoice history export (for your accountant) →
+        Full invoice history export (for your accountant) →
       </Link>
 
       <div style={subTabRowStyle}>
@@ -607,7 +608,7 @@ async function InvoicesTab({ db, adminDb, settings, sub }) {
       {activeList.length === 0 && (
         <p style={{ color: "#888" }}>
           {activeSub === "overdue"
-            ? "Nothing overdue right now 🎉"
+            ? "Nothing overdue right now"
             : activeSub === "awaiting"
             ? "Nothing awaiting payment."
             : "No paid invoices yet."}
@@ -775,7 +776,6 @@ async function RemindersTab({ db, currentMember, sub }) {
           >
             <div style={{ fontWeight: 600 }}>{reminder.title}</div>
             <div style={{ fontSize: 13, color: "#888" }}>
-              📌{" "}
               {new Date(reminder.scheduled_start).toLocaleString("en-GB", {
                 weekday: "short",
                 day: "numeric",
@@ -803,13 +803,14 @@ const tabRowStyle = { display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap
 const tabStyle = (active) => ({
   flex: 1,
   textAlign: "center",
-  padding: "10px 0",
-  borderRadius: 8,
+  padding: "11px 0",
+  borderRadius: 2,
   textDecoration: "none",
-  fontWeight: 700,
-  fontSize: 14,
-  background: active ? "#111" : "white",
-  color: active ? "white" : "#111",
+  fontWeight: 500,
+  fontSize: 13.5,
+  background: active ? c.ink : c.paper,
+  color: active ? c.paper : c.ink,
+  border: active ? `1px solid ${c.ink}` : `1px solid ${c.line}`,
 });
 
 const subTabRowStyle = { display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" };
@@ -817,15 +818,15 @@ const subTabRowStyle = { display: "flex", gap: 6, marginBottom: 16, flexWrap: "w
 const subTabStyle = (active) => ({
   flex: "1 1 auto",
   textAlign: "center",
-  padding: "8px 6px",
-  borderRadius: 8,
+  padding: "9px 6px",
+  borderRadius: 2,
   textDecoration: "none",
-  fontWeight: 600,
-  fontSize: 12,
+  fontWeight: 500,
+  fontSize: 11.5,
   whiteSpace: "nowrap",
-  background: active ? "#2563eb" : "white",
-  color: active ? "white" : "#111",
-  border: active ? "none" : "1px solid #ddd",
+  background: active ? c.ink : c.paper,
+  color: active ? c.paper : c.mid,
+  border: `1px solid ${active ? c.ink : c.line}`,
 });
 
 const jobLinkStyle = {
@@ -845,27 +846,28 @@ const searchFormStyle = { display: "flex", gap: 8, marginBottom: 16 };
 const searchInputStyle = {
   flex: 1,
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: `1px solid ${c.line}`,
   fontSize: 15,
 };
 
 const searchButtonStyle = {
-  background: "#111",
-  color: "white",
+  background: c.ink,
+  color: c.paper,
   border: "none",
   padding: "12px 16px",
-  borderRadius: 8,
-  fontWeight: 600,
-  fontSize: 14,
+  borderRadius: 2,
+  fontWeight: 500,
+  fontSize: 13.5,
 };
 
 const cardStyle = (color) => ({
-  background: "white",
-  borderRadius: 10,
+  background: c.paper,
+  border: `1px solid ${c.line}`,
+  borderLeft: `3px solid ${color}`,
+  borderRadius: 3,
   padding: 14,
   marginBottom: 8,
-  borderLeft: `4px solid ${color}`,
 });
 
 // Paid invoice cards have no other interactive elements inside them, so
@@ -892,37 +894,37 @@ const reminderCardLinkStyle = {
 const addReminderButtonStyle = {
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  background: "#111",
-  color: "white",
+  gap: 8,
+  background: c.ink,
+  color: c.paper,
   border: "none",
-  borderRadius: 999,
-  padding: "10px 16px",
-  fontSize: 14,
-  fontWeight: 700,
+  borderRadius: 2,
+  padding: "11px 16px",
+  fontSize: 13.5,
+  fontWeight: 500,
   textDecoration: "none",
   marginBottom: 16,
 };
 
 const primaryButtonStyle = {
   width: "100%",
-  background: "#111",
-  color: "white",
+  background: c.ink,
+  color: c.paper,
   border: "none",
-  padding: "8px 10px",
-  borderRadius: 8,
-  fontWeight: 600,
+  padding: "10px 10px",
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 13,
 };
 
 const secondaryButtonStyle = {
   width: "100%",
-  background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
-  padding: "8px 10px",
-  borderRadius: 8,
-  fontWeight: 600,
+  background: c.paper,
+  color: c.ink,
+  border: `1px solid ${c.line}`,
+  padding: "10px 10px",
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 13,
 };
 
@@ -945,14 +947,14 @@ const viewJobButtonStyle = {
   display: "block",
   textAlign: "center",
   marginTop: 10,
-  background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
-  padding: "10px 12px",
-  borderRadius: 8,
-  fontWeight: 600,
+  background: c.paper,
+  color: c.ink,
+  border: `1px solid ${c.line}`,
+  padding: "11px 12px",
+  borderRadius: 2,
+  fontWeight: 500,
   textDecoration: "none",
-  fontSize: 14,
+  fontSize: 13.5,
 };
 
 const importantViewJobButtonStyle = {
@@ -974,14 +976,14 @@ const viewAllLinkStyle = {
 const recurringButtonStyle = {
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  background: "#fef3c7",
-  color: "#92400e",
-  border: "1px solid #fde68a",
-  borderRadius: 999,
-  padding: "8px 14px",
+  gap: 8,
+  background: c.paper,
+  color: c.ink,
+  border: `1px solid ${c.line}`,
+  borderRadius: 2,
+  padding: "10px 14px",
   fontSize: 13,
-  fontWeight: 700,
+  fontWeight: 500,
   textDecoration: "none",
   marginBottom: 16,
 };
@@ -989,12 +991,12 @@ const recurringButtonStyle = {
 const accountantLinkStyle = {
   display: "block",
   textAlign: "center",
-  background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  background: c.paper,
+  color: c.ink,
+  border: `1px solid ${c.line}`,
   padding: "12px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 13,
   textDecoration: "none",
   marginBottom: 16,
