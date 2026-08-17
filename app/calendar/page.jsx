@@ -3,6 +3,7 @@ import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { formatCurrency } from "../lib/formatCurrency";
 import { getTodayInLondon } from "../lib/today";
 import { advanceDate } from "../lib/duration";
+import { poppins, metallicTitleStyle } from "../lib/fonts";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canCreateJob } from "../lib/permissions";
 import { filterJobsForMember } from "../lib/jobAccess";
@@ -63,10 +64,15 @@ function getDateRange(range, offset, todayStr) {
     return { start, end };
   }
 
+  // "today" - single day
   const day = addDaysUTC(today, offset);
   return { start: day, end: day };
 }
 
+// Projects every future date a recurring job would land on within
+// [rangeStartStr, rangeEndStr], without creating any real job rows - the
+// actual booking only gets created once the daily cron reaches that date,
+// but the calendar should still show it coming up in advance
 function projectRecurringOccurrences(nextOccurrence, value, unit, rangeStartStr, rangeEndStr) {
   const dates = [];
   let current = nextOccurrence;
@@ -80,6 +86,11 @@ function projectRecurringOccurrences(nextOccurrence, value, unit, rangeStartStr,
 }
 
 export default async function Calendar({ searchParams }) {
+  // Fetched ahead of the scoped client - it needs to know who's logged
+  // in (and their business) before it can even be constructed. This
+  // page previously had no explicit login check at all - middleware
+  // already required a session to reach it, but that's now required
+  // here too rather than optional, given the scoped client's own needs.
   const currentMember = await getCurrentTeamMember();
   if (!currentMember) {
     notFound();
@@ -87,6 +98,10 @@ export default async function Calendar({ searchParams }) {
   const showEverything = canSeeEverything(currentMember);
 
   const db = await getScopedDb(currentMember);
+  // outstanding_invoices is a database view, not a direct table - kept
+  // on the service-role client until its own RLS behaviour through the
+  // view has been specifically verified, same reasoning as the manual
+  // invoice chase route
   const adminDb = supabaseAdmin();
 
   const settings = await getBusinessSettings();
@@ -116,6 +131,10 @@ export default async function Calendar({ searchParams }) {
     .gte("scheduled_start", `${rangeStartStr}T00:00:00`)
     .lte("scheduled_start", `${rangeEndStr}T23:59:59`)
     .order("scheduled_start", { ascending: true });
+  // A subcontractor sees jobs they're directly assigned to, plus any
+  // job someone's shared with them - same filter used on Work → Jobs
+  // and the general Jobs list, so a job shows up consistently
+  // everywhere someone has access to it, not just some places
   if (!showEverything) {
     scheduledJobsQuery = await filterJobsForMember(db, scheduledJobsQuery, currentMember?.id);
   }
@@ -129,6 +148,9 @@ export default async function Calendar({ searchParams }) {
     : { data: [] };
   const jobCustomerName = Object.fromEntries((jobCustomers || []).map((c) => [c.id, c.name]));
 
+  // Payment-due entries are financial information a subcontractor has no
+  // need to see - skip the query entirely for them rather than fetching
+  // it and hiding it, since there's no reason to pull it down at all
   const { data: outstandingInvoices } = showEverything
     ? await adminDb
         .from("outstanding_invoices")
@@ -138,6 +160,10 @@ export default async function Calendar({ searchParams }) {
         .order("due_date", { ascending: true })
     : { data: [] };
 
+  // Reminders are private to whoever made them - this applies to
+  // everyone, not just non-owner roles, since a personal reminder is
+  // personal regardless of who created it - now also includes anything
+  // shared with this person by an owner/manager, not just their own
   const { data: sharedReminderRows } = await db
     .from("reminder_shares")
     .select("reminder_id")
@@ -157,6 +183,8 @@ export default async function Calendar({ searchParams }) {
       : remindersQuery.eq("created_by", meId);
   const { data: reminders } = await remindersQuery;
 
+  // For labelling shared reminders - who else is on each one, and who
+  // set it if it wasn't this person
   const { data: allTeamMembers } = await db.from("team_members").select("id, name");
   const teamMemberNameById = Object.fromEntries((allTeamMembers || []).map((m) => [m.id, m.name]));
   const reminderIdsForSharing = (reminders || []).map((r) => r.id);
@@ -183,9 +211,13 @@ export default async function Calendar({ searchParams }) {
     (recurringCustomers || []).map((c) => [c.id, c.name])
   );
 
+  // Combine job bookings, payment due dates, and reminders into one
+  // date-grouped timeline
   const entriesByDate = {};
   const now = new Date();
 
+  // Same "how overdue" formatting used on Work → Jobs, so the two screens
+  // describe lateness consistently
   const formatLateness = (scheduledEnd) => {
     const diffHours = (now - new Date(scheduledEnd)) / (1000 * 60 * 60);
     if (diffHours < 1) return "under an hour late";
@@ -296,10 +328,12 @@ export default async function Calendar({ searchParams }) {
 
   return (
     <main>
-     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-  <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
-  <h1 style={{ fontSize: 20, margin: 0 }}>Calendar</h1>
-</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 6, height: 24, background: "#d97706", borderRadius: 3 }} />
+        <h1 className={poppins.className} style={{ ...metallicTitleStyle, fontSize: 20, margin: 0 }}>
+          Calendar
+        </h1>
+      </div>
 
       <div style={{ display: "flex", gap: 10, margin: "16px 0" }}>
         {canCreateJob(currentMember) && (
@@ -461,6 +495,9 @@ const jumpToTodayStyle = {
   textDecoration: "underline",
 };
 
+// Past days get a subtle off-white treatment - visually distinct from
+// today and upcoming days, but everything inside stays fully legible,
+// since the point is to signal "history" not to hide anything
 const dayCardStyle = (isToday, isPast) => ({
   background: isPast ? "#f7f7f5" : "white",
   borderRadius: 12,
