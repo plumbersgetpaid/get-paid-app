@@ -37,6 +37,7 @@ export async function POST(req) {
   }
 
   const passwordHash = await hashPassword(password);
+  const businessId = crypto.randomUUID();
 
   const { data: newMember, error: insertErr } = await db
     .from("team_members")
@@ -46,6 +47,7 @@ export async function POST(req) {
       password_hash: passwordHash,
       role: "owner",
       is_active: true,
+      business_id: businessId,
     })
     .select("id")
     .single();
