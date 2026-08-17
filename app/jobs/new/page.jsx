@@ -47,7 +47,7 @@ export default async function NewQuote() {
         <input name="name" placeholder="Customer name" required style={inputStyle} />
         <input
           name="phone"
-          placeholder="Phone (for SMS/WhatsApp chase)"
+          placeholder="Phone"
           style={inputStyle}
         />
         <input name="email" type="email" placeholder="Email" style={inputStyle} />
