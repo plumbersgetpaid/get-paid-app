@@ -25,6 +25,14 @@ export default function CompleteJobForm({
   const [busyLabel, setBusyLabel] = useState("");
   const [error, setError] = useState(null);
 
+  // Adds to whatever's already selected rather than replacing it - the
+  // native file picker's own onChange always reports only the files
+  // chosen in that one interaction, so replacing here would silently
+  // drop anything picked in an earlier pass. Clearing the input's own
+  // value afterward means this array is the only place selection state
+  // actually lives, so a later tap on the same input always starts from
+  // a clean, empty picker rather than the browser's own memory of what
+  // was previously chosen.
   function handleAddBeforeFiles(e) {
     const newFiles = Array.from(e.target.files || []);
     setBeforeFiles((prev) => [...prev, ...newFiles]);
@@ -74,6 +82,11 @@ export default function CompleteJobForm({
 
       const formData = new FormData();
       formData.append("jobId", job.id);
+      // A subcontractor never sends amount/dueDate/paymentLink at all -
+      // not just hidden fields with default values, genuinely absent
+      // from the request. The server also independently ignores these
+      // for anyone who isn't owner/manager, so this isn't the only
+      // thing stopping a crafted request either.
       if (showEverything) {
         formData.append("amount", amount);
         formData.append("dueDate", dueDate);
@@ -117,6 +130,8 @@ export default function CompleteJobForm({
       });
       const data = await res.json().catch(() => ({}));
 
+      // Update the note text in place - no navigation, no reload, so any
+      // photos already selected stay exactly where they are
       if (data.note) setNote(data.note);
       if (data.error) setError(data.error + " - your note's been kept as you wrote it.");
       setBusy(false);
@@ -137,13 +152,13 @@ export default function CompleteJobForm({
       <section
         style={{
           background: "white",
-          borderRadius: 12,
+          borderRadius: 3,
           padding: 16,
           margin: "16px 0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          border: "1px solid #e2e2e2",
         }}
       >
-        <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
+        <div style={{ fontWeight: 500 }}>{customer?.name || "Customer"}</div>
         <div style={{ fontSize: 13, color: "#888" }}>
           {job.job_type || "Job"}
           {showEverything && <> · originally quoted £{job.amount}</>}
@@ -157,8 +172,8 @@ export default function CompleteJobForm({
 
       {importantNotes.length > 0 && (
         <section style={importantNotesBannerStyle}>
-          <div style={{ fontWeight: 700, color: "#92400e", fontSize: 13, marginBottom: 8 }}>
-            ⚠️ Important notes for this job
+          <div style={{ fontWeight: 500, color: "#92400e", fontSize: 13, marginBottom: 8 }}>
+            Important notes for this job
           </div>
           {importantNotes.map((n) => (
             <div key={n.id} style={{ marginBottom: 10 }}>
@@ -178,7 +193,7 @@ export default function CompleteJobForm({
       )}
 
       <a href={`/jobs/notes/${job.id}`} style={notesButtonStyle}>
-        📝 Job notes (team only)
+        Job notes (team only)
       </a>
 
       {aiError && (
@@ -270,7 +285,7 @@ export default function CompleteJobForm({
         </button>
 
         <div style={photosCardStyle}>
-          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+          <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 8 }}>
             Before / after photos (optional)
           </div>
           <label style={{ fontSize: 12, color: "#666" }}>
@@ -353,8 +368,8 @@ export default function CompleteJobForm({
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
@@ -362,11 +377,11 @@ const inputStyle = {
 
 const cancelButtonStyle = {
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "14px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   flex: 1,
   textAlign: "center",
   textDecoration: "none",
@@ -376,19 +391,19 @@ const submitButtonStyle = {
   background: "#16a34a",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   flex: 2,
 };
 
 const enhanceButtonStyle = {
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "12px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   fontSize: 14,
 };
 
@@ -396,7 +411,7 @@ const aiErrorBoxStyle = {
   background: "#fee2e2",
   color: "#991b1b",
   padding: 12,
-  borderRadius: 8,
+  borderRadius: 2,
   marginBottom: 12,
   fontSize: 13,
 };
@@ -404,7 +419,7 @@ const aiErrorBoxStyle = {
 const importantNotesBannerStyle = {
   background: "#fef3c7",
   border: "1px solid #fde68a",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   marginBottom: 16,
 };
@@ -412,7 +427,7 @@ const importantNotesBannerStyle = {
 const importantNoteImageStyle = {
   width: "100%",
   maxWidth: 200,
-  borderRadius: 8,
+  borderRadius: 2,
   marginTop: 6,
   display: "block",
 };
@@ -421,7 +436,7 @@ const importantNotesLinkStyle = {
   display: "block",
   fontSize: 12,
   color: "#92400e",
-  fontWeight: 600,
+  fontWeight: 500,
   textDecoration: "underline",
   marginTop: 4,
 };
@@ -431,19 +446,19 @@ const notesButtonStyle = {
   textAlign: "center",
   marginBottom: 16,
   background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  color: "#000",
+  border: "1px solid #e2e2e2",
   padding: "10px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   textDecoration: "none",
   fontSize: 14,
 };
 
 const photosCardStyle = {
   background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 10,
+  border: "1px solid #e2e2e2",
+  borderRadius: 2,
   padding: 14,
 };
 
@@ -459,7 +474,7 @@ const fileRowStyle = {
   justifyContent: "space-between",
   gap: 8,
   background: "#f6f7f9",
-  borderRadius: 6,
+  borderRadius: 2,
   padding: "6px 8px",
 };
 
@@ -476,7 +491,7 @@ const removeFileButtonStyle = {
   border: "none",
   color: "#b91c1c",
   fontSize: 13,
-  fontWeight: 700,
+  fontWeight: 500,
   cursor: "pointer",
   padding: "2px 6px",
   flexShrink: 0,

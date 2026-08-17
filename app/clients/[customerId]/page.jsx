@@ -20,10 +20,24 @@ export default async function ClientDetail({ params }) {
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
 
+  // Same hard block as the clients list itself - if the database is
+  // turned off for this person, that covers every client detail page
+  // too, not just the list. They can still see this same customer's
+  // name/phone/email inline on a job they're assigned to, which is a
+  // separate, always-available path that isn't affected by this at all.
+  //
+  // Staying ahead of the scoped client below matters: it guarantees
+  // currentMember is a real, valid record before that client is ever
+  // constructed, since getScopedDb() requires one.
   if (!canSeeClientDatabase(currentMember)) {
     notFound();
   }
 
+  // Now backed by Row Level Security at the database level - everything
+  // below is otherwise unchanged. RLS only adds business-level
+  // isolation; the subcontractor-level filtering further down (which
+  // jobs someone's actually assigned to) still needs to run exactly as
+  // it did before.
   const db = await getScopedDb(currentMember);
 
   const { data: customer, error } = await db
@@ -41,11 +55,19 @@ export default async function ClientDetail({ params }) {
     .select("*")
     .eq("customer_id", customerId)
     .order("created_at", { ascending: false });
+  // A subcontractor sees jobs for this client they're directly assigned
+  // to, plus anything shared with them - same filter used everywhere
+  // else, so a shared (not directly assigned) job doesn't just vanish
+  // from this client's history
   if (!showEverything) {
     jobsQuery = await filterJobsForMember(db, jobsQuery, currentMember?.id);
   }
   const { data: jobs } = await jobsQuery;
 
+  // If a subcontractor has no assigned job for this client at all, this
+  // client doesn't exist for them - matches the same rule the Clients
+  // list itself already applies, checked again here since this page can
+  // be reached directly by URL, not just by clicking through the list
   if (!showEverything && (!jobs || jobs.length === 0)) {
     notFound();
   }
@@ -66,6 +88,12 @@ export default async function ClientDetail({ params }) {
     noteCountByJob[n.job_id] = (noteCountByJob[n.job_id] || 0) + 1;
   }
 
+  // Look for other customer records that share this one's email or phone -
+  // likely duplicates worth merging, excluding any pair already dismissed.
+  // Uses separate lookups rather than a combined filter, since combined
+  // filters can misbehave on values containing dots (common in emails).
+  // Skipped entirely for a subcontractor - merging duplicate records is a
+  // data-management concern for whoever runs the business, not them.
   let duplicates = [];
   if (showEverything && (customer.email || customer.phone)) {
     const dupeMap = {};
@@ -145,7 +173,7 @@ export default async function ClientDetail({ params }) {
         const invoice = invoiceByJobId[job.id];
         return (
           <div key={job.id} style={jobCardStyle}>
-            <div style={{ fontWeight: 600 }}>{job.job_type || "Job"}</div>
+            <div style={{ fontWeight: 500 }}>{job.job_type || "Job"}</div>
             <div style={{ fontSize: 13, color: "#888" }}>
               {showEverything && <>{formatCurrency(job.amount, settings.currency)} · </>}
               <span style={{ textTransform: "capitalize" }}>
@@ -163,21 +191,21 @@ export default async function ClientDetail({ params }) {
             )}
             {job.completion_note && (
               <div style={{ fontSize: 12, color: "#666", marginTop: 4, fontStyle: "italic" }}>
-                📝 {job.completion_note}
+                {job.completion_note}
               </div>
             )}
             <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
               {showEverything && invoice && (
                 <Link
                   href={`/invoices/${invoice.id}`}
-                  style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
+                  style={{ fontSize: 12, color: "#000", textDecoration: "underline" }}
                 >
                   View invoice →
                 </Link>
               )}
               <a
                 href={`/jobs/view/${job.id}`}
-                style={{ fontSize: 12, color: "#111", textDecoration: "underline" }}
+                style={{ fontSize: 12, color: "#000", textDecoration: "underline" }}
               >
                 View job{noteCountByJob[job.id] ? ` (${noteCountByJob[job.id]} note${noteCountByJob[job.id] === 1 ? "" : "s"})` : ""}
               </a>
@@ -195,21 +223,21 @@ export default async function ClientDetail({ params }) {
 
 const cardStyle = {
   background: "white",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   margin: "16px 0",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const editLinkStyle = {
   fontSize: 13,
-  color: "#111",
+  color: "#000",
   textDecoration: "underline",
 };
 
 const jobCardStyle = {
   background: "white",
-  borderRadius: 10,
+  borderRadius: 2,
   padding: 14,
   marginBottom: 8,
 };

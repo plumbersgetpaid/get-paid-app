@@ -12,6 +12,10 @@ export const revalidate = 0;
 export default async function JobPhotos({ params, searchParams }) {
   const { jobId } = params;
 
+  // This page previously had no login lookup at all - middleware
+  // already required a session to reach it, but the scoped client below
+  // specifically needs to know whose business to scope to, so this is
+  // now required rather than optional.
   const currentMember = await getCurrentTeamMember();
   if (!currentMember) {
     notFound();
@@ -29,6 +33,11 @@ export default async function JobPhotos({ params, searchParams }) {
     notFound();
   }
 
+  // This page previously had no per-job access check at all - any
+  // logged-in team member, regardless of permissions or assignment,
+  // could view or add photos on any job in the business. Same shared
+  // check used everywhere else a job's own access needs confirming:
+  // owner/manager, the direct assignee, or anyone it's been shared with.
   const hasAccess = await canAccessJob(db, job, currentMember);
   if (!hasAccess) {
     notFound();
@@ -57,7 +66,7 @@ export default async function JobPhotos({ params, searchParams }) {
       </div>
 
       <section style={summaryCardStyle}>
-        <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
+        <div style={{ fontWeight: 500 }}>{customer?.name || "Customer"}</div>
         <div style={{ fontSize: 13, color: "#888" }}>{job.job_type || "Job"}</div>
       </section>
 
@@ -67,7 +76,7 @@ export default async function JobPhotos({ params, searchParams }) {
             background: "#fee2e2",
             color: "#991b1b",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
             marginBottom: 12,
             fontSize: 13,
           }}
@@ -151,10 +160,10 @@ export default async function JobPhotos({ params, searchParams }) {
 
 const summaryCardStyle = {
   background: "white",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   margin: "16px 0",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const labelStyle = {
@@ -162,25 +171,25 @@ const labelStyle = {
   gap: 6,
   fontSize: 13,
   color: "#666",
-  fontWeight: 600,
+  fontWeight: 500,
 };
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
 };
 
 const uploadButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 15,
 };
 
@@ -192,16 +201,16 @@ const galleryStyle = {
 
 const photoCardStyle = {
   background: "white",
-  borderRadius: 10,
+  borderRadius: 2,
   padding: 8,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const photoImgStyle = {
   width: "100%",
   height: 120,
   objectFit: "cover",
-  borderRadius: 6,
+  borderRadius: 2,
   display: "block",
   marginBottom: 6,
 };
@@ -212,7 +221,7 @@ const deletePhotoButtonStyle = {
   color: "#b91c1c",
   border: "1px solid #fca5a5",
   padding: "6px",
-  borderRadius: 6,
+  borderRadius: 2,
   fontSize: 12,
-  fontWeight: 600,
+  fontWeight: 500,
 };

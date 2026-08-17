@@ -116,7 +116,7 @@ export default function AccountForm({ currentName, currentEmail }) {
   return (
     <>
       <section style={cardStyle}>
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>Your name</div>
+        <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 10 }}>Your name</div>
         <form onSubmit={handleNameSubmit} style={{ display: "grid", gap: 10 }}>
           <input
             value={name}
@@ -136,7 +136,7 @@ export default function AccountForm({ currentName, currentEmail }) {
       </section>
 
       <section style={cardStyle}>
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>Your email</div>
+        <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 10 }}>Your email</div>
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 12, color: "#888" }}>Current email</div>
           <div style={{ fontSize: 15 }}>{currentEmail}</div>
@@ -187,7 +187,7 @@ export default function AccountForm({ currentName, currentEmail }) {
       </section>
 
       <section style={cardStyle}>
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>Change password</div>
+        <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 10 }}>Change password</div>
         <form onSubmit={handlePasswordSubmit} style={{ display: "grid", gap: 10 }}>
           <label style={labelStyle}>
             Current password
@@ -233,6 +233,12 @@ export default function AccountForm({ currentName, currentEmail }) {
             {passwordBusy ? "Saving..." : "Change password"}
           </button>
         </form>
+        {/* For someone who's been logged in a while via the persistent
+            session and has genuinely forgotten their actual password -
+            the form above is a dead end for them since it needs the
+            current one. A plain anchor, not Link, matching the same
+            approach used on the login page after Link caused a crash
+            there. */}
         <div style={{ marginTop: 12, textAlign: "center" }}>
           <a href="/forgot-password?from=account" style={forgotLinkStyle}>
             Forgotten your current password? Reset it by email instead
@@ -245,10 +251,10 @@ export default function AccountForm({ currentName, currentEmail }) {
 
 const cardStyle = {
   background: "white",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   margin: "16px 0",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const labelStyle = {
@@ -256,27 +262,27 @@ const labelStyle = {
   gap: 6,
   fontSize: 13,
   color: "#666",
-  fontWeight: 600,
+  fontWeight: 500,
 };
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   fontWeight: 400,
-  color: "#111",
+  color: "#000",
   width: "100%",
   boxSizing: "border-box",
 };
 
 const submitButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "12px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 14,
 };
 
@@ -284,7 +290,7 @@ const errorBoxStyle = {
   background: "#fee2e2",
   color: "#991b1b",
   padding: 10,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
 };
 
@@ -298,6 +304,6 @@ const successBoxStyle = {
   background: "#dcfce7",
   color: "#166534",
   padding: 10,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
 };

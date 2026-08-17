@@ -15,6 +15,10 @@ export const revalidate = 0;
 export default async function AllInvoices({ searchParams }) {
   const settings = await getBusinessSettings();
 
+  // Same rule as the invoice detail page - this entire section doesn't
+  // exist for a subcontractor, checked on the server. Staying ahead of
+  // the scoped client below matters: it guarantees currentMember is a
+  // real, valid record before that client is ever constructed.
   const currentMember = await getCurrentTeamMember();
   if (!canInvoice(currentMember)) {
     notFound();
@@ -87,6 +91,9 @@ export default async function AllInvoices({ searchParams }) {
     .reduce((sum, i) => sum + Number(i.amount), 0);
   const totalOutstanding = totalInvoiced - totalPaid;
 
+  // Build a list of months that actually have invoices, for the bulk
+  // download filter - based on the FULL history, not the current filter,
+  // so the dropdown doesn't shrink when a custom range is applied
   const { data: allDates } = await db.from("invoices").select("created_at");
   const monthsSet = new Set(
     (allDates || []).map((inv) => inv.created_at.slice(0, 7))
@@ -133,12 +140,12 @@ export default async function AllInvoices({ searchParams }) {
       <section
         style={{
           background: "white",
-          borderRadius: 12,
+          borderRadius: 3,
           padding: 16,
           margin: "16px 0",
         }}
       >
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
+        <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 10 }}>
           Custom date range
         </div>
         <form
@@ -191,31 +198,31 @@ export default async function AllInvoices({ searchParams }) {
       <section
         style={{
           background: "white",
-          borderRadius: 12,
+          borderRadius: 3,
           padding: 16,
           margin: "16px 0",
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: 8,
           textAlign: "center",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          border: "1px solid #e2e2e2",
         }}
       >
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12, color: "#888" }}>Total invoiced</div>
-          <div style={{ fontSize: 17, fontWeight: 700, overflowWrap: "break-word" }}>
+          <div style={{ fontSize: 17, fontWeight: 500, overflowWrap: "break-word" }}>
             {formatCurrency(totalInvoiced, settings.currency)}
           </div>
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12, color: "#888" }}>Total paid</div>
-          <div style={{ fontSize: 17, fontWeight: 700, overflowWrap: "break-word" }}>
+          <div style={{ fontSize: 17, fontWeight: 500, overflowWrap: "break-word" }}>
             {formatCurrency(totalPaid, settings.currency)}
           </div>
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12, color: "#888" }}>Outstanding</div>
-          <div style={{ fontSize: 17, fontWeight: 700, overflowWrap: "break-word" }}>
+          <div style={{ fontSize: 17, fontWeight: 500, overflowWrap: "break-word" }}>
             {formatCurrency(totalOutstanding, settings.currency)}
           </div>
         </div>
@@ -262,7 +269,7 @@ export default async function AllInvoices({ searchParams }) {
           style={{
             display: "block",
             background: "white",
-            borderRadius: 10,
+            borderRadius: 2,
             padding: 14,
             marginBottom: 8,
             textDecoration: "none",
@@ -270,8 +277,8 @@ export default async function AllInvoices({ searchParams }) {
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
-            <div style={{ fontWeight: 600 }}>{formatCurrency(inv.amount, settings.currency)}</div>
+            <div style={{ fontWeight: 500 }}>{inv.customer_name}</div>
+            <div style={{ fontWeight: 500 }}>{formatCurrency(inv.amount, settings.currency)}</div>
           </div>
           <div style={{ fontSize: 13, color: "#888" }}>
             {formatInvoiceNumber(inv.invoice_number)} · {inv.job_type || "Job"} · due {inv.due_date} ·{" "}
@@ -286,27 +293,27 @@ export default async function AllInvoices({ searchParams }) {
 const monthSelectStyle = {
   flex: 1,
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 14,
   background: "white",
 };
 
 const formatSelectStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 14,
   background: "white",
 };
 
 const bulkDownloadButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   border: "none",
   padding: "12px 16px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };
 
@@ -316,30 +323,30 @@ const dateInputStyle = {
   minWidth: 0,
   boxSizing: "border-box",
   padding: "10px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 14,
   marginTop: 4,
 };
 
 const applyRangeButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   border: "none",
   padding: "10px 16px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 13,
   flex: 1,
 };
 
 const clearRangeButtonStyle = {
   background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  color: "#000",
+  border: "1px solid #e2e2e2",
   padding: "10px 16px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 13,
   textDecoration: "none",
   textAlign: "center",

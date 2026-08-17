@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Icon from "./Icon";
 import { useRouter } from "next/navigation";
 
 export default function AssignAndShareControl({ jobId, initialAssignees, teamMembers }) {
@@ -35,6 +36,10 @@ export default function AssignAndShareControl({ jobId, initialAssignees, teamMem
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Couldn't update that");
       } else {
+        // Tells Next.js's own page cache this route's data just changed,
+        // so navigating back to it later re-fetches fresh rather than
+        // serving a snapshot from before this change - same fix already
+        // proven on the team permissions screen
         router.refresh();
       }
     } catch (err) {
@@ -48,7 +53,8 @@ export default function AssignAndShareControl({ jobId, initialAssignees, teamMem
   return (
     <details style={{ marginTop: 8 }}>
       <summary style={summaryStyle}>
-        👤 {assignees.length === 0 ? "Unassigned" : assignees.map((a) => a.name).join(", ")}
+        <Icon name="person" size={15} strokeWidth={1.6} />
+        {assignees.length === 0 ? "Unassigned" : assignees.map((a) => a.name).join(", ")}
       </summary>
       <div style={optionsBoxStyle}>
         {teamMembers.map((m) => (
@@ -74,11 +80,11 @@ export default function AssignAndShareControl({ jobId, initialAssignees, teamMem
 const summaryStyle = {
   fontSize: 12,
   padding: "6px 10px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
-  color: "#111",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  color: "#000",
   background: "white",
-  fontWeight: 600,
+  fontWeight: 500,
   cursor: "pointer",
   display: "inline-block",
 };
@@ -86,8 +92,8 @@ const summaryStyle = {
 const optionsBoxStyle = {
   marginTop: 6,
   background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
+  border: "1px solid #e2e2e2",
+  borderRadius: 2,
   padding: 6,
 };
 

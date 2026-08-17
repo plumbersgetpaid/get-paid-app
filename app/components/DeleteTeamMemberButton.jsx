@@ -35,13 +35,13 @@ export default function DeleteTeamMemberButton({ memberId, memberName }) {
   return (
     <>
       <button type="button" onClick={() => setShowConfirm(true)} style={deleteButtonStyle}>
-        🗑️ Delete permanently
+        Delete permanently
       </button>
 
       {showConfirm && (
         <div style={backdropStyle} onClick={() => !busy && setShowConfirm(false)}>
           <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>
+            <div style={{ fontWeight: 500, fontSize: 16, marginBottom: 8 }}>
               Permanently delete {memberName}?
             </div>
             <div style={{ fontSize: 14, color: "#666", marginBottom: 16 }}>
@@ -81,11 +81,11 @@ export default function DeleteTeamMemberButton({ memberId, memberName }) {
 const deleteButtonStyle = {
   fontSize: 12,
   padding: "6px 10px",
-  borderRadius: 6,
+  borderRadius: 2,
   border: "1px solid #fca5a5",
   color: "#b91c1c",
   background: "white",
-  fontWeight: 600,
+  fontWeight: 500,
 };
 
 const backdropStyle = {
@@ -101,7 +101,7 @@ const backdropStyle = {
 
 const modalStyle = {
   background: "white",
-  borderRadius: 14,
+  borderRadius: 3,
   padding: 20,
   maxWidth: 340,
   width: "100%",
@@ -111,11 +111,11 @@ const modalStyle = {
 const modalCancelButtonStyle = {
   flex: 1,
   background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  color: "#000",
+  border: "1px solid #e2e2e2",
   padding: "12px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };
 
@@ -125,7 +125,7 @@ const modalConfirmButtonStyle = {
   color: "white",
   border: "none",
   padding: "12px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };

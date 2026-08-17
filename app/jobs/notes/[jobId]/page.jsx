@@ -12,6 +12,10 @@ export const revalidate = 0;
 export default async function JobNotes({ params }) {
   const { jobId } = params;
 
+  // Fetched ahead of the job itself now - the scoped client needs to
+  // know who's logged in (and their business) before it can even be
+  // constructed, so this can no longer come after the job lookup the
+  // way it originally did.
   const currentMember = await getCurrentTeamMember();
   const db = await getScopedDb(currentMember);
 
@@ -25,6 +29,11 @@ export default async function JobNotes({ params }) {
     notFound();
   }
 
+  // Uses the same shared access check as Work → Jobs and the job details
+  // view - owner/manager, the direct assignee, or anyone it's been
+  // shared with. Was only checking assigned_to directly until now, which
+  // meant someone a job was shared with (rather than directly assigned)
+  // could see the Job notes button but got blocked the moment they tapped it.
   const hasAccess = await canAccessJob(db, job, currentMember);
   if (!hasAccess) {
     notFound();
@@ -44,12 +53,12 @@ export default async function JobNotes({ params }) {
       </div>
 
       <section style={summaryCardStyle}>
-        <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
+        <div style={{ fontWeight: 500 }}>{customer?.name || "Customer"}</div>
         <div style={{ fontSize: 13, color: "#888" }}>{job.job_type || "Job"}</div>
       </section>
 
       <div style={internalBannerStyle}>
-        🔒 Internal only - these notes are never shown or sent to the client.
+        Internal only - these notes are never shown or sent to the client.
       </div>
 
       <NotesSection jobId={job.id} />
@@ -59,17 +68,17 @@ export default async function JobNotes({ params }) {
 
 const summaryCardStyle = {
   background: "white",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   margin: "16px 0",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const internalBannerStyle = {
   background: "#f3f4f6",
   color: "#444",
   padding: 10,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 12,
-  fontWeight: 600,
+  fontWeight: 500,
 };

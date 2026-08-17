@@ -16,8 +16,18 @@ export const revalidate = 0;
 export default async function ScheduleJob({ params, searchParams }) {
   const { jobId } = params;
 
+  // Fetched ahead of the job itself now - the scoped client needs to
+  // know who's logged in (and their business) before it can even be
+  // constructed, so this can no longer come after the job lookup the
+  // way it originally did.
   const currentMember = await getCurrentTeamMember();
 
+  // Gated by the specific can_reschedule permission now, not blanket
+  // owner/manager status - an individual subcontractor can be granted
+  // this. showEverything below stays tied to the broader
+  // canSeeEverything check, since it still governs price visibility on
+  // this page - being allowed to reschedule doesn't also mean seeing
+  // every price, since that's not one of the six granular permissions.
   const showEverything = canSeeEverything(currentMember);
   if (!canReschedule(currentMember)) {
     notFound();
@@ -35,6 +45,13 @@ export default async function ScheduleJob({ params, searchParams }) {
     notFound();
   }
 
+  // can_reschedule alone only means this person is trusted to reschedule
+  // in general - it was never actually checking whether they're assigned
+  // to or shared on this specific job, meaning a subcontractor could
+  // reschedule any job in the business regardless of assignment. Same
+  // shared check used everywhere else a job's own access needs
+  // confirming: owner/manager, the direct assignee, or anyone it's
+  // been shared with.
   const hasAccess = await canAccessJob(db, job, currentMember);
   if (!hasAccess) {
     notFound();
@@ -48,6 +65,9 @@ export default async function ScheduleJob({ params, searchParams }) {
 
   const settings = await getBusinessSettings();
 
+  // Defaults: tomorrow at 9am for 2 hours, unless we're coming back from a
+  // double-booking warning (keep what was entered) or the job's already
+  // got a scheduled time saved
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const defaultDate = tomorrow.toISOString().slice(0, 10);
@@ -62,6 +82,12 @@ export default async function ScheduleJob({ params, searchParams }) {
     initialDate = existingStart.toISOString().slice(0, 10);
     initialTime = existingStart.toISOString().slice(11, 16);
     if (job.scheduled_end) {
+      // The original weeks/days/hours choice is never actually stored -
+      // only the raw start/end timestamps are. Re-deriving this always as
+      // "hours" (e.g. "480 hours" for what was booked as "2 weeks") is
+      // technically correct but unreadable, so show it in whichever
+      // sensible unit divides the gap evenly, falling back to hours only
+      // if nothing bigger fits cleanly.
       const hours = (new Date(job.scheduled_end) - existingStart) / (1000 * 60 * 60);
       if (hours % (24 * 7) === 0) {
         initialDuration = String(hours / (24 * 7));
@@ -91,21 +117,21 @@ export default async function ScheduleJob({ params, searchParams }) {
       </div>
 
       <section style={summaryCardStyle}>
-        <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
+        <div style={{ fontWeight: 500 }}>{customer?.name || "Customer"}</div>
         <div style={{ fontSize: 13, color: "#888" }}>
           {job.job_type || "Job"}
           {showEverything && <> · {formatCurrency(job.amount, settings.currency)}</>}
         </div>
         {job.time_confirmed === false && (
-          <div style={{ fontSize: 12, color: "#b45309", marginTop: 6, fontWeight: 600 }}>
-            ⏰ Time not yet confirmed - set the real time below
+          <div style={{ fontSize: 12, color: "#b45309", marginTop: 6, fontWeight: 500 }}>
+            Time not yet confirmed - set the real time below
           </div>
         )}
       </section>
 
       {conflictMessage && (
         <div style={warningBoxStyle}>
-          ⚠️ {conflictMessage} You can still book it in anyway if that's fine.
+          {conflictMessage} You can still book it in anyway if that's fine.
         </div>
       )}
 
@@ -139,7 +165,7 @@ export default async function ScheduleJob({ params, searchParams }) {
             fontSize: 14,
             background: "white",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
           }}
         >
           <input
@@ -155,7 +181,7 @@ export default async function ScheduleJob({ params, searchParams }) {
         </label>
 
         <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
+          <div style={{ fontSize: 13, color: "#666", fontWeight: 500 }}>
             Let the client know
           </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
@@ -188,16 +214,16 @@ export default async function ScheduleJob({ params, searchParams }) {
 
 const summaryCardStyle = {
   background: "white",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   margin: "16px 0",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const locationInputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
@@ -207,18 +233,18 @@ const warningBoxStyle = {
   background: "#fef3c7",
   color: "#92400e",
   padding: 12,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
   marginBottom: 12,
 };
 
 const cancelButtonStyle = {
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "14px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   flex: 1,
   textAlign: "center",
   textDecoration: "none",
@@ -228,8 +254,8 @@ const submitButtonStyle = {
   background: "#16a34a",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   flex: 2,
 };

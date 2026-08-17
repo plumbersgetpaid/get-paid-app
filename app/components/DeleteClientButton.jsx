@@ -35,13 +35,13 @@ export default function DeleteClientButton({ customerId }) {
   return (
     <>
       <button type="button" onClick={() => setShowConfirm(true)} style={deleteButtonStyle}>
-        🗑️ Delete this client
+        Delete this client
       </button>
 
       {showConfirm && (
         <div style={backdropStyle} onClick={() => !busy && setShowConfirm(false)}>
           <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>
+            <div style={{ fontWeight: 500, fontSize: 16, marginBottom: 8 }}>
               Delete this client?
             </div>
             <div style={{ fontSize: 14, color: "#666", marginBottom: 16 }}>
@@ -84,8 +84,8 @@ const deleteButtonStyle = {
   color: "#b91c1c",
   border: "1px solid #fca5a5",
   padding: "14px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 15,
   marginTop: 16,
 };
@@ -103,7 +103,7 @@ const backdropStyle = {
 
 const modalStyle = {
   background: "white",
-  borderRadius: 14,
+  borderRadius: 3,
   padding: 20,
   maxWidth: 340,
   width: "100%",
@@ -113,11 +113,11 @@ const modalStyle = {
 const modalCancelButtonStyle = {
   flex: 1,
   background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  color: "#000",
+  border: "1px solid #e2e2e2",
   padding: "12px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };
 
@@ -127,7 +127,7 @@ const modalConfirmButtonStyle = {
   color: "white",
   border: "none",
   padding: "12px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };

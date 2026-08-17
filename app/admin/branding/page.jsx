@@ -10,6 +10,10 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function AdminBranding({ searchParams }) {
+  // A 404, not a redirect to login - someone without this specific
+  // flag shouldn't even learn this page exists, the same reasoning
+  // used for Settings but one level more restrictive, since this
+  // affects every business on the platform rather than just one
   const currentMember = await getCurrentTeamMember();
   if (!isPlatformAdmin(currentMember)) {
     notFound();
@@ -95,17 +99,17 @@ export default async function AdminBranding({ searchParams }) {
 
 const cardStyle = {
   background: "white",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   margin: "16px 0",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const successBannerStyle = {
   background: "#dcfce7",
   color: "#166534",
   padding: 10,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
   marginBottom: 12,
 };

@@ -46,29 +46,43 @@ export default async function NewClient() {
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
+};
+
+const backButtonStyle = {
+  background: "white",
+  border: "1px solid #e2e2e2",
+  borderRadius: 2,
+  width: 36,
+  height: 36,
+  fontSize: 18,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textDecoration: "none",
+  color: "#000",
 };
 
 const cancelButtonStyle = {
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "14px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   flex: 1,
   textAlign: "center",
   textDecoration: "none",
 };
 
 const submitButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   flex: 1,
 };

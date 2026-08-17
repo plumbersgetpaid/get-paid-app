@@ -40,6 +40,10 @@ export default function NewRecurringJob() {
         return;
       }
 
+      // Replace this page in the browser's history with the destination,
+      // so pressing Back afterwards skips straight past this form to
+      // wherever the tradie actually came from - not back into a
+      // just-submitted form
       router.replace("/jobs/recurring");
     } catch (err) {
       console.error("Recurring job save error:", err);
@@ -110,7 +114,7 @@ export default function NewRecurringJob() {
             fontSize: 14,
             background: "white",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
           }}
         >
           <input type="checkbox" name="confirmTimeLater" value="1" />
@@ -141,7 +145,7 @@ export default function NewRecurringJob() {
         </label>
 
         <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
+          <div style={{ fontSize: 13, color: "#666", fontWeight: 500 }}>
             Let the client know each time (if you've added their email above)
           </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
@@ -172,8 +176,8 @@ export default function NewRecurringJob() {
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
@@ -181,11 +185,11 @@ const inputStyle = {
 
 const cancelButtonStyle = {
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "14px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   flex: 1,
   textAlign: "center",
   textDecoration: "none",
@@ -195,9 +199,9 @@ const submitButtonStyle = {
   background: "#16a34a",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   flex: 2,
 };
 
@@ -205,7 +209,7 @@ const errorBoxStyle = {
   background: "#fee2e2",
   color: "#991b1b",
   padding: 12,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
   marginTop: 12,
 };

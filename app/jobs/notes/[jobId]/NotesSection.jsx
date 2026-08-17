@@ -89,14 +89,14 @@ export default function NotesSection({ jobId }) {
 
   async function handleDelete(noteId) {
     const previous = notes;
-    setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    setNotes((prev) => prev.filter((n) => n.id !== noteId)); // instant, don't wait on the server
 
     try {
       const formData = new FormData();
       formData.append("noteId", noteId);
       const res = await fetch("/api/jobs/notes/delete", { method: "POST", body: formData });
       if (!res.ok) {
-        setNotes(previous);
+        setNotes(previous); // put it back if the delete actually failed
       }
     } catch (e) {
       console.error("Delete note error:", e);
@@ -124,7 +124,7 @@ export default function NotesSection({ jobId }) {
               checked={important}
               onChange={(e) => setImportant(e.target.checked)}
             />
-            ⚠️ Important
+            Important
           </label>
           <button
             type="submit"
@@ -135,7 +135,7 @@ export default function NotesSection({ jobId }) {
           </button>
         </div>
         <label style={{ fontSize: 12, color: "#666", display: "flex", alignItems: "center", gap: 8 }}>
-          📷 Photo
+          Photo
           <input
             key={fileInputKey}
             type="file"
@@ -157,8 +157,8 @@ export default function NotesSection({ jobId }) {
       {notes.map((n) => (
         <div key={n.id} style={n.important ? importantNoteCardStyle : noteCardStyle}>
           {n.important && (
-            <div style={{ fontWeight: 700, color: "#92400e", fontSize: 12, marginBottom: 4 }}>
-              ⚠️ Important
+            <div style={{ fontWeight: 500, color: "#92400e", fontSize: 12, marginBottom: 4 }}>
+              Important
             </div>
           )}
           <div style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{n.note}</div>
@@ -195,8 +195,8 @@ export default function NotesSection({ jobId }) {
 
 const textareaStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
@@ -205,12 +205,12 @@ const textareaStyle = {
 };
 
 const submitButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "8px 20px",
-  borderRadius: 8,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 14,
 };
 
@@ -218,16 +218,16 @@ const errorBoxStyle = {
   background: "#fee2e2",
   color: "#991b1b",
   padding: 12,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
 };
 
 const noteCardStyle = {
   background: "white",
-  borderRadius: 10,
+  borderRadius: 2,
   padding: 14,
   marginBottom: 8,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const importantNoteCardStyle = {
@@ -239,7 +239,7 @@ const importantNoteCardStyle = {
 const noteImageStyle = {
   width: "100%",
   maxWidth: 240,
-  borderRadius: 8,
+  borderRadius: 2,
   marginTop: 8,
   display: "block",
 };
@@ -248,9 +248,9 @@ const deleteNoteButtonStyle = {
   background: "#fee2e2",
   color: "#b91c1c",
   border: "none",
-  borderRadius: 6,
+  borderRadius: 2,
   padding: "5px 12px",
   fontSize: 12,
-  fontWeight: 700,
+  fontWeight: 500,
   cursor: "pointer",
 };

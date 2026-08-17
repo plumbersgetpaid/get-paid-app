@@ -13,6 +13,10 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function Settings({ searchParams }) {
+  // This whole page is business-wide configuration - owner/manager only.
+  // The link to it was already hidden from subcontractors, but that
+  // alone doesn't stop someone typing the URL directly, so this checks
+  // it again here on the server, same as every other restricted page.
   const currentMember = await getCurrentTeamMember();
   if (!canSeeEverything(currentMember)) {
     notFound();
@@ -36,15 +40,15 @@ export default async function Settings({ searchParams }) {
             justifyContent: "space-between",
             alignItems: "center",
             background: "white",
-            borderRadius: 12,
+            borderRadius: 3,
             padding: 14,
             margin: "16px 0",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+            border: "1px solid #e2e2e2",
           }}
         >
           <div>
             <div style={{ fontSize: 13, color: "#888" }}>Logged in as</div>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>
+            <div style={{ fontWeight: 500, fontSize: 14 }}>
               {currentMember.name} · {currentMember.email}
             </div>
           </div>
@@ -62,15 +66,15 @@ export default async function Settings({ searchParams }) {
         style={{
           display: "block",
           background: "white",
-          borderRadius: 12,
+          borderRadius: 3,
           padding: 16,
           margin: "16px 0",
           textDecoration: "none",
-          color: "#111",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          color: "#000",
+          border: "1px solid #e2e2e2",
         }}
       >
-        <div style={{ fontWeight: 600, fontSize: 14 }}>Message templates →</div>
+        <div style={{ fontWeight: 500, fontSize: 14 }}>Message templates →</div>
         <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
           Edit the wording of every automated quote, invoice, and reminder
         </div>
@@ -81,15 +85,15 @@ export default async function Settings({ searchParams }) {
         style={{
           display: "block",
           background: "white",
-          borderRadius: 12,
+          borderRadius: 3,
           padding: 16,
           margin: "16px 0",
           textDecoration: "none",
-          color: "#111",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          color: "#000",
+          border: "1px solid #e2e2e2",
         }}
       >
-        <div style={{ fontWeight: 600, fontSize: 14 }}>Team →</div>
+        <div style={{ fontWeight: 500, fontSize: 14 }}>Team →</div>
         <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
           Add people, set their role, or remove access
         </div>
@@ -101,7 +105,7 @@ export default async function Settings({ searchParams }) {
             background: "#dcfce7",
             color: "#166534",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
             margin: "16px 0",
             fontSize: 13,
           }}
@@ -116,7 +120,7 @@ export default async function Settings({ searchParams }) {
             background: "#dcfce7",
             color: "#166534",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
             margin: "16px 0",
             fontSize: 13,
           }}
@@ -132,7 +136,7 @@ export default async function Settings({ searchParams }) {
             background: "#fee2e2",
             color: "#991b1b",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
             margin: "16px 0",
             fontSize: 13,
           }}
@@ -148,7 +152,7 @@ export default async function Settings({ searchParams }) {
             background: "#fee2e2",
             color: "#991b1b",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
             margin: "16px 0",
             fontSize: 13,
           }}
@@ -163,7 +167,7 @@ export default async function Settings({ searchParams }) {
             background: "#fee2e2",
             color: "#991b1b",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
             margin: "16px 0",
             fontSize: 13,
           }}
@@ -179,7 +183,7 @@ export default async function Settings({ searchParams }) {
             background: "#fee2e2",
             color: "#991b1b",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
             margin: "16px 0",
             fontSize: 13,
           }}
@@ -196,7 +200,7 @@ export default async function Settings({ searchParams }) {
         style={{ marginTop: 16 }}
       >
         <button type="submit" style={testButtonStyle}>
-          📨 Send a test review request to yourself
+          Send a test review request to yourself
         </button>
         <p style={{ fontSize: 12, color: "#888", marginTop: 6 }}>
           Uses whatever's currently saved above - handy for checking the
@@ -207,12 +211,12 @@ export default async function Settings({ searchParams }) {
       <section
         style={{
           background: "white",
-          borderRadius: 12,
+          borderRadius: 3,
           padding: 16,
           marginTop: 20,
         }}
       >
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>Logo</div>
+        <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 4 }}>Logo</div>
         <p style={{ fontSize: 12, color: "#888", marginTop: 0, marginBottom: 12 }}>
           Shown on your PDF invoices. Best as a PNG with a transparent or white
           background.
@@ -232,7 +236,7 @@ export default async function Settings({ searchParams }) {
 
       {isPlatformAdmin(currentMember) && (
         <Link href="/admin/branding" style={adminLinkStyle}>
-          ⚙️ Platform branding (admin only)
+          Platform branding (admin only)
         </Link>
       )}
     </main>
@@ -244,22 +248,22 @@ const labelStyle = {
   gap: 6,
   fontSize: 13,
   color: "#666",
-  fontWeight: 600,
+  fontWeight: 500,
 };
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   fontWeight: 400,
-  color: "#111",
+  color: "#000",
 };
 
 const backButtonStyle = {
   background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
+  border: "1px solid #e2e2e2",
+  borderRadius: 2,
   width: 36,
   height: 36,
   fontSize: 18,
@@ -267,37 +271,37 @@ const backButtonStyle = {
   alignItems: "center",
   justifyContent: "center",
   textDecoration: "none",
-  color: "#111",
+  color: "#000",
 };
 
 const submitButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 15,
 };
 
 const testButtonStyle = {
   width: "100%",
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "12px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   fontSize: 14,
 };
 
 const uploadButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "10px 16px",
-  borderRadius: 8,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 13,
   whiteSpace: "nowrap",
 };

@@ -61,7 +61,7 @@ export default async function QuickBook({ searchParams }) {
 
       {conflictMessage && (
         <div style={warningBoxStyle}>
-          ⚠️ {conflictMessage} You can still book it in anyway if that's fine.
+          {conflictMessage} You can still book it in anyway if that's fine.
         </div>
       )}
 
@@ -106,7 +106,7 @@ export default async function QuickBook({ searchParams }) {
             fontSize: 14,
             background: "white",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
           }}
         >
           <input
@@ -122,7 +122,7 @@ export default async function QuickBook({ searchParams }) {
         </label>
 
         <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
+          <div style={{ fontSize: 13, color: "#666", fontWeight: 500 }}>
             Let the client know (if you add their email above)
           </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
@@ -146,8 +146,8 @@ export default async function QuickBook({ searchParams }) {
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
@@ -157,18 +157,18 @@ const warningBoxStyle = {
   background: "#fef3c7",
   color: "#92400e",
   padding: 12,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
   marginTop: 12,
 };
 
 const cancelButtonStyle = {
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "14px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   flex: 1,
   textAlign: "center",
   textDecoration: "none",
@@ -178,8 +178,8 @@ const submitButtonStyle = {
   background: "#16a34a",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   flex: 2,
 };

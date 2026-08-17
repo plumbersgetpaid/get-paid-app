@@ -15,6 +15,12 @@ export default async function InvoiceDetail({ params }) {
   const { invoiceId } = params;
   const settings = await getBusinessSettings();
 
+  // Invoices are financial information - gated by the specific
+  // can_invoice permission now, not blanket owner/manager status, so a
+  // specific subcontractor can be individually granted this. Staying
+  // ahead of the scoped client below matters: it guarantees
+  // currentMember is a real, valid record before that client is ever
+  // constructed.
   const currentMember = await getCurrentTeamMember();
   if (!canInvoice(currentMember)) {
     notFound();
@@ -59,9 +65,9 @@ export default async function InvoiceDetail({ params }) {
       <section
         style={{
           background: "white",
-          borderRadius: 12,
+          borderRadius: 3,
           padding: 24,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          border: "1px solid #e2e2e2",
         }}
       >
         <h2 style={{ fontSize: 22, marginBottom: 4 }}>Invoice</h2>
@@ -71,7 +77,7 @@ export default async function InvoiceDetail({ params }) {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 600 }}>{customer?.name || "Customer"}</div>
+          <div style={{ fontWeight: 500 }}>{customer?.name || "Customer"}</div>
           {customer?.email && (
             <div style={{ color: "#888", fontSize: 14 }}>{customer.email}</div>
           )}
@@ -154,7 +160,7 @@ export default async function InvoiceDetail({ params }) {
         </div>
 
         <section style={paymentLinkCardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
             💳 Payment link
           </div>
           {invoice.payment_link && (
@@ -195,7 +201,7 @@ export default async function InvoiceDetail({ params }) {
           download
           style={downloadButtonStyle}
         >
-          📄 Download PDF
+          Download PDF
         </a>
         <a
           href={`/api/invoices/export-csv?invoiceId=${invoice.id}`}
@@ -218,18 +224,18 @@ const paymentLinkCardStyle = {
 const paymentLinkInputStyle = {
   flex: 1,
   padding: "10px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 13,
 };
 
 const paymentLinkSaveButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   border: "none",
   padding: "10px 16px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 13,
 };
 
@@ -238,12 +244,12 @@ const downloadButtonStyle = {
   flex: 1,
   boxSizing: "border-box",
   textAlign: "center",
-  background: "#111",
+  background: "#000",
   color: "white",
   border: "none",
   padding: "14px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 15,
   textDecoration: "none",
 };

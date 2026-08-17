@@ -71,7 +71,7 @@ export default function TeamMemberRow({ member, isSelf }) {
     <div style={cardStyle(isActive)}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <div style={{ fontWeight: 600 }}>
+          <div style={{ fontWeight: 500 }}>
             {member.name} {isSelf && <span style={{ color: "#888", fontWeight: 400 }}>(you)</span>}
           </div>
           <div style={{ fontSize: 13, color: "#888" }}>{member.email}</div>
@@ -102,12 +102,24 @@ export default function TeamMemberRow({ member, isSelf }) {
           </button>
         )}
 
+        {/* Granular permissions only ever apply to a subcontractor - an
+            owner/manager already has everything, so this link only
+            shows for the role it actually means something for. Reacts
+            to the live role state, not member.role, so it appears or
+            disappears immediately if the dropdown above is changed,
+            without needing a full page reload. */}
         {role === "subcontractor" && (
           <a href={`/settings/team/${member.id}`} style={permissionsLinkStyle}>
-            ⚙️ Permissions
+            Permissions
           </a>
         )}
 
+        {/* Permanent deletion only ever shows once someone's already
+            deactivated - a deliberate two-step process for something
+            this destructive, matching how it was actually asked for:
+            delete as a follow-up to deactivating someone, not an
+            alternative to it. Reacts to the live isActive state, so it
+            appears the moment Deactivate is tapped, no reload needed. */}
         {!locked && !isActive && (
           <DeleteTeamMemberButton memberId={member.id} memberName={member.name} />
         )}
@@ -120,7 +132,7 @@ export default function TeamMemberRow({ member, isSelf }) {
 
 const cardStyle = (isActive) => ({
   background: "white",
-  borderRadius: 10,
+  borderRadius: 2,
   padding: 14,
   marginBottom: 8,
   opacity: isActive ? 1 : 0.7,
@@ -128,7 +140,7 @@ const cardStyle = (isActive) => ({
 
 const inactiveBadgeStyle = {
   fontSize: 11,
-  fontWeight: 700,
+  fontWeight: 500,
   color: "#991b1b",
   background: "#fee2e2",
   padding: "3px 8px",
@@ -138,30 +150,30 @@ const inactiveBadgeStyle = {
 const selectStyle = {
   fontSize: 13,
   padding: "6px 10px",
-  borderRadius: 6,
-  border: "1px solid #ddd",
-  color: "#111",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  color: "#000",
   background: "white",
 };
 
 const deactivateButtonStyle = {
   fontSize: 12,
   padding: "6px 10px",
-  borderRadius: 6,
+  borderRadius: 2,
   border: "1px solid #fca5a5",
   color: "#b91c1c",
   background: "white",
-  fontWeight: 600,
+  fontWeight: 500,
 };
 
 const activateButtonStyle = {
   fontSize: 12,
   padding: "6px 10px",
-  borderRadius: 6,
-  border: "1px solid #ddd",
-  color: "#111",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  color: "#000",
   background: "white",
-  fontWeight: 600,
+  fontWeight: 500,
 };
 
 const errorTextStyle = {
@@ -173,10 +185,10 @@ const errorTextStyle = {
 const permissionsLinkStyle = {
   fontSize: 12,
   padding: "6px 10px",
-  borderRadius: 6,
-  border: "1px solid #ddd",
-  color: "#111",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  color: "#000",
   background: "white",
-  fontWeight: 600,
+  fontWeight: 500,
   textDecoration: "none",
 };

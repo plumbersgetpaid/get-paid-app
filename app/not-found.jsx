@@ -11,14 +11,27 @@ export default function NotFound() {
           role="img"
           aria-label="A pipe that doesn't connect to anything"
         >
+          {/* Left pipe segment: body, top highlight, and a slightly
+              wider end coupling so it reads clearly as a pipe fitting,
+              not just a plain bar */}
           <rect x="10" y="52" width="78" height="32" rx="4" fill="#171717" />
           <rect x="10" y="52" width="78" height="7" rx="3" fill="#3a3a3a" />
           <rect x="76" y="47" width="16" height="42" rx="4" fill="#0a0a0a" />
 
+          {/* Right pipe segment, offset lower - the two halves of this
+              pipe don't line up, same as the page that was being
+              looked for */}
           <rect x="152" y="80" width="78" height="32" rx="4" fill="#171717" />
           <rect x="152" y="80" width="78" height="7" rx="3" fill="#3a3a3a" />
           <rect x="148" y="75" width="16" height="42" rx="4" fill="#0a0a0a" />
 
+          {/* Drip, falling from the left pipe's open end. Positioning
+              lives on this outer group's own transform attribute, kept
+              deliberately separate from the animated inner group below -
+              a CSS animation on `transform` replaces an SVG element's
+              transform attribute rather than combining with it, so the
+              two can't safely share one element without the animation
+              silently overriding the position. */}
           <g transform="translate(84,96)">
             <g className="gp-drip">
               <path
@@ -72,9 +85,9 @@ const wrapStyle = {
 
 const cardStyle = {
   background: "white",
-  borderRadius: 16,
+  borderRadius: 3,
   padding: "36px 28px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
   textAlign: "center",
   maxWidth: 340,
   width: "100%",
@@ -82,8 +95,8 @@ const cardStyle = {
 
 const headingStyle = {
   fontSize: 19,
-  fontWeight: 700,
-  color: "#111",
+  fontWeight: 500,
+  color: "#000",
   margin: "20px 0 8px",
 };
 
@@ -96,12 +109,12 @@ const bodyStyle = {
 
 const buttonStyle = {
   display: "inline-block",
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "14px 28px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 15,
   textDecoration: "none",
 };

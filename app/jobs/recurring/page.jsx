@@ -12,6 +12,8 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function RecurringJobs() {
+  // Also enforced centrally in middleware, but checked again here
+  // directly - defense in depth, same pattern as Settings and Invoices
   const currentMember = await getCurrentTeamMember();
   if (!canCreateRecurringJob(currentMember)) {
     notFound();
@@ -54,8 +56,8 @@ export default async function RecurringJobs() {
       {recurring.map((r) => (
         <div key={r.id} style={cardStyle(r.active ? "#2563eb" : "#9ca3af")}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 600 }}>{r.customer_name}</div>
-            <div style={{ fontWeight: 600 }}>{formatCurrency(r.amount, settings.currency)}</div>
+            <div style={{ fontWeight: 500 }}>{r.customer_name}</div>
+            <div style={{ fontWeight: 500 }}>{formatCurrency(r.amount, settings.currency)}</div>
           </div>
           <div style={{ fontSize: 13, color: "#888" }}>
             {r.job_type || "Job"} · every {r.frequency_value} {r.frequency_unit}
@@ -72,7 +74,7 @@ export default async function RecurringJobs() {
           </div>
           {r.next_occurrence_time && (
             <div style={{ fontSize: 12, color: "#92400e", marginTop: 2 }}>
-              📌 Next occurrence set for {r.next_occurrence_time} (one-off)
+              Next occurrence set for {r.next_occurrence_time} (one-off)
             </div>
           )}
 
@@ -106,18 +108,18 @@ export default async function RecurringJobs() {
 const newButtonStyle = {
   display: "block",
   textAlign: "center",
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "12px",
-  borderRadius: 10,
+  borderRadius: 2,
   textDecoration: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   margin: "16px 0",
 };
 
 const cardStyle = (color) => ({
   background: "white",
-  borderRadius: 10,
+  borderRadius: 2,
   padding: 14,
   marginBottom: 8,
   borderLeft: `4px solid ${color}`,
@@ -126,11 +128,11 @@ const cardStyle = (color) => ({
 const secondaryButtonStyle = {
   width: "100%",
   background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  color: "#000",
+  border: "1px solid #e2e2e2",
   padding: "8px 10px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 13,
 };
 
@@ -140,7 +142,7 @@ const deleteButtonStyle = {
   color: "#b91c1c",
   border: "1px solid #fca5a5",
   padding: "8px 10px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 13,
 };

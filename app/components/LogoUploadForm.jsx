@@ -34,6 +34,11 @@ export default function LogoUploadForm() {
         return;
       }
 
+      // replace(), not a plain href assignment - same reasoning as
+      // SettingsForm just below it on this same page: navigating "to"
+      // the page you're already on with href stacks a duplicate
+      // history entry, making a single Back tap look like it does
+      // nothing
       window.location.replace("/settings?saved=1");
     } catch (err) {
       console.error("Logo upload error:", err);
@@ -50,7 +55,7 @@ export default function LogoUploadForm() {
             background: "#fee2e2",
             color: "#991b1b",
             padding: 10,
-            borderRadius: 8,
+            borderRadius: 2,
             fontSize: 12,
             flex: 1,
           }}
@@ -72,11 +77,11 @@ export default function LogoUploadForm() {
 }
 
 const uploadButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "10px 16px",
-  borderRadius: 8,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 13,
 };

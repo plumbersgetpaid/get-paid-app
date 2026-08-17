@@ -17,6 +17,8 @@ export default async function NewReminder() {
   const showEverything = canSeeEverything(currentMember);
   const today = new Date().toISOString().slice(0, 10);
 
+  // Only owner/manager can share a reminder with someone else - a
+  // subcontractor's reminder stays private to them, same as always
   let teamMembers = [];
   if (showEverything) {
     const db = await getScopedDb(currentMember);
@@ -56,7 +58,7 @@ export default async function NewReminder() {
             fontSize: 14,
             background: "white",
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 2,
           }}
         >
           <input
@@ -92,11 +94,11 @@ export default async function NewReminder() {
 
 const cancelButtonStyle = {
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "14px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   flex: 1,
   textAlign: "center",
   textDecoration: "none",
@@ -106,8 +108,8 @@ const submitButtonStyle = {
   background: "#16a34a",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   flex: 2,
 };

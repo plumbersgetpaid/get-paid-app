@@ -79,13 +79,13 @@ export default function DuplicateRow({ customerId, customerName, dupe, onResolve
 
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 14, fontWeight: 600 }}>{dupe.name}</div>
+      <div style={{ fontSize: 14, fontWeight: 500 }}>{dupe.name}</div>
       <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>
         {[dupe.phone, dupe.email].filter(Boolean).join(" · ")}
       </div>
       {mergedOk && (
-        <div style={{ fontSize: 12, color: "#166534", marginBottom: 6, fontWeight: 700 }}>
-          ✓ Merged
+        <div style={{ fontSize: 12, color: "#166534", marginBottom: 6, fontWeight: 500 }}>
+          Merged
         </div>
       )}
       {error && (
@@ -97,7 +97,7 @@ export default function DuplicateRow({ customerId, customerName, dupe, onResolve
         disabled={busy || mergedOk}
         style={mergeButtonStyle}
       >
-        {mergedOk ? "✓ Merged" : busy ? "Working..." : `Merge into ${customerName}`}
+        {mergedOk ? "Merged" : busy ? "Working..." : `Merge into ${customerName}`}
       </button>
       <button
         type="button"
@@ -114,11 +114,11 @@ export default function DuplicateRow({ customerId, customerName, dupe, onResolve
 const mergeButtonStyle = {
   display: "block",
   background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  color: "#000",
+  border: "1px solid #e2e2e2",
   padding: "8px 12px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 13,
 };
 

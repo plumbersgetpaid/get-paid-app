@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 
 export default function DateFieldWithHint({ name, defaultValue, label }) {
   const [value, setValue] = useState(defaultValue || "");
+  // Only touch-primary devices get the custom hint - desktop already
+  // renders its own dd/mm/yyyy natively, so showing both at once was
+  // stacking two copies on top of each other
   const [showCustomHint, setShowCustomHint] = useState(false);
 
   useEffect(() => {
@@ -46,8 +49,8 @@ const dateInputStyle = {
   minWidth: 0,
   boxSizing: "border-box",
   padding: "12px 10px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 14,
   background: "white",
   position: "relative",

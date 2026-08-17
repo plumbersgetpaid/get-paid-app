@@ -14,8 +14,8 @@ export default function DuplicatesSection({ customerId, customerName, initialDup
 
   return (
     <section style={duplicateCardStyle}>
-      <div style={{ fontWeight: 700, color: "#b91c1c", marginBottom: 8 }}>
-        ⚠️ Possible duplicate{duplicates.length > 1 ? "s" : ""}
+      <div style={{ fontWeight: 500, color: "#b91c1c", marginBottom: 8 }}>
+        Possible duplicate{duplicates.length > 1 ? "s" : ""}
       </div>
       {duplicates.map((dupe) => (
         <DuplicateRow
@@ -33,7 +33,7 @@ export default function DuplicatesSection({ customerId, customerName, initialDup
 const duplicateCardStyle = {
   background: "#fef2f2",
   border: "1px solid #fecaca",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   marginBottom: 16,
 };

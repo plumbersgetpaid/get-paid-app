@@ -14,6 +14,10 @@ export const revalidate = 0;
 export default async function ReminderDetail({ params }) {
   const { reminderId } = params;
 
+  // Fetched ahead of the job itself now - the scoped client needs to
+  // know who's logged in (and their business) before it can even be
+  // constructed, so this can no longer come after the reminder lookup
+  // the way it originally did.
   const currentMember = await getCurrentTeamMember();
   const db = await getScopedDb(currentMember);
 
@@ -27,6 +31,8 @@ export default async function ReminderDetail({ params }) {
     notFound();
   }
 
+  // A reminder is accessible to whoever made it, or anyone it's been
+  // shared with - full access either way, same as jobs
   const hasAccess = await canAccessReminder(db, reminder, currentMember?.id);
   if (!hasAccess) {
     notFound();
@@ -35,6 +41,8 @@ export default async function ReminderDetail({ params }) {
   const isCreator = reminder.created_by === currentMember?.id;
   const showEverything = canSeeEverything(currentMember);
 
+  // Only owner/manager, and only if they made this one, can change who
+  // it's shared with - matches how sharing is managed everywhere else
   let teamMembers = [];
   let currentSharedIds = [];
   if (showEverything && isCreator) {
@@ -140,8 +148,8 @@ export default async function ReminderDetail({ params }) {
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   flex: 1,
   width: "100%",
@@ -150,11 +158,11 @@ const inputStyle = {
 
 const cancelButtonStyle = {
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "14px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   flex: 1,
   textAlign: "center",
   textDecoration: "none",
@@ -164,9 +172,9 @@ const submitButtonStyle = {
   background: "#16a34a",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   flex: 2,
 };
 
@@ -175,7 +183,7 @@ const deleteButtonStyle = {
   background: "white",
   color: "#b91c1c",
   padding: "12px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "1px solid #fca5a5",
-  fontWeight: 600,
+  fontWeight: 500,
 };

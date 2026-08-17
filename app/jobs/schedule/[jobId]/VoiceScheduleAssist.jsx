@@ -169,8 +169,8 @@ export default function VoiceScheduleAssist({
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   width: "100%",
   boxSizing: "border-box",
@@ -179,11 +179,11 @@ const inputStyle = {
 
 const recordButtonStyle = {
   background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  color: "#000",
+  border: "1px solid #e2e2e2",
   padding: "12px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };
 
@@ -192,8 +192,8 @@ const recordingButtonStyle = {
   color: "#991b1b",
   border: "1px solid #fca5a5",
   padding: "12px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };
 
@@ -201,7 +201,7 @@ const errorBoxStyle = {
   background: "#fee2e2",
   color: "#991b1b",
   padding: 10,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
 };
 
@@ -209,6 +209,6 @@ const transcriptBoxStyle = {
   background: "#f3f4f6",
   color: "#444",
   padding: 10,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
 };

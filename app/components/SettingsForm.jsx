@@ -23,6 +23,11 @@ export default function SettingsForm({ settings }) {
         return;
       }
 
+      // replace(), not a plain href assignment - this page IS /settings
+      // already, so navigating "to" itself with href would stack a
+      // second history entry on top of the one already there, meaning
+      // a single tap of Back would only pop that duplicate and appear
+      // to do nothing at all
       window.location.replace("/settings?saved=1");
     } catch (err) {
       console.error("Save settings error:", err);
@@ -83,7 +88,7 @@ export default function SettingsForm({ settings }) {
             name="accent_color"
             type="color"
             defaultValue={settings.accent_color}
-            style={{ width: 48, height: 40, padding: 0, border: "1px solid #ddd", borderRadius: 8 }}
+            style={{ width: 48, height: 40, padding: 0, border: "1px solid #e2e2e2", borderRadius: 8 }}
           />
           <span style={{ fontSize: 13, color: "#888" }}>{settings.accent_color}</span>
         </div>
@@ -159,25 +164,25 @@ const labelStyle = {
   gap: 6,
   fontSize: 13,
   color: "#666",
-  fontWeight: 600,
+  fontWeight: 500,
 };
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
   fontWeight: 400,
-  color: "#111",
+  color: "#000",
 };
 
 const submitButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 15,
 };
 
@@ -185,6 +190,6 @@ const errorBoxStyle = {
   background: "#fee2e2",
   color: "#991b1b",
   padding: 12,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
 };

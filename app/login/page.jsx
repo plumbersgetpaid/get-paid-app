@@ -31,7 +31,7 @@ export default async function Login() {
 
 const cardStyle = {
   background: "white",
-  borderRadius: 16,
+  borderRadius: 3,
   padding: 24,
   boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
   border: "1px solid #eee",

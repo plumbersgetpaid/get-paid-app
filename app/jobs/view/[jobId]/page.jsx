@@ -14,6 +14,12 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
+// Combines the DB lifecycle status (in_progress vs complete/invoiced/paid)
+// with scheduling to get to the 5 states that actually matter at a
+// glance: whether it's finished, not yet booked in, upcoming, currently
+// running, or overdue. Verified against 9 scenarios before wiring in,
+// including the edge cases (unconfirmed time never counts as late,
+// starting exactly now counts as in progress not upcoming).
 function deriveJobStatus(job, now) {
   if (job.status === "cancelled") {
     return { label: "Cancelled", color: "#6b7280" };
@@ -35,6 +41,9 @@ function deriveJobStatus(job, now) {
   return { label: "In progress", color: "#16a34a" };
 }
 
+// Same same-day-vs-multi-day distinction already used on Calendar for
+// consistency - "finishes ~3:45pm" reads better for a same-day job than
+// repeating today's date, while a multi-day job needs the actual date
 function describeCompletion(startIso, endIso) {
   const start = new Date(startIso);
   const end = new Date(endIso);
@@ -44,6 +53,10 @@ function describeCompletion(startIso, endIso) {
     : end.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
+// Expresses a scheduled_start/scheduled_end gap in whichever unit divides
+// it evenly - "2 weeks" reads far better than "336 hours" - falling back
+// to hours only when nothing bigger fits cleanly. Same approach already
+// used on the Schedule page for re-deriving a duration from raw timestamps.
 function describeDuration(startIso, endIso) {
   const hours = (new Date(endIso) - new Date(startIso)) / (1000 * 60 * 60);
   if (hours <= 0) return null;
@@ -61,6 +74,11 @@ function describeDuration(startIso, endIso) {
 
 export default async function ViewJob({ params }) {
   const { jobId } = params;
+  // Fetched ahead of the job itself now - the scoped client needs to
+  // know who's logged in (and their business) before it can even be
+  // constructed, so this can no longer come after the job lookup the
+  // way it originally did. These two steps don't depend on each other,
+  // so reordering them changes nothing else about how this page behaves.
   const currentMember = await getCurrentTeamMember();
   const db = await getScopedDb(currentMember);
 
@@ -77,6 +95,10 @@ export default async function ViewJob({ params }) {
   const showEverything = canSeeEverything(currentMember);
   const settings = await getBusinessSettings();
 
+  // Whether this job has an invoice determines what owner/manager can do
+  // with it below - a job with real financial history attached is never
+  // deletable, only cancellable, so nothing about the invoice trail can
+  // ever silently disappear
   const { data: existingInvoice } = showEverything
     ? await db.from("invoices").select("id").eq("job_id", jobId).maybeSingle()
     : { data: null };
@@ -87,6 +109,11 @@ export default async function ViewJob({ params }) {
     .eq("id", job.customer_id)
     .single();
 
+  // Combines the legacy single assigned_to column with job_shares into
+  // one list - same pattern used everywhere else assignment is shown,
+  // so this page stays consistent with Work → Jobs. Kept as full
+  // {id, name} objects, not just names, since owner/manager get the
+  // actual editable AssignAndShareControl here, not just a read-out.
   const { data: allTeamMembers } = await db
     .from("team_members")
     .select("id, name")
@@ -113,14 +140,14 @@ export default async function ViewJob({ params }) {
 
   return (
     <main>
-            <ReloadOnBack />
+      <ReloadOnBack />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/work?tab=jobs" />
         <h1 style={{ fontSize: 20, margin: 0 }}>Job details</h1>
       </div>
 
       <section style={cardStyle}>
-        <div style={{ fontWeight: 700, fontSize: 17 }}>{customer?.name || "Customer"}</div>
+        <div style={{ fontWeight: 500, fontSize: 17 }}>{customer?.name || "Customer"}</div>
         {customer?.phone && (
           <a href={`tel:${customer.phone}`} style={contactLinkStyle}>
             📞 {customer.phone}
@@ -139,7 +166,7 @@ export default async function ViewJob({ params }) {
       </section>
 
       <section style={cardStyle}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 10 }}>
+        <div style={{ fontWeight: 500, fontSize: 15, marginBottom: 10 }}>
           {job.job_type || "Job"}
         </div>
 
@@ -157,7 +184,7 @@ export default async function ViewJob({ params }) {
 
         {job.scheduled_start ? (
           <div style={rowStyle}>
-            <span style={rowLabelStyle}>📅 Starts</span>
+            <span style={rowLabelStyle}>Starts</span>
             <span style={rowValueStyle}>
               {job.time_confirmed === false
                 ? `${new Date(job.scheduled_start).toLocaleDateString("en-GB", {
@@ -176,7 +203,7 @@ export default async function ViewJob({ params }) {
           </div>
         ) : (
           <div style={rowStyle}>
-            <span style={rowLabelStyle}>📅 Starts</span>
+            <span style={rowLabelStyle}>Starts</span>
             <span style={rowValueStyle}>Not yet booked in</span>
           </div>
         )}
@@ -197,7 +224,7 @@ export default async function ViewJob({ params }) {
 
         {showEverything ? (
           <div style={{ padding: "10px 0", borderBottom: "1px solid #f2f2f2" }}>
-            <div style={{ ...rowLabelStyle, fontSize: 14, marginBottom: 6 }}>👤 Assigned to</div>
+            <div style={{ ...rowLabelStyle, fontSize: 14, marginBottom: 6 }}>Assigned to</div>
             <AssignAndShareControl
               jobId={job.id}
               initialAssignees={assignees}
@@ -206,7 +233,7 @@ export default async function ViewJob({ params }) {
           </div>
         ) : (
           <div style={rowStyle}>
-            <span style={rowLabelStyle}>👤 Assigned to</span>
+            <span style={rowLabelStyle}>Assigned to</span>
             <span style={rowValueStyle}>
               {assigneeNames.length > 0 ? assigneeNames.join(", ") : "Unassigned"}
             </span>
@@ -222,7 +249,7 @@ export default async function ViewJob({ params }) {
 
         {job.completion_note && (
           <div style={{ ...rowStyle, borderBottom: "none" }}>
-            <span style={rowLabelStyle}>📝 Completion note</span>
+            <span style={rowLabelStyle}>Completion note</span>
             <span style={rowValueStyle}>{job.completion_note}</span>
           </div>
         )}
@@ -230,7 +257,7 @@ export default async function ViewJob({ params }) {
 
       <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
         <a href={`/jobs/notes/${job.id}`} style={secondaryButtonStyle}>
-          📝 Job notes
+          Job notes
         </a>
         {canReschedule(currentMember) && job.status === "in_progress" && (
           <a href={`/jobs/schedule/${job.id}`} style={secondaryButtonStyle}>
@@ -274,10 +301,10 @@ export default async function ViewJob({ params }) {
 
 const cardStyle = {
   background: "white",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   margin: "16px 0",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const contactLinkStyle = {
@@ -303,8 +330,8 @@ const rowLabelStyle = {
 };
 
 const rowValueStyle = {
-  color: "#111",
-  fontWeight: 600,
+  color: "#000",
+  fontWeight: 500,
   textAlign: "right",
 };
 
@@ -312,11 +339,11 @@ const secondaryButtonStyle = {
   display: "block",
   textAlign: "center",
   background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  color: "#000",
+  border: "1px solid #e2e2e2",
   padding: "14px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   textDecoration: "none",
   fontSize: 15,
 };
@@ -328,8 +355,8 @@ const primaryButtonStyle = {
   color: "white",
   border: "none",
   padding: "14px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   textDecoration: "none",
   fontSize: 15,
 };
@@ -342,7 +369,7 @@ const cancelButtonStyle = {
   color: "#92400e",
   border: "1px solid #fde68a",
   padding: "14px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 15,
 };

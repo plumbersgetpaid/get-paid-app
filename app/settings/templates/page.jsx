@@ -84,6 +84,9 @@ const TEMPLATE_INFO = [
 ];
 
 export default async function TemplatesSettings() {
+  // Same rule as the main Settings page - this is business-wide
+  // configuration, checked here on the server regardless of whether the
+  // link to it was ever shown
   const currentMember = await getCurrentTeamMember();
   if (!canSeeEverything(currentMember)) {
     notFound();
@@ -114,7 +117,7 @@ export default async function TemplatesSettings() {
 
         return (
           <section key={info.key} style={cardStyle}>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>{info.label}</div>
+            <div style={{ fontWeight: 500, fontSize: 15 }}>{info.label}</div>
             <div style={{ fontSize: 12, color: "#888", marginBottom: 10 }}>
               {info.description}
             </div>
@@ -142,10 +145,10 @@ export default async function TemplatesSettings() {
 
 const cardStyle = {
   background: "white",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   marginBottom: 14,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };
 
 const labelStyle = {
@@ -153,27 +156,27 @@ const labelStyle = {
   gap: 6,
   fontSize: 12,
   color: "#666",
-  fontWeight: 600,
+  fontWeight: 500,
 };
 
 const inputStyle = {
   padding: "10px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 14,
   fontWeight: 400,
-  color: "#111",
+  color: "#000",
   width: "100%",
   boxSizing: "border-box",
 };
 
 const saveButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "10px",
-  borderRadius: 8,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 13,
 };
 
@@ -181,7 +184,7 @@ const savedBannerStyle = {
   background: "#dcfce7",
   color: "#166534",
   padding: 8,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 12,
   marginBottom: 10,
 };

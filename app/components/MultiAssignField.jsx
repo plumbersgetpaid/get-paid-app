@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Icon from "./Icon";
 
 export default function MultiAssignField({ teamMembers, name = "assignedTo", initialSelectedIds = [] }) {
   const [selectedIds, setSelectedIds] = useState(new Set(initialSelectedIds));
@@ -28,7 +29,8 @@ export default function MultiAssignField({ teamMembers, name = "assignedTo", ini
       ))}
       <details>
         <summary style={summaryStyle}>
-          👤 {selectedNames.length === 0 ? "Unassigned" : selectedNames.join(", ")}
+          <Icon name="person" size={15} strokeWidth={1.6} />
+          {selectedNames.length === 0 ? "Unassigned" : selectedNames.join(", ")}
         </summary>
         <div style={optionsBoxStyle}>
           {teamMembers.map((m) => (
@@ -53,19 +55,19 @@ export default function MultiAssignField({ teamMembers, name = "assignedTo", ini
 const summaryStyle = {
   fontSize: 13,
   padding: "10px 12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
-  color: "#111",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  color: "#000",
   background: "white",
-  fontWeight: 600,
+  fontWeight: 500,
   cursor: "pointer",
 };
 
 const optionsBoxStyle = {
   marginTop: 6,
   background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
+  border: "1px solid #e2e2e2",
+  borderRadius: 2,
   padding: 6,
 };
 

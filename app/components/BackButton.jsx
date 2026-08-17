@@ -39,8 +39,8 @@ export default function BackButton({
 
 const backButtonStyle = {
   background: "white",
-  border: "1px solid #ddd",
-  borderRadius: 8,
+  border: "1px solid #e2e2e2",
+  borderRadius: 2,
   width: 36,
   height: 36,
   fontSize: 18,
@@ -48,5 +48,5 @@ const backButtonStyle = {
   alignItems: "center",
   justifyContent: "center",
   cursor: "pointer",
-  color: "#111",
+  color: "#000",
 };

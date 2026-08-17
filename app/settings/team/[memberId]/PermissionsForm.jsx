@@ -40,6 +40,16 @@ const PERMISSIONS = [
 export default function PermissionsForm({ member }) {
   const router = useRouter();
 
+  // Pressing the phone's physical back button (rather than an in-app
+  // link) can restore this page as a frozen snapshot from the exact
+  // moment it was left - the browser's own back-forward cache, which
+  // operates below Next.js's own router and isn't reachable by either
+  // the Cache-Control header or router.refresh() above. The pageshow
+  // event with persisted=true is the standard, reliable way to detect
+  // this specific case. A permissions screen showing stale data is a
+  // real correctness problem, not just a cosmetic one - worth a brief,
+  // visible reload to guarantee this always reflects what was actually
+  // just saved, rather than a snapshot from before it.
   useEffect(() => {
     function handlePageShow(event) {
       if (event.persisted) {
@@ -49,6 +59,12 @@ export default function PermissionsForm({ member }) {
     window.addEventListener("pageshow", handlePageShow);
     return () => window.removeEventListener("pageshow", handlePageShow);
   }, []);
+  // initial is its own state, not a plain derived constant - it needs
+  // to be updated after a successful save so "unsaved changes" gets
+  // recalculated against what was actually just saved, not what the
+  // page originally loaded with. Without this, the "Saved" confirmation
+  // could never show: values would keep permanently differing from a
+  // stale initial, so hasChanges would stay true forever after saving.
   const [initial, setInitial] = useState(() =>
     Object.fromEntries(PERMISSIONS.map((p) => [p.key, !!member[p.key]]))
   );
@@ -92,6 +108,12 @@ export default function PermissionsForm({ member }) {
       setShowConfirm(false);
       setSaved(true);
       setBusy(false);
+      // Tells Next.js's own internal page cache that this route's data
+      // just changed server-side, so it re-fetches fresh next time
+      // rather than serving a snapshot from before this save - separate
+      // from the browser-level Cache-Control fix, since this is a
+      // different caching layer Next.js manages itself for fast
+      // back/forward navigation, and that fix alone doesn't reach it
       router.refresh();
     } catch (err) {
       console.error("Update permissions error:", err);
@@ -106,7 +128,7 @@ export default function PermissionsForm({ member }) {
         {PERMISSIONS.map((p) => (
           <label key={p.key} style={toggleRowStyle}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{p.label}</div>
+              <div style={{ fontWeight: 500, fontSize: 14 }}>{p.label}</div>
               <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{p.description}</div>
             </div>
             <input
@@ -133,7 +155,7 @@ export default function PermissionsForm({ member }) {
       {showConfirm && (
         <div style={backdropStyle} onClick={() => !busy && setShowConfirm(false)}>
           <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 10 }}>
+            <div style={{ fontWeight: 500, fontSize: 16, marginBottom: 10 }}>
               Confirm changes for {member.name}
             </div>
             <div style={{ display: "grid", gap: 8, marginBottom: 16 }}>
@@ -142,7 +164,7 @@ export default function PermissionsForm({ member }) {
                 const turningOn = values[key];
                 return (
                   <div key={key} style={changeRowStyle(turningOn)}>
-                    {turningOn ? "✅ Turning ON" : "❌ Turning OFF"}: {p.label}
+                    {turningOn ? "Turning ON" : "Turning OFF"}: {p.label}
                   </div>
                 );
               })}
@@ -178,19 +200,19 @@ const toggleRowStyle = {
   alignItems: "center",
   gap: 12,
   background: "white",
-  borderRadius: 10,
+  borderRadius: 2,
   padding: 14,
 };
 
 const saveButtonStyle = {
   width: "100%",
   marginTop: 16,
-  background: "#111",
+  background: "#000",
   color: "white",
   border: "none",
   padding: "14px",
-  borderRadius: 10,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 15,
 };
 
@@ -204,7 +226,7 @@ const successBoxStyle = {
   background: "#dcfce7",
   color: "#166534",
   padding: 10,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
   marginTop: 12,
   textAlign: "center",
@@ -214,7 +236,7 @@ const errorBoxStyle = {
   background: "#fee2e2",
   color: "#991b1b",
   padding: 10,
-  borderRadius: 8,
+  borderRadius: 2,
   fontSize: 13,
   marginBottom: 12,
 };
@@ -232,7 +254,7 @@ const backdropStyle = {
 
 const modalStyle = {
   background: "white",
-  borderRadius: 14,
+  borderRadius: 3,
   padding: 20,
   maxWidth: 360,
   width: "100%",
@@ -244,30 +266,30 @@ const modalStyle = {
 const changeRowStyle = (turningOn) => ({
   fontSize: 13,
   padding: "8px 10px",
-  borderRadius: 8,
+  borderRadius: 2,
   background: turningOn ? "#dcfce7" : "#fee2e2",
   color: turningOn ? "#166534" : "#991b1b",
-  fontWeight: 600,
+  fontWeight: 500,
 });
 
 const modalCancelButtonStyle = {
   flex: 1,
   background: "white",
-  color: "#111",
-  border: "1px solid #ddd",
+  color: "#000",
+  border: "1px solid #e2e2e2",
   padding: "12px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };
 
 const modalConfirmButtonStyle = {
   flex: 1,
-  background: "#111",
+  background: "#000",
   color: "white",
   border: "none",
   padding: "12px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };

@@ -25,15 +25,20 @@ export default async function AllJobs({ searchParams }) {
   const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);
+  // Reaching this page at all already requires being logged in, via
+  // middleware, so currentMember is guaranteed valid by this point
   const db = await getScopedDb(currentMember);
   const q = (searchParams?.q || "").trim().toLowerCase();
-  const status = searchParams?.status;
+  const status = searchParams?.status; // optional: filter to one status, or "unscheduled"
 
   let jobsQuery = db
     .from("jobs")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(200);
+  // Same rule as everywhere else - a subcontractor sees jobs they're
+  // directly assigned to, plus anything shared with them, filtered here
+  // on the server
   if (!showEverything) {
     jobsQuery = await filterJobsForMember(db, jobsQuery, currentMember?.id);
   }
@@ -136,9 +141,9 @@ export default async function AllJobs({ searchParams }) {
       {jobs.map((job) => (
         <div key={job.id} style={cardStyle(STATUS_COLORS[job.status] || "#ccc")}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 600 }}>{job.customer_name}</div>
+            <div style={{ fontWeight: 500 }}>{job.customer_name}</div>
             {showEverything && (
-              <div style={{ fontWeight: 600 }}>{formatCurrency(job.amount, settings.currency)}</div>
+              <div style={{ fontWeight: 500 }}>{formatCurrency(job.amount, settings.currency)}</div>
             )}
           </div>
           <div style={{ fontSize: 13, color: "#888" }}>
@@ -152,8 +157,7 @@ export default async function AllJobs({ searchParams }) {
             <div style={{ fontSize: 12, color: "#888" }}>📍 {job.location}</div>
           )}
           {job.status === "in_progress" && job.time_confirmed === false && (
-            <div style={{ fontSize: 12, color: "#b45309", fontWeight: 600 }}>
-              ⏰{" "}
+            <div style={{ fontSize: 12, color: "#b45309", fontWeight: 500 }}>
               {job.scheduled_start
                 ? new Date(job.scheduled_start).toLocaleDateString("en-GB", {
                     weekday: "short",
@@ -188,24 +192,24 @@ export default async function AllJobs({ searchParams }) {
 const searchInputStyle = {
   flex: 1,
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
 };
 
 const searchButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   border: "none",
   padding: "12px 16px",
-  borderRadius: 8,
-  fontWeight: 600,
+  borderRadius: 2,
+  fontWeight: 500,
   fontSize: 14,
 };
 
 const cardStyle = (color) => ({
   background: "white",
-  borderRadius: 10,
+  borderRadius: 2,
   padding: 14,
   marginBottom: 8,
   borderLeft: `4px solid ${color}`,
@@ -213,6 +217,6 @@ const cardStyle = (color) => ({
 
 const jobLinkStyle = {
   fontSize: 12,
-  color: "#111",
+  color: "#000",
   textDecoration: "underline",
 };

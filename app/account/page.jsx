@@ -28,6 +28,10 @@ export default async function Account() {
 
       <AccountForm currentName={currentMember.name} currentEmail={currentMember.email} />
 
+      {/* This page is reachable by every role, unlike Settings which is
+          owner/manager only - previously the only Log out button in the
+          whole app lived on Settings, which meant a subcontractor had no
+          way to log out at all */}
       <div style={{ marginTop: 24 }}>
         <LogoutButton />
       </div>
@@ -37,8 +41,8 @@ export default async function Account() {
 
 const cardStyle = {
   background: "white",
-  borderRadius: 12,
+  borderRadius: 3,
   padding: 16,
   margin: "16px 0",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  border: "1px solid #e2e2e2",
 };

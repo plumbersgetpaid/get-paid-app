@@ -22,7 +22,7 @@ export default function ResetPassword({ searchParams }) {
             background: "#fee2e2",
             color: "#991b1b",
             padding: 14,
-            borderRadius: 10,
+            borderRadius: 2,
             fontSize: 14,
             textAlign: "center",
           }}

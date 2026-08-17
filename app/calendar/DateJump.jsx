@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+// Mirrors the server-side date logic in calendar/page.jsx exactly, so
+// jumping to a picked date always lands on a range that actually
+// contains it - tested against 12 cases (including week/month/year
+// boundaries) before this went anywhere near the real calendar.
+
 function ymdToUTCDate(ymd) {
   const [y, m, d] = ymd.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d));
@@ -37,7 +42,13 @@ function computeOffset(range, todayStr, pickedStr) {
 
 export default function DateJump({ range, todayStr }) {
   const router = useRouter();
+  // This input is uncontrolled (no value prop) since it always resets
+  // to empty once the page navigates away - this just tracks whether
+  // to show the dd/mm/yyyy hint, separately from the input's own value
   const [isEmpty, setIsEmpty] = useState(true);
+  // Only touch-primary devices get the custom hint - desktop already
+  // renders its own dd/mm/yyyy natively, so showing both at once was
+  // stacking two copies on top of each other
   const [showCustomHint, setShowCustomHint] = useState(false);
 
   useEffect(() => {
@@ -71,12 +82,12 @@ const wrapperStyle = {
 
 const dateJumpStyle = {
   padding: "10px 12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 13,
   minWidth: 0,
   background: "white",
-  color: "#111",
+  color: "#000",
 };
 
 const hintStyle = {

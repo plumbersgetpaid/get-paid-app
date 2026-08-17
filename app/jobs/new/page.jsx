@@ -13,6 +13,7 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function NewQuote() {
+  // Also enforced centrally in middleware - defense in depth
   const currentMember = await getCurrentTeamMember();
   if (!canCreateQuote(currentMember)) {
     notFound();
@@ -60,7 +61,7 @@ export default async function NewQuote() {
         <VoiceQuoteAssist />
 
         <details style={{ marginTop: 4 }}>
-          <summary style={{ fontSize: 13, color: "#666", fontWeight: 600, cursor: "pointer" }}>
+          <summary style={{ fontSize: 13, color: "#666", fontWeight: 500, cursor: "pointer" }}>
             Proposed date &amp; duration (optional)
           </summary>
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
@@ -134,29 +135,29 @@ export default async function NewQuote() {
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
   fontSize: 15,
 };
 
 const cancelButtonStyle = {
   background: "white",
-  color: "#111",
+  color: "#000",
   padding: "14px",
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontWeight: 600,
+  borderRadius: 2,
+  border: "1px solid #e2e2e2",
+  fontWeight: 500,
   flex: 1,
   textAlign: "center",
   textDecoration: "none",
 };
 
 const submitButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "14px",
-  borderRadius: 10,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   flex: 1,
 };

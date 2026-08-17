@@ -52,7 +52,7 @@ export default function AppLogoUploadForm({ uploadEndpoint, savedParam }) {
             background: "#fee2e2",
             color: "#991b1b",
             padding: 10,
-            borderRadius: 8,
+            borderRadius: 2,
             fontSize: 12,
             flex: 1,
           }}
@@ -74,11 +74,11 @@ export default function AppLogoUploadForm({ uploadEndpoint, savedParam }) {
 }
 
 const uploadButtonStyle = {
-  background: "#111",
+  background: "#000",
   color: "white",
   padding: "10px 16px",
-  borderRadius: 8,
+  borderRadius: 2,
   border: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   fontSize: 13,
 };

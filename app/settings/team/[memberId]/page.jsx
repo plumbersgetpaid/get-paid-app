@@ -29,6 +29,9 @@ export default async function TeamMemberPermissions({ params }) {
     notFound();
   }
 
+  // Granular permissions only ever apply to a subcontractor - an
+  // owner/manager already has everything unconditionally, so there's
+  // nothing meaningful to show or edit here for them
   if (member.role !== "subcontractor") {
     notFound();
   }
