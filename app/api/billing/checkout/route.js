@@ -74,7 +74,7 @@ export async function POST(req) {
       client_reference_id: businessId,
       allow_promotion_codes: true,
       success_url: `${origin}/billing?done=1`,
-      cancel_url: `${origin}/billing`,
+      cancel_url: `${origin}/settings`,
     });
 
     return NextResponse.json({ url: session.url });
