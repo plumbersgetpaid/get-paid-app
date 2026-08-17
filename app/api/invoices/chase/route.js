@@ -12,6 +12,8 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
+// Lets the plumber chase a specific invoice on demand, on top of the
+// automatic daily chase cron job.
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
   if (!canInvoice(currentMember)) {
@@ -26,12 +28,22 @@ export async function POST(req) {
   }
 
   const db = await getScopedDb(currentMember);
+  // outstanding_invoices is a database view, not a direct table -
+  // Postgres views don't automatically carry RLS through to their
+  // underlying tables the same way a normal table does unless
+  // specifically configured to, which hasn't been verified here. Kept
+  // on the service-role client until that's confirmed safe, rather than
+  // risking either a broken query or a silent cross-business leak.
   const adminDb = supabaseAdmin();
 
+  // Scoped by business_id as well as invoice id: without it, anyone
+  // could chase another business's customer just by knowing an
+  // invoice id. The view now exposes business_id for exactly this.
   const { data: inv, error: fetchErr } = await adminDb
     .from("outstanding_invoices")
     .select("*")
     .eq("invoice_id", invoiceId)
+    .eq("business_id", currentMember.business_id)
     .single();
 
   if (fetchErr || !inv) {
@@ -119,6 +131,7 @@ export async function POST(req) {
         ],
       });
 
+      // business_id set explicitly - same requirement as any other insert
       await db.from("chase_log").insert({
         invoice_id: inv.invoice_id,
         message: bodyText,
