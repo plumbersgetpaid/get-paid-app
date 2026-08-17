@@ -1,0 +1,84 @@
+"use client";
+
+import { useState } from "react";
+import { compressImage } from "../../lib/compressImage";
+
+// Reused for both the app logo and the sign-off logo - only the upload
+// destination and the confirmation redirect differ between the two.
+export default function AppLogoUploadForm({ uploadEndpoint, savedParam }) {
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!file) return;
+    setError(null);
+    setBusy(true);
+
+    try {
+      let uploadFile = file;
+      try {
+        uploadFile = await compressImage(file, 800, 0.9, true);
+      } catch (err) {
+        console.error("Logo compression failed, using original:", err);
+      }
+
+      const formData = new FormData();
+      formData.append("logo", uploadFile);
+
+      const res = await fetch(uploadEndpoint, { method: "POST", body: formData });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Couldn't upload the logo.");
+        setBusy(false);
+        return;
+      }
+
+      window.location.replace(`/admin/branding?saved=${savedParam}`);
+    } catch (err) {
+      console.error("Logo upload error:", err);
+      setError("Couldn't reach the server. Check your connection and try again.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: "flex", gap: 10 }}>
+      {error && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 10,
+            borderRadius: 2,
+            fontSize: 12,
+            flex: 1,
+          }}
+        >
+          {error}
+        </div>
+      )}
+      <input
+        type="file"
+        accept="image/png,image/jpeg"
+        onChange={(e) => setFile(e.target.files?.[0] || null)}
+        style={{ flex: 1, fontSize: 13 }}
+      />
+      <button type="submit" disabled={busy || !file} style={uploadButtonStyle}>
+        {busy ? "Uploading..." : "Upload"}
+      </button>
+    </form>
+  );
+}
+
+const uploadButtonStyle = {
+  background: "#000",
+  color: "white",
+  padding: "10px 16px",
+  borderRadius: 2,
+  border: "none",
+  fontWeight: 500,
+  fontSize: 13,
+};
