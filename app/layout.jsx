@@ -1,5 +1,6 @@
 import BottomNav from "./components/BottomNav";
 import { getCurrentTeamMember } from "./lib/auth";
+import { poppins, mono, c } from "./lib/theme";
 import {
   canCreateQuote,
   canCreateJob,
@@ -8,7 +9,7 @@ import {
 } from "./lib/permissions";
 
 export const metadata = {
-  title: "Patch Up",
+  title: "PatchUp",
   description: "Never chase an invoice by hand again",
 };
 
@@ -16,13 +17,17 @@ export default async function RootLayout({ children }) {
   const currentMember = await getCurrentTeamMember();
 
   return (
-    <html lang="en">
+    // Both font variables are attached at the root so any screen can
+    // reach for the mono face via var(--font-mono) without importing
+    // anything - figures are set in it all over the app.
+    <html lang="en" className={`${poppins.variable} ${mono.variable}`}>
       <body
         style={{
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontFamily: "var(--font-poppins), system-ui, sans-serif",
           margin: 0,
-          background: "#f6f7f9",
-          color: "#111",
+          background: c.surface,
+          color: c.ink,
+          WebkitFontSmoothing: "antialiased",
         }}
       >
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px", paddingBottom: 110 }}>
