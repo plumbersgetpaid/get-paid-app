@@ -5,7 +5,7 @@ import SettingsForm from "../components/SettingsForm";
 import LogoutButton from "../components/LogoutButton";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../lib/auth";
-import { canSeeEverything } from "../lib/permissions";
+import { canSeeEverything, isPlatformAdmin } from "../lib/permissions";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -229,6 +229,12 @@ export default async function Settings({ searchParams }) {
 
         <LogoUploadForm />
       </section>
+
+      {isPlatformAdmin(currentMember) && (
+        <Link href="/admin/branding" style={adminLinkStyle}>
+          ⚙️ Platform branding (admin only)
+        </Link>
+      )}
     </main>
   );
 }
@@ -294,4 +300,14 @@ const uploadButtonStyle = {
   fontWeight: 600,
   fontSize: 13,
   whiteSpace: "nowrap",
+};
+
+const adminLinkStyle = {
+  display: "block",
+  textAlign: "center",
+  fontSize: 12,
+  color: "#999",
+  textDecoration: "none",
+  marginTop: 24,
+  marginBottom: 16,
 };
