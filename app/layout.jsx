@@ -20,8 +20,7 @@ export default async function RootLayout({ children }) {
     <html lang="en">
       <body>
         <div className="desktop-wordmark">
-          <img src="/icon-white.svg" alt="" height={24} />
-          <img src="/wordmark-white.svg" alt="Patch Up" height={24} />
+          <img src="/03-logo-on-black-1254.png" alt="Patch Up" height={64} />
         </div>
         <div className="app-shell" style={{ padding: "16px", paddingBottom: 110 }}>
           {children}
