@@ -121,7 +121,7 @@ export default async function Settings({ searchParams }) {
             fontSize: 13,
           }}
         >
-          Test sent to {settings.contact_email || "your WhatsApp"} - check it arrived, and
+          Test sent to {settings.contact_email || "your contact email"} - check it arrived, and
           that the review link is a real clickable link.
         </div>
       )}
