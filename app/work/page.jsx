@@ -12,6 +12,7 @@ import AssignAndShareControl from "../components/AssignAndShareControl";
 import ReloadOnBack from "../components/ReloadOnBack";
 import ConfirmSubmitButton from "../components/ConfirmSubmitButton";
 import Link from "next/link";
+import { nowInLondonFrame } from "../lib/today";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -244,7 +245,7 @@ async function QuotesTab({ db, settings, sub }) {
 // Formats how overdue a job is in plain language, e.g. "2 hours late" or
 // "3 days late" - a bare "Running late" didn't give any sense of scale
 function formatLateness(scheduledEnd) {
-  const diffMs = new Date() - new Date(scheduledEnd);
+  const diffMs = nowInLondonFrame() - new Date(scheduledEnd);
   const diffHours = diffMs / (1000 * 60 * 60);
 
   if (diffHours < 1) return "under an hour late";
@@ -461,7 +462,7 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
         const isLate =
           job.time_confirmed !== false &&
           job.scheduled_end &&
-          new Date(job.scheduled_end) < new Date() &&
+          new Date(job.scheduled_end) < nowInLondonFrame() &&
           !job.status.startsWith("complete");
 
         return (
@@ -729,7 +730,7 @@ async function RemindersTab({ db, currentMember, sub }) {
     (sharedNamesByReminder[s.reminder_id] ||= []).push(name);
   }
 
-  const now = new Date();
+  const now = nowInLondonFrame();
   const upcomingReminders = reminders.filter((r) => new Date(r.scheduled_start) >= now);
   const pastReminders = reminders
     .filter((r) => new Date(r.scheduled_start) < now)

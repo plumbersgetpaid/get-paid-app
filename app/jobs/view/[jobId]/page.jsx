@@ -10,6 +10,7 @@ import AssignAndShareControl from "../../../components/AssignAndShareControl";
 import DeleteJobButton from "../../../components/DeleteJobButton";
 import ConfirmSubmitButton from "../../../components/ConfirmSubmitButton";
 import ReloadOnBack from "../../../components/ReloadOnBack";
+import { nowInLondonFrame } from "../../../lib/today";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -138,7 +139,7 @@ export default async function ViewJob(props) {
     job.scheduled_start && job.scheduled_end
       ? describeCompletion(job.scheduled_start, job.scheduled_end)
       : null;
-  const status = deriveJobStatus(job, new Date());
+  const status = deriveJobStatus(job, nowInLondonFrame());
 
   return (
     <main>

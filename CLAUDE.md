@@ -211,6 +211,27 @@ up in front of this one".
   for day-to-day work (the verified inventory above is the reference), but
   a fresh deploy from this repo would produce a broken database.
 
+## Time and timezones
+
+Scheduled times (`jobs.scheduled_start/scheduled_end`, `personal_events`,
+recurring occurrences) are stored as **London wall-clock in a UTC frame**:
+they're written by parsing the user's typed time on a UTC server
+(`new Date(`${date}T${time}:00`)`), so 16:00 London is stored as `16:00Z`.
+Displays read them back without a timeZone, so the user sees "16:00" again —
+self-consistent, and intentional for a UK-only product.
+
+The one thing this breaks is comparing a stored time against a real
+`new Date()`: during BST the stored value is an hour behind the true
+instant, so "running late"/"upcoming" flip an hour late. Use
+`nowInLondonFrame()` from `lib/today.js` for those comparisons — it returns
+the current London wall-clock in the same stored frame. **Never** compare it
+against a true UTC timestamp (`trial_ends_at`, `locked_until`,
+`reset_token_expires` — those are real instants and use plain `new Date()`).
+
+If the product ever goes non-UK, this model has to change to true-UTC
+storage plus `timeZone`-aware display, which is a data migration of every
+stored scheduled value.
+
 ## Stack notes
 
 - **Next 16.3.1 / React 19.2.8** since Aug 2026, upgraded from 14.2.35/18

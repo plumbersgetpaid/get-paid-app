@@ -12,6 +12,7 @@ import { getScopedDb } from "../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import DateJump from "./DateJump";
 import Link from "next/link";
+import { nowInLondonFrame } from "../lib/today";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -217,7 +218,7 @@ export default async function Calendar(props) {
   // Combine job bookings, payment due dates, and reminders into one
   // date-grouped timeline
   const entriesByDate = {};
-  const now = new Date();
+  const now = nowInLondonFrame();
 
   // Same "how overdue" formatting used on Work → Jobs, so the two screens
   // describe lateness consistently

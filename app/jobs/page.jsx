@@ -7,6 +7,7 @@ import { filterJobsForMember } from "../lib/jobAccess";
 import { getScopedDb } from "../lib/scopedSupabaseClient";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
+import { nowInLondonFrame } from "../lib/today";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -71,7 +72,7 @@ export default async function AllJobs(props) {
   if (status === "unscheduled") {
     jobs = jobs.filter((j) => j.status === "in_progress" && !j.scheduled_start);
   } else if (status === "late") {
-    const now = new Date();
+    const now = nowInLondonFrame();
     jobs = jobs.filter(
       (j) =>
         j.status === "in_progress" &&

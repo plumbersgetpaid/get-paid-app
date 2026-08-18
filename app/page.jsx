@@ -19,6 +19,7 @@ import {
   mono,
 } from "./lib/theme";
 import Link from "next/link";
+import { nowInLondonFrame } from "./lib/today";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -80,7 +81,7 @@ export default async function Today() {
     (j) => j.scheduled_start && j.scheduled_start.slice(0, 10) === todayStr
   );
   const needsBooking = (activeJobs || []).filter((j) => !j.scheduled_start);
-  const now = new Date();
+  const now = nowInLondonFrame();
   const lateJobs = (activeJobs || []).filter(
     (j) => j.time_confirmed !== false && j.scheduled_end && new Date(j.scheduled_end) < now
   );
