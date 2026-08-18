@@ -1,36 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 // Where Stripe's "Return to PatchUp" button lands after managing billing.
 //
-// The portal opens in a tab we created with window.open(), and a tab a
-// script opened is allowed to close itself. So this page's whole job is
-// window.close() - the tab vanishes and the person is back in the
-// original app tab, exactly where they left it, with no Stripe history
-// anywhere for a back button to wander into. That history was the mobile
-// bug: back from the portal walked through expired Stripe pages and
-// looped between settings and billing, and no amount of history juggling
-// fixed it, because a site can't edit another origin's entries. Not
-// creating the history is the only version that works.
+// Plan A: this tab was opened by window.open(), and a script-opened tab
+// may close itself - so close it, and the person is back in the original
+// app tab exactly where they left, with no Stripe history anywhere.
 //
-// If close() is refused (the popup-blocked fallback navigated the
-// original tab here instead, so we didn't open it), fall through to
-// replace() - which at least swaps this page out of history rather than
-// stacking on top.
+// Plan B, because mobile browsers often refuse close() once a tab has
+// navigated through another origin: this orphan tab is about to become
+// the person's app tab, and its entire history is Stripe pages, so back
+// would walk into an expired portal and "stop working". A site can't
+// delete another origin's entries - but it CAN relabel the current one
+// and build forward from it. Relabel this entry as /settings, then do a
+// real navigation to /billing on top: back now lands on Settings like it
+// would in a tab with an honest past. (Two backs still reach a dead
+// Stripe page - that entry is beyond anyone's power to remove - but one
+// back is what people actually press.)
 export default function PortalReturn() {
+  const router = useRouter();
   const [closing, setClosing] = useState(true);
 
   useEffect(() => {
     window.close();
-    // Still alive a moment later means the browser refused - this tab
-    // wasn't script-opened. Go back to billing without adding history.
     const timer = setTimeout(() => {
       setClosing(false);
-      window.location.replace("/billing");
+      window.history.replaceState(null, "", "/settings");
+      router.push("/billing");
     }, 400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   return (
     <main style={{ maxWidth: 400, margin: "80px auto", padding: "0 20px", textAlign: "center" }}>
