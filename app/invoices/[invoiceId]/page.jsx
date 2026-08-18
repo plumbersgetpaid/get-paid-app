@@ -45,6 +45,15 @@ export default async function InvoiceDetail(props) {
     .eq("id", invoice.job_id)
     .single();
 
+  // Only used to decide whether to offer the photos link below - a link
+  // to an empty gallery is worse than no link at all.
+  const { count: photoCount } = job?.id
+    ? await db
+        .from("job_photos")
+        .select("*", { count: "exact", head: true })
+        .eq("job_id", job.id)
+    : { count: 0 };
+
   const { data: customer } = job?.customer_id
     ? await db.from("customers").select("*").eq("id", job.customer_id).single()
     : { data: null };
@@ -204,6 +213,11 @@ export default async function InvoiceDetail(props) {
         >
           Download PDF
         </a>
+        {photoCount > 0 && (
+          <Link href={`/jobs/photos/${job.id}`} style={quietActionStyle}>
+            {photoCount} photo{photoCount === 1 ? "" : "s"}
+          </Link>
+        )}
         <a
           href={`/api/invoices/export-csv?invoiceId=${invoice.id}`}
           download
@@ -238,6 +252,21 @@ const paymentLinkSaveButtonStyle = {
   borderRadius: 2,
   fontWeight: 500,
   fontSize: 13,
+};
+
+const quietActionStyle = {
+  display: "block",
+  flex: 1,
+  boxSizing: "border-box",
+  textAlign: "center",
+  background: "white",
+  color: "#000",
+  border: "1px solid #e2e2e2",
+  padding: "14px",
+  borderRadius: 2,
+  fontWeight: 500,
+  textDecoration: "none",
+  fontSize: 13.5,
 };
 
 const downloadButtonStyle = {
