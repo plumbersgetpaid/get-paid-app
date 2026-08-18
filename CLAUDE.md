@@ -82,27 +82,31 @@ Two things this cost, both worth remembering:
   photo on 10 Aug, before any of this. **Sweep for other unchecked writes
   during the audit** — this one proved the pattern loses real data.
 
-### 2. Deletion at 30 days — BUILT, migration outstanding
+### 2. Deletion at 30 days — DONE and verified (Aug 2026)
 
-`api/cron/delete-cancelled` runs daily at 3am and deletes everything for
-accounts cancelled 30+ days ago. Storage first (the paths come from job
-ids), then one transactional call to `delete_business_data()`.
+`api/cron/delete-cancelled` runs daily at 3am. Storage first (the paths
+come from job ids), then one transactional call to
+`delete_business_data()`. `?dryRun=1` reports without deleting.
 
 Kept: the `subscriptions` row and the `businesses` name — the billing
 record held 6 years for UK tax. Everything else goes outright.
-
-**`supabase/delete-cancelled-business.sql` has not been run yet.** Until
-it is, `subscriptions.canceled_at` and the function don't exist, and the
-cron will error nightly without deleting anything. Run it, then do a
-`?dryRun=1` pass before trusting it.
 
 Ordering is dictated by the foreign keys, which are almost all NO ACTION —
 nothing cascades from the business down:
 `chase_log → invoices → jobs → customers`, with `team_members` last
 because jobs, notes, personal events and recurring jobs all reference it.
 
-Test case waiting: lux plumbing cancelled 17 Aug 2026, so it comes due
-around 17 Sep 2026.
+**Verified against the live database, not just reasoned about:**
+
+- Backdating a cancellation 31 days made the dry run report that account
+  and no other; restoring matched the original value exactly.
+- A throwaway business with a real chain — team member, client, job
+  created by *and* assigned to that member, notes, shares, recurring job,
+  recurring share, invoice, chase log, photo row — deleted with zero
+  leftovers across all 15 tables, subscription and business name intact.
+
+Re-run those two checks if the schema gains a table or a foreign key.
+The ordering is hand-derived, and nothing in the code enforces it.
 
 ### 3. Data export — DONE (Aug 2026)
 
