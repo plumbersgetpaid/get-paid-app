@@ -28,6 +28,20 @@ export async function GET(req) {
   }
 
   try {
+  // --- TEMP VAPID health probe (no secrets exposed) ---
+  const wp = (await import("web-push")).default;
+  const health = {
+    hasPublic: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    hasPrivate: !!process.env.VAPID_PRIVATE_KEY,
+    subject: process.env.VAPID_SUBJECT || "(unset)",
+    privateKeyLength: (process.env.VAPID_PRIVATE_KEY || "").length,
+  };
+  try { wp.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:x@y.com", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY); health.setVapidDetails = "OK"; }
+  catch (e) { health.setVapidDetails = "REJECTED: " + e.message; }
+  if (new URL(req.url).searchParams.get("health") === "1") {
+    return NextResponse.json({ vapidHealth: health });
+  }
+
   const db = supabaseAdmin();
   const now = nowInLondonFrame();
   const nowIso = now.toISOString();
