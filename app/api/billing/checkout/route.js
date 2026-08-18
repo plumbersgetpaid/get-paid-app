@@ -27,8 +27,15 @@ export async function POST(req) {
   const seats = await countActiveSeats(businessId);
 
   // Reuse the Stripe customer if this business has one, so a second
-  // attempt doesn't create a duplicate customer record.
+  // attempt doesn't create a duplicate.
+  //
+  // The write-back below is checked rather than fire-and-forget. If the
+  // subscriptions row doesn't exist, the update silently affects zero
+  // rows, the id is never saved, and the next attempt creates another
+  // customer - which is how one account ended up with five. Creating
+  // the row when it's missing stops that at the source.
   let customerId = subscription?.stripe_customer_id || null;
+
   if (!customerId) {
     const customer = await stripe.customers.create({
       email: currentMember.email,
@@ -36,10 +43,36 @@ export async function POST(req) {
       metadata: { business_id: businessId },
     });
     customerId = customer.id;
-    await db
-      .from("subscriptions")
-      .update({ stripe_customer_id: customerId, updated_at: new Date().toISOString() })
-      .eq("business_id", businessId);
+
+    if (subscription) {
+      const { error: updErr } = await db
+        .from("subscriptions")
+        .update({ stripe_customer_id: customerId, updated_at: new Date().toISOString() })
+        .eq("business_id", businessId);
+      if (updErr) {
+        console.error("Checkout: couldn't save customer id", businessId, updErr);
+        return NextResponse.json(
+          { error: "Couldn't start checkout - try again in a moment." },
+          { status: 500 }
+        );
+      }
+    } else {
+      // No row yet - businesses created before billing existed won't
+      // have one, and without it nothing can be saved against them.
+      const { error: insErr } = await db.from("subscriptions").insert({
+        business_id: businessId,
+        status: "trialing",
+        seats,
+        stripe_customer_id: customerId,
+      });
+      if (insErr) {
+        console.error("Checkout: couldn't create subscription row", businessId, insErr);
+        return NextResponse.json(
+          { error: "Couldn't start checkout - try again in a moment." },
+          { status: 500 }
+        );
+      }
+    }
   }
 
   // If they still have trial left, hand the remaining days to Stripe
