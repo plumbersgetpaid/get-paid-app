@@ -27,6 +27,7 @@ export async function GET(req) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  try {
   const db = supabaseAdmin();
   const now = nowInLondonFrame();
   const nowIso = now.toISOString();
@@ -111,4 +112,8 @@ export async function GET(req) {
   }
 
   return NextResponse.json({ ok: true, jobs: jobs?.length || 0, events: events?.length || 0, pushed });
+  } catch (e) {
+    console.error("starting-soon crashed:", e);
+    return NextResponse.json({ error: String(e?.message || e), stack: String(e?.stack || "").split("\n").slice(0,4) }, { status: 500 });
+  }
 }
