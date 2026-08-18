@@ -162,6 +162,27 @@ naming is not self-explanatory, so for reference:
 Use `-01` anywhere the mark appears small — favicons, app icons, the
 sign-off mark. The lockup is unreadable below about 100px.
 
+## Audit findings (Aug 2026)
+
+Full pass done 18 Aug 2026. Fixed: the `outstanding_invoices` view leaked
+all unpaid invoices to the bare anon key (views default to owner
+privileges — RLS never applied; now `security_invoker`), RLS was never
+enabled on `businesses`/`subscriptions`/`platform_settings` (Stripe ids
+readable), and the six worst of 32 error-discarding writes (the repeat-
+email and money-state ones). The dead browser Supabase client is removed —
+keep it that way; server-only access means the anon key's reach doesn't
+depend on every table's RLS being perfect.
+
+Still open, deliberately:
+
+- **26 remaining unchecked writes** — child-row deletes and log inserts,
+  failure recoverable. List them for the outside review with
+  `grep -rn 'await db.from' app | grep -v 'error'` and judgement.
+- **`scripts/isolation-test.mjs`** — 126 checks, re-run after any schema
+  or route change: `node --env-file=.env.local scripts/isolation-test.mjs`
+- New views MUST set `security_invoker = true` — the default is the trap
+  that caused the worst finding of this audit.
+
 ## Service-role queries and business scoping
 
 21 API routes use `supabaseAdmin()`, which bypasses row-level security. The
