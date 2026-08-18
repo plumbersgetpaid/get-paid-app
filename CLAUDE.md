@@ -147,11 +147,24 @@ sign-off mark. The lockup is unreadable below about 100px.
 
 ## Other known issues
 
-- **No Node.js / lockfile in the local dev setup.** Changes have historically gone
-  straight to Vercel without a local build. Run `npm install && npm run build`
-  before deploying.
-- **`app/package.json` is a second, divergent manifest** (different `next` and
-  `resend` versions to the root). Vercel builds from the root; the nested file is
-  likely vestigial and should probably be deleted.
-- **`get-paid-app/public/` is not served.** Next only serves `public/` at the
-  project root, which doesn't exist, so the brand PNGs there are unreachable.
+- **`app/package.json` is a second, divergent manifest.** It still pins
+  `next` 14.2.5 while the root is on 16.3.1, so it is now actively
+  misleading. Vercel builds from the root; the nested file is almost
+  certainly vestigial and should probably be deleted.
+- **`supabase/schema.sql` is stale** — 4 tables against the live 16. Fine
+  for day-to-day work (the verified inventory above is the reference), but
+  a fresh deploy from this repo would produce a broken database.
+
+## Stack notes
+
+- **Next 16.3.1 / React 19.2.8** since Aug 2026, upgraded from 14.2.35/18
+  to clear 21 security advisories. `params` and `searchParams` are
+  Promises — await them in pages and route handlers.
+- **`proxy.js`, not `middleware.js`** — Next 16 renamed the convention.
+  This file is the tenant-isolation gate: it checks the session, the
+  Stripe access gate, and per-permission route access. Anything that stops
+  it being picked up silently makes every route public, so re-run the
+  unauthenticated-redirect check after touching it.
+- Local dev: `npm run dev`, needs `.env.local` (gitignored). Node and a
+  committed lockfile are in place as of Aug 2026; `npm run build` before
+  deploying.
