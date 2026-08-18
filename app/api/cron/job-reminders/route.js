@@ -80,10 +80,15 @@ export async function GET(req) {
   }
 
   const jobIds = jobs.map((j) => j.id);
-  await db
+  // Same shape as the recurring cron: if this stamp fails, every one of
+  // these customers gets the same reminder again tomorrow.
+  const { error: stampErr } = await db
     .from("jobs")
     .update({ reminder_sent_at: new Date().toISOString() })
     .in("id", jobIds);
+  if (stampErr) {
+    console.error("Job reminders sent but reminder_sent_at NOT stamped - will re-send tomorrow:", stampErr);
+  }
 
   return NextResponse.json({ ok: true, sent: jobs.length });
 }

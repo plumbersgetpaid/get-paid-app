@@ -36,7 +36,12 @@ export async function POST(req) {
   }
 
   if (invoice?.job_id) {
-    await db.from("jobs").update({ status: "paid" }).eq("id", invoice.job_id);
+    const { error: jobErr } = await db.from("jobs").update({ status: "paid" }).eq("id", invoice.job_id);
+    if (jobErr) {
+      // The invoice is already marked paid above - a silent failure here
+      // leaves job and invoice disagreeing about money.
+      console.error(`Invoice ${invoice.id} paid but job ${invoice.job_id} status update failed:`, jobErr);
+    }
   }
 
   if (invoice?.job_id) {

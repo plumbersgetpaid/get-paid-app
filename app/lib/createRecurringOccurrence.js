@@ -159,10 +159,20 @@ export async function createRecurringOccurrence(db, settings, r) {
   }
 
   const nextOccurrence = advanceDate(r.next_occurrence, r.frequency_value, r.frequency_unit);
-  await db
+  // If advancing the date fails, tomorrow's cron sees the same
+  // next_occurrence and creates the same job again - and again every day
+  // after, each with its own booking email to the customer. The worst
+  // failure mode in this file, so it does not get to fail silently.
+  const { error: advanceErr } = await db
     .from("recurring_jobs")
     .update({ next_occurrence: nextOccurrence, next_occurrence_time: null })
     .eq("id", r.id);
+  if (advanceErr) {
+    console.error(
+      `Recurring ${r.id}: occurrence created but next_occurrence NOT advanced - will duplicate daily until fixed:`,
+      advanceErr
+    );
+  }
 
   return { created: true, job };
 }

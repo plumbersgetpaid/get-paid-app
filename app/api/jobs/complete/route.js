@@ -185,7 +185,11 @@ async function finishInvoice({
     });
     console.log("Resend result:", result);
 
-    await db.from("invoices").update({ sent_at: new Date().toISOString() }).eq("id", invoice.id);
+    const { error: sentErr } = await db
+      .from("invoices")
+      .update({ sent_at: new Date().toISOString() })
+      .eq("id", invoice.id);
+    if (sentErr) console.error(`Invoice ${invoice.id} emailed but sent_at not recorded:`, sentErr);
   } catch (e) {
     console.error("Finish invoice error:", e);
   }
@@ -263,7 +267,12 @@ export async function POST(req) {
     return NextResponse.json({ error: invErr.message }, { status: 400 });
   }
 
-  await db.from("jobs").update({ status: "invoiced" }).eq("id", job.id);
+  const { error: statusErr } = await db.from("jobs").update({ status: "invoiced" }).eq("id", job.id);
+  if (statusErr) {
+    // The invoice exists by this point - a silent failure leaves the job
+    // looking un-invoiced and invites a second invoice for the same work.
+    console.error(`Job ${job.id} invoiced but status update failed:`, statusErr);
+  }
 
   await finishInvoice({
     db,

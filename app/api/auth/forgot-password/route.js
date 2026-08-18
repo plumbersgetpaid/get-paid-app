@@ -32,10 +32,16 @@ export async function POST(req) {
       const token = generateResetToken();
       const expires = new Date(Date.now() + 60 * 60 * 1000);
 
-      await db
+      const { error: tokenErr } = await db
         .from("team_members")
         .update({ reset_token: token, reset_token_expires: expires.toISOString() })
         .eq("id", member.id);
+      if (tokenErr) {
+        // Without this check the email still goes out and its link can
+        // never work - "reset is broken" with nothing in any log.
+        console.error("Reset token save failed for", member.id, tokenErr);
+        throw tokenErr;
+      }
 
       const settings = await getBusinessSettings();
       const resetUrl = new URL(`/reset-password?token=${token}`, req.url).toString();
