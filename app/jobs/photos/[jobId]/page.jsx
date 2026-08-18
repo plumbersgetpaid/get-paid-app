@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import ConfirmSubmitButton from "../../../components/ConfirmSubmitButton";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
@@ -129,9 +130,14 @@ export default async function JobPhotos(props) {
             <form action="/api/jobs/photos/delete" method="POST">
               <input type="hidden" name="photoId" value={photo.id} />
               <input type="hidden" name="jobId" value={job.id} />
-              <button type="submit" style={deletePhotoButtonStyle}>
+              <ConfirmSubmitButton
+                style={deletePhotoButtonStyle}
+                confirmText="Delete this photo? The image file is removed for good."
+                confirmLabel="Delete"
+                cancelLabel="Keep"
+              >
                 Delete
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </div>
         ))}
@@ -149,9 +155,14 @@ export default async function JobPhotos(props) {
             <form action="/api/jobs/photos/delete" method="POST">
               <input type="hidden" name="photoId" value={photo.id} />
               <input type="hidden" name="jobId" value={job.id} />
-              <button type="submit" style={deletePhotoButtonStyle}>
+              <ConfirmSubmitButton
+                style={deletePhotoButtonStyle}
+                confirmText="Delete this photo? The image file is removed for good."
+                confirmLabel="Delete"
+                cancelLabel="Keep"
+              >
                 Delete
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </div>
         ))}

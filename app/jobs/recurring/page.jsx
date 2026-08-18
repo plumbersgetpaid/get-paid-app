@@ -6,6 +6,7 @@ import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
+import ConfirmSubmitButton from "../../components/ConfirmSubmitButton";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -78,7 +79,7 @@ export default async function RecurringJobs() {
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
             <Link
               href={`/jobs/recurring/${r.id}/edit`}
               style={{ ...secondaryButtonStyle, textAlign: "center", textDecoration: "none" }}
@@ -88,15 +89,35 @@ export default async function RecurringJobs() {
             <form action="/api/jobs/recurring/pause" method="POST" style={{ flex: 1 }}>
               <input type="hidden" name="recurringId" value={r.id} />
               <input type="hidden" name="active" value={r.active ? "0" : "1"} />
-              <button type="submit" style={secondaryButtonStyle}>
-                {r.active ? "Pause" : "Resume"}
-              </button>
+              {/* Pausing stops future jobs being created, so it asks first.
+                  Resuming doesn't - confirming that you'd like to switch
+                  something back on is friction with nothing behind it. */}
+              {r.active ? (
+                <ConfirmSubmitButton
+                  tone="neutral"
+                  style={secondaryButtonStyle}
+                  confirmText={`Pause the recurring job for ${r.customer_name}? No new jobs will be created until you resume it. Nothing already booked is affected.`}
+                  confirmLabel="Yes, pause it"
+                  cancelLabel="Keep it running"
+                >
+                  Pause
+                </ConfirmSubmitButton>
+              ) : (
+                <button type="submit" style={secondaryButtonStyle}>
+                  Resume
+                </button>
+              )}
             </form>
             <form action="/api/jobs/recurring/delete" method="POST" style={{ flex: 1 }}>
               <input type="hidden" name="recurringId" value={r.id} />
-              <button type="submit" style={deleteButtonStyle}>
+              <ConfirmSubmitButton
+                style={deleteButtonStyle}
+                confirmText={`Delete the recurring job for ${r.customer_name}? This removes the schedule for good - it can't be undone. Jobs already created from it stay where they are.`}
+                confirmLabel="Yes, delete it"
+                cancelLabel="Cancel"
+              >
                 Delete
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import MultiAssignField from "../../../components/MultiAssignField";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
+import ConfirmSubmitButton from "../../../components/ConfirmSubmitButton";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -139,9 +140,14 @@ export default async function ReminderDetail(props) {
 
       <form action="/api/calendar/reminder/delete" method="POST" style={{ marginTop: 16 }}>
         <input type="hidden" name="reminderId" value={reminder.id} />
-        <button type="submit" style={deleteButtonStyle}>
+        <ConfirmSubmitButton
+          style={deleteButtonStyle}
+          confirmText="Delete this reminder? It'll disappear from your calendar and can't be brought back."
+          confirmLabel="Yes, delete it"
+          cancelLabel="Keep it"
+        >
           Delete reminder
-        </button>
+        </ConfirmSubmitButton>
       </form>
     </main>
   );

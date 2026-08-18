@@ -8,6 +8,7 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import AssignAndShareControl from "../../../components/AssignAndShareControl";
 import DeleteJobButton from "../../../components/DeleteJobButton";
+import ConfirmSubmitButton from "../../../components/ConfirmSubmitButton";
 import ReloadOnBack from "../../../components/ReloadOnBack";
 
 export const dynamic = "force-dynamic";
@@ -277,9 +278,14 @@ export default async function ViewJob(props) {
           <form action="/api/jobs/cancel" method="POST">
             <input type="hidden" name="jobId" value={job.id} />
             <input type="hidden" name="from" value="work" />
-            <button type="submit" style={cancelButtonStyle}>
+            <ConfirmSubmitButton
+              style={cancelButtonStyle}
+              confirmText="Cancel this job? The invoice raised against it stays on record, so this doesn't undo the billing."
+              confirmLabel="Yes, cancel the job"
+              cancelLabel="Leave it as is"
+            >
               Cancel this job
-            </button>
+            </ConfirmSubmitButton>
           </form>
         )}
       </div>
