@@ -1,6 +1,5 @@
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
-import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { findExistingCustomer } from "../../../lib/findCustomer";
 import { textToEmailHtml } from "../../../lib/emailHtml";
@@ -32,7 +31,6 @@ export async function POST(req) {
   const includeWeekends = form.get("includeWeekends") === "1";
   const force = form.get("force") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
-  const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
 
   if (!customerName || !startDate || !startTime) {
     return NextResponse.json(
@@ -177,7 +175,7 @@ export async function POST(req) {
     }
   }
 
-  if (notifyEmail || notifyWhatsapp) {
+  if (notifyEmail) {
     const template = await getTemplate("booking_confirmation");
     const vars = {
       customer_name: customerName,
@@ -210,10 +208,6 @@ export async function POST(req) {
       } catch (e) {
         console.error("Booking confirmation email error:", e);
       }
-    }
-
-    if (notifyWhatsapp && customerPhone) {
-      await sendWhatsAppMessage(customerPhone, bodyText);
     }
   }
 

@@ -21,7 +21,6 @@ export async function POST(req) {
   const frequencyValue = parseInt(form.get("frequencyValue") || "1", 10);
   const frequencyUnit = form.get("frequencyUnit") || "months";
   const notifyEmail = form.get("notifyEmail") === "1";
-  const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
   const desiredAssigneeIds = form.getAll("assignedTo").filter(Boolean);
   const nextOccurrenceTime = (form.get("nextOccurrenceTime") || "").toString().trim();
 
@@ -48,7 +47,6 @@ export async function POST(req) {
       frequency_value: frequencyValue,
       frequency_unit: frequencyUnit,
       notify_email: notifyEmail,
-      notify_whatsapp: notifyWhatsapp,
       next_occurrence_time: nextOccurrenceTime || null,
       assigned_to: null,
     })

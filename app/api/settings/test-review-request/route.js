@@ -2,7 +2,6 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
-import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
@@ -56,10 +55,6 @@ export async function POST(req) {
       emailErrorMessage = e.message || "Unknown error sending the email.";
       console.error("Test review email threw:", e);
     }
-  }
-
-  if (settings.contact_phone) {
-    await sendWhatsAppMessage(settings.contact_phone, `[TEST]\n\n${bodyText}`);
   }
 
   const redirectUrl = new URL("/settings", req.url);

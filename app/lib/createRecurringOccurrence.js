@@ -1,7 +1,6 @@
 import { getTemplate, renderTemplate } from "./getTemplate";
 import { textToEmailHtml } from "./emailHtml";
 import { getEmailFrom } from "./emailFrom";
-import { sendWhatsAppMessage } from "./sendWhatsApp";
 import { advanceDate } from "./duration";
 import { Resend } from "resend";
 
@@ -109,7 +108,7 @@ export async function createRecurringOccurrence(db, settings, r) {
     }
   }
 
-  if (timeIsConfirmed && (r.notify_email || r.notify_whatsapp) && customer) {
+  if (timeIsConfirmed && r.notify_email && customer) {
     try {
       const template = await getTemplate("booking_confirmation");
       const vars = {
@@ -139,9 +138,6 @@ export async function createRecurringOccurrence(db, settings, r) {
           subject,
           html,
         });
-      }
-      if (r.notify_whatsapp && customer.phone) {
-        await sendWhatsAppMessage(customer.phone, bodyText);
       }
     } catch (e) {
       console.error("Recurring booking confirmation error:", e);

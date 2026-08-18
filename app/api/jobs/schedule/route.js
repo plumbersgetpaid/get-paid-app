@@ -1,6 +1,5 @@
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
-import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
@@ -22,7 +21,6 @@ export async function POST(req) {
   const includeWeekends = form.get("includeWeekends") === "1";
   const force = form.get("force") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
-  const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
 
   if (!jobId || !startDate || !startTime) {
     return NextResponse.json({ error: "Missing scheduling details" }, { status: 400 });
@@ -119,7 +117,7 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  if ((notifyEmail || notifyWhatsapp) && updatedJob) {
+  if (notifyEmail && updatedJob) {
     const { data: customer } = await db
       .from("customers")
       .select("*")
@@ -159,10 +157,6 @@ export async function POST(req) {
         } catch (e) {
           console.error("Booking confirmation email error:", e);
         }
-      }
-
-      if (notifyWhatsapp && customer.phone) {
-        await sendWhatsAppMessage(customer.phone, bodyText);
       }
     }
   }

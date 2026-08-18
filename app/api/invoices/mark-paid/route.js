@@ -1,6 +1,5 @@
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
-import { sendWhatsAppMessage } from "../../../lib/sendWhatsApp";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getCurrentTeamMember } from "../../../lib/auth";
@@ -76,10 +75,6 @@ export async function POST(req) {
               subject,
               html,
             });
-          }
-
-          if (customer.phone) {
-            await sendWhatsAppMessage(customer.phone, bodyText);
           }
         }
       }

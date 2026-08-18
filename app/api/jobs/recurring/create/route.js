@@ -25,7 +25,6 @@ export async function POST(req) {
   const frequencyUnit = form.get("frequencyUnit") || "months";
   const confirmTimeLater = form.get("confirmTimeLater") === "1";
   const notifyEmail = form.get("notifyEmail") === "1";
-  const notifyWhatsapp = form.get("notifyWhatsapp") === "1";
   const assignedToIds = form.getAll("assignedTo").filter(Boolean);
 
   if (!name || !startDate) {
@@ -72,7 +71,6 @@ export async function POST(req) {
       frequency_unit: frequencyUnit,
       confirm_time_later: confirmTimeLater,
       notify_email: notifyEmail,
-      notify_whatsapp: notifyWhatsapp,
       created_by: currentMember?.id || null,
       assigned_to: null,
       business_id: currentMember.business_id,
