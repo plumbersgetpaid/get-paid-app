@@ -873,7 +873,7 @@ const cardStyle = (color) => ({
   border: `1px solid ${c.line}`,
   borderLeft: `3px solid ${color}`,
   borderRadius: 3,
-  padding: 14,
+  padding: "var(--card-pad-tight, 14px)",
   marginBottom: 8,
 });
 

@@ -225,7 +225,7 @@ export default async function ClientDetail({ params }) {
 const cardStyle = {
   background: "white",
   borderRadius: 3,
-  padding: 16,
+  padding: "var(--card-pad, 16px)",
   margin: "16px 0",
   border: "1px solid #e2e2e2",
 };

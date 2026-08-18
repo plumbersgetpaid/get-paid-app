@@ -89,8 +89,12 @@ export const cardStyle = {
   background: c.paper,
   border: `1px solid ${c.line}`,
   borderRadius: 3,
-  padding: 16,
-  marginTop: 14,
+  // Fixed on mobile, roomier on desktop - the variables are defined in
+  // layout.jsx, the only place a media query can live given everything
+  // here is an inline style object. Fallbacks keep this correct if the
+  // style ever renders outside the app shell.
+  padding: "var(--card-pad, 16px)",
+  marginTop: "var(--card-gap, 14px)",
 };
 
 // Small mono caps, the same device the site uses above each section.

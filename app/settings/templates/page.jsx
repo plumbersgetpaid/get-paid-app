@@ -146,7 +146,7 @@ export default async function TemplatesSettings() {
 const cardStyle = {
   background: "white",
   borderRadius: 3,
-  padding: 16,
+  padding: "var(--card-pad, 16px)",
   marginBottom: 14,
   border: "1px solid #e2e2e2",
 };

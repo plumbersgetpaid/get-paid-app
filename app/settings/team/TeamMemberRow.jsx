@@ -133,7 +133,7 @@ export default function TeamMemberRow({ member, isSelf }) {
 const cardStyle = (isActive) => ({
   background: "white",
   borderRadius: 2,
-  padding: 14,
+  padding: "var(--card-pad-tight, 14px)",
   marginBottom: 8,
   opacity: isActive ? 1 : 0.7,
 });

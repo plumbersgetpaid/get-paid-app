@@ -103,7 +103,7 @@ const cardStyle = {
   background: c.paper,
   border: `1px solid ${c.line}`,
   borderRadius: 3,
-  padding: 16,
+  padding: "var(--card-pad, 16px)",
   marginTop: 14,
 };
 
