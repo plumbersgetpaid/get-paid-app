@@ -74,7 +74,7 @@ function redirectNoCache(url) {
   return res;
 }
 
-export async function middleware(req) {
+export async function proxy(req) {
   const { pathname } = req.nextUrl;
 
   if (matchesAny(pathname, PUBLIC_PATHS)) {
