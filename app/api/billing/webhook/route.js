@@ -43,15 +43,30 @@ async function syncSubscription(db, businessId, sub) {
   // checkout completing.
   const { data: existing } = await db
     .from("subscriptions")
-    .select("stripe_subscription_id, canceled_at")
+    .select("stripe_subscription_id, canceled_at, status")
     .eq("business_id", businessId)
     .maybeSingle();
 
-  if (existing?.stripe_subscription_id && existing.stripe_subscription_id !== sub.id) {
+  // Ignore an event about a DIFFERENT subscription only while the stored
+  // one is still live. A failed/abandoned checkout can leave an orphaned
+  // sub on the same customer, and an event about it must not overwrite the
+  // one the business is actually paying for.
+  //
+  // But a cancelled subscription is not something to protect: when a
+  // business resubscribes, Stripe issues a brand-new subscription id, so
+  // "differs from the stored id" is exactly what a resubscribe looks like.
+  // Blocking it here left the row stuck on 'canceled' forever - the
+  // customer paid, stayed locked out, and the 30-day deletion cron then
+  // wiped their data. So only guard when the stored subscription is still
+  // in a status that grants access.
+  const storedIsLive =
+    existing?.status && existing.status !== "canceled" && existing.status !== "incomplete_expired";
+
+  if (existing?.stripe_subscription_id && existing.stripe_subscription_id !== sub.id && storedIsLive) {
     console.log(
-      "Stripe webhook: ignoring event for stale subscription",
+      "Stripe webhook: ignoring event for a different subscription",
       sub.id,
-      "- business is on",
+      "- business is live on",
       existing.stripe_subscription_id
     );
     return;

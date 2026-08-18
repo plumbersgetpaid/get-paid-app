@@ -22,7 +22,23 @@ export async function POST(req) {
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const ext = (file.name.split(".").pop() || "png").toLowerCase();
-  const path = `logo-${Date.now()}.${ext}`;
+  // Store under a business_id folder, not a flat `logo-<timestamp>` name.
+  // The flat name was unreachable by the 30-day deletion job (it couldn't
+  // tell which file belonged to a cancelled business), so logos outlived
+  // the account forever at a public URL. A per-business prefix lets the
+  // cron list and remove them like it does job photos.
+  const businessId = currentMember.business_id;
+  const path = `${businessId}/logo-${Date.now()}.${ext}`;
+
+  // Clear any previous logo in this business's folder first. Timestamped
+  // names never collide, so without this every re-upload orphaned the old
+  // file at a live public URL.
+  const { data: existingFiles } = await adminDb.storage.from("logos").list(businessId);
+  if (existingFiles?.length) {
+    await adminDb.storage
+      .from("logos")
+      .remove(existingFiles.map((f) => `${businessId}/${f.name}`));
+  }
 
   const { error: uploadError } = await adminDb.storage
     .from("logos")

@@ -224,6 +224,22 @@ export async function POST(req) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
+  // Stop a double submit creating a second invoice. Completing a job does
+  // photo uploads + PDF + email before redirecting, so it's slow enough to
+  // double-click or retry - and there's no unique constraint on
+  // invoices.job_id, so a second pass just takes the next invoice number
+  // and emails the customer again. If this job already has an invoice,
+  // treat completion as already done and return quietly.
+  const { data: existingInvoice } = await db
+    .from("invoices")
+    .select("id")
+    .eq("job_id", jobId)
+    .maybeSingle();
+  if (existingInvoice) {
+    const already = (form.get("from") || "").toString() === "work" ? "/work?tab=jobs" : "/";
+    return NextResponse.redirect(new URL(already, req.url), 303);
+  }
+
   const { data: job, error: jobErr } = await db
     .from("jobs")
     .update({

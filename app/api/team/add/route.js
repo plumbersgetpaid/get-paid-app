@@ -34,12 +34,18 @@ export async function POST(req) {
   const db = supabaseAdmin();
   const passwordHash = await hashPassword(password);
 
+  // business_id is required. This runs on the admin client (RLS bypassed),
+  // so nothing fills it in for us - omitting it created the member with a
+  // NULL business_id: invisible to the scoped team list, and getScopedDb()
+  // throws for them on login, 500-ing every page. Scope to the owner's own
+  // business, the same as every other row this business creates.
   const { error } = await db.from("team_members").insert({
     name,
     email,
     password_hash: passwordHash,
     role,
     is_active: true,
+    business_id: currentMember.business_id,
   });
 
   if (error) {

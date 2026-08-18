@@ -1,11 +1,11 @@
+import { cronAuthorized } from "../../../lib/requireCron";
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { createRecurringOccurrence } from "../../../lib/createRecurringOccurrence";
 import { NextResponse } from "next/server";
 
 export async function GET(req) {
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

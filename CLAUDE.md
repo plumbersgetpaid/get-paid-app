@@ -9,19 +9,19 @@ PatchUp.
 
 ## Stack
 
-- **Next.js 14** (App Router, JavaScript — not TypeScript), deployed on Vercel
+- **Next.js 16** (App Router, JavaScript — not TypeScript), deployed on Vercel
 - **Supabase** (Postgres + Storage) — data and file storage
 - **Resend** — transactional email (invoices, quotes, chasers)
 - **Stripe** — subscription billing for tradespeople
 - **pdf-lib** — invoice PDF generation
-- Auth is custom (session cookie + `middleware.js`), not Supabase Auth
+- Auth is custom (session cookie + `proxy.js`), not Supabase Auth
 
 ## Layout
 
 - `app/api/**` — route handlers, one directory per action
 - `app/lib/**` — shared server helpers (auth, permissions, PDF, email, Stripe,
   Supabase clients)
-- `middleware.js` — session check, Stripe access gate (`hasAccess`), and
+- `proxy.js` — session check, Stripe access gate (`hasAccess`), and
   per-permission route gating
 - `supabase/schema.sql` — **stale**, covers only 4 early tables; the live schema
   has many more (users, teams, subscriptions, reminders, recurring jobs, notes,
@@ -207,10 +207,6 @@ up in front of this one".
 
 ## Other known issues
 
-- **`app/package.json` is a second, divergent manifest.** It still pins
-  `next` 14.2.5 while the root is on 16.3.1, so it is now actively
-  misleading. Vercel builds from the root; the nested file is almost
-  certainly vestigial and should probably be deleted.
 - **`supabase/schema.sql` is stale** — 4 tables against the live 16. Fine
   for day-to-day work (the verified inventory above is the reference), but
   a fresh deploy from this repo would produce a broken database.

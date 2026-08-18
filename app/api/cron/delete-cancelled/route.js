@@ -1,3 +1,4 @@
+import { cronAuthorized } from "../../../lib/requireCron";
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { NextResponse } from "next/server";
 
@@ -46,8 +47,7 @@ async function deleteStorageForJobs(db, jobIds, dryRun) {
 }
 
 export async function GET(req) {
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -81,6 +81,21 @@ export async function GET(req) {
 
     const storage = await deleteStorageForJobs(db, jobIds, dryRun);
 
+    // The business logo lives in the logos bucket under a business_id
+    // folder (see settings/upload-logo). Cleared here so a cancelled
+    // account's branding doesn't outlive it at a public URL.
+    let logoFiles = 0;
+    const { data: logos } = await db.storage.from("logos").list(businessId, { limit: 1000 });
+    if (logos?.length) {
+      logoFiles = logos.length;
+      if (!dryRun) {
+        const { error: logoErr } = await db.storage
+          .from("logos")
+          .remove(logos.map((f) => `${businessId}/${f.name}`));
+        if (logoErr) console.error(`Retention: removing logos for ${businessId} failed:`, logoErr.message);
+      }
+    }
+
     if (dryRun) {
       const { count: customers } = await db
         .from("customers")
@@ -94,7 +109,7 @@ export async function GET(req) {
       results.push({
         businessId,
         canceledAt: sub.canceled_at,
-        wouldDelete: { jobs: jobIds.length, customers, invoices, files: storage.found },
+        wouldDelete: { jobs: jobIds.length, customers, invoices, files: storage.found, logoFiles },
       });
       continue;
     }
@@ -116,7 +131,7 @@ export async function GET(req) {
       JSON.stringify(counts),
       `files removed: ${storage.removed}/${storage.found}`
     );
-    results.push({ businessId, deleted: counts, filesRemoved: storage.removed });
+    results.push({ businessId, deleted: counts, filesRemoved: storage.removed, logoFiles });
   }
 
   return NextResponse.json({
