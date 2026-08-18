@@ -1,4 +1,6 @@
 import BottomNav from "./components/BottomNav";
+import ServiceWorkerRegister from "./components/ServiceWorkerRegister";
+import InstallBanner from "./components/InstallBanner";
 import { getCurrentTeamMember } from "./lib/auth";
 import { getPlatformSettings } from "./lib/getPlatformSettings";
 import { poppins, mono, c } from "./lib/theme";
@@ -49,9 +51,22 @@ export async function generateMetadata() {
             { url: "/patchup-emblem.svg", type: "image/svg+xml" },
             { url: "/patchup-emblem.png", type: "image/png" },
           ],
+      // iOS uses this for the home-screen icon when installed as a PWA.
+      apple: [{ url: "/apple-touch-icon.png" }],
+    },
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      title: "PatchUp",
+      statusBarStyle: "default",
     },
   };
 }
+
+// Drives the browser/status-bar tint on the installed app.
+export const viewport = {
+  themeColor: "#111111",
+};
 
 export default async function RootLayout({ children }) {
   const currentMember = await getCurrentTeamMember();
@@ -87,6 +102,8 @@ export default async function RootLayout({ children }) {
           canCreateRecurringJob={canCreateRecurringJob(currentMember)}
           canSeeClientDatabase={canSeeClientDatabase(currentMember)}
         />
+        <ServiceWorkerRegister />
+        {currentMember && <InstallBanner />}
       </body>
     </html>
   );

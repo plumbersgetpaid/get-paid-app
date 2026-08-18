@@ -15,6 +15,12 @@ import {
 const PUBLIC_PATHS = [
   "/privacy",
   "/terms",
+  // PWA assets the browser fetches without credentials. Not caught by the
+  // static-asset matcher exclusion (which lists only image extensions), so
+  // they must be exempted here or the proxy redirects them to /login and
+  // the app is neither installable nor able to register its worker.
+  "/manifest.webmanifest",
+  "/sw.js",
   // Contains nothing but window.close() - and must run even when the
   // session expired while the person was inside the Stripe portal,
   // otherwise the tab shows a login page instead of closing.
