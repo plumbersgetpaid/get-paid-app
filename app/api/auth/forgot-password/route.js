@@ -4,6 +4,7 @@ import { getEmailFrom } from "../../../lib/emailFrom";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
+import { checkLoginAllowed, recordFailedLogin } from "../../../lib/loginThrottle";
 
 function generateResetToken() {
   const bytes = new Uint8Array(32);
@@ -18,6 +19,19 @@ export async function POST(req) {
   if (!email) {
     return NextResponse.json({ error: "Enter your email" }, { status: 400 });
   }
+
+  // Same per-IP throttle as login. This endpoint sends an email each time,
+  // so without a limit it's an email-bombing vector as well as a way to
+  // probe which addresses have accounts. The response is identical whether
+  // or not the email exists, and each request counts toward the IP's limit.
+  const gate = await checkLoginAllowed(req);
+  if (gate.blocked) {
+    return NextResponse.json(
+      { error: "Too many attempts. Try again shortly." },
+      { status: 429 }
+    );
+  }
+  await recordFailedLogin(gate.ip);
 
   const db = supabaseAdmin();
   const { data: member } = await db

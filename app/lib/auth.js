@@ -46,19 +46,37 @@ async function sign(value) {
   return toHex(signatureBuffer);
 }
 
-export async function buildSessionToken(teamMemberId) {
+export async function buildSessionToken(teamMemberId, sessionVersion = 0) {
   const expires = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
-  const payload = `${teamMemberId}.${expires}`;
+  // Version is part of the signed payload. Bumping team_members.session_version
+  // (on any password change) makes every token carrying the old number fail
+  // the version check its holder runs after loading the member.
+  const payload = `${teamMemberId}.${expires}.${sessionVersion}`;
   return `${payload}.${await sign(payload)}`;
 }
 
+// Returns { teamMemberId, sessionVersion } on a valid signature+expiry, or
+// null. It does NOT check the version against the database (it has no DB
+// access and runs in the Edge proxy too) - the caller compares
+// sessionVersion against the loaded member's current session_version.
 export async function verifySessionToken(token) {
   if (!token || typeof token !== "string") return null;
   const parts = token.split(".");
-  if (parts.length !== 3) return null;
 
-  const [teamMemberId, expiresStr, signature] = parts;
-  const payload = `${teamMemberId}.${expiresStr}`;
+  let teamMemberId, expiresStr, sessionVersion, signature, payload;
+  if (parts.length === 4) {
+    [teamMemberId, expiresStr, sessionVersion, signature] = parts;
+    payload = `${teamMemberId}.${expiresStr}.${sessionVersion}`;
+  } else if (parts.length === 3) {
+    // Legacy token issued before versioning. Treated as version 0, which
+    // matches the column default, so existing logins keep working until
+    // they expire or a password change bumps the version past 0.
+    [teamMemberId, expiresStr, signature] = parts;
+    sessionVersion = "0";
+    payload = `${teamMemberId}.${expiresStr}`;
+  } else {
+    return null;
+  }
 
   const signatureBytes = fromHex(signature);
   if (!signatureBytes) return null;
@@ -78,7 +96,7 @@ export async function verifySessionToken(token) {
   const expires = Number(expiresStr);
   if (!expires || Number.isNaN(expires) || Date.now() > expires) return null;
 
-  return teamMemberId;
+  return { teamMemberId, sessionVersion: Number(sessionVersion) };
 }
 
 export async function getCurrentTeamMember() {
@@ -86,16 +104,23 @@ export async function getCurrentTeamMember() {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const teamMemberId = await verifySessionToken(token);
-  if (!teamMemberId) return null;
+  const verified = await verifySessionToken(token);
+  if (!verified) return null;
 
   const db = supabaseAdmin();
   const { data } = await db
     .from("team_members")
     .select("*")
-    .eq("id", teamMemberId)
+    .eq("id", verified.teamMemberId)
     .eq("is_active", true)
     .maybeSingle();
 
-  return data || null;
+  if (!data) return null;
+
+  // A token minted before the last password change carries an older
+  // session_version and is no longer valid, even though its signature and
+  // expiry are fine.
+  if ((data.session_version ?? 0) !== verified.sessionVersion) return null;
+
+  return data;
 }

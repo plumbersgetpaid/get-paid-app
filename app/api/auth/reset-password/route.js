@@ -20,7 +20,7 @@ export async function POST(req) {
   const db = supabaseAdmin();
   const { data: member } = await db
     .from("team_members")
-    .select("id, reset_token_expires")
+    .select("id, reset_token_expires, session_version")
     .eq("reset_token", token)
     .eq("is_active", true)
     .maybeSingle();
@@ -33,9 +33,17 @@ export async function POST(req) {
   }
 
   const newHash = await hashPassword(newPassword);
+  // Bump session_version so every existing session token stops verifying -
+  // a password reset is the one action a compromised user is told to take,
+  // so it has to end the attacker's session, not just change the password.
   const { error } = await db
     .from("team_members")
-    .update({ password_hash: newHash, reset_token: null, reset_token_expires: null })
+    .update({
+      password_hash: newHash,
+      reset_token: null,
+      reset_token_expires: null,
+      session_version: (member.session_version ?? 0) + 1,
+    })
     .eq("id", member.id);
 
   if (error) {

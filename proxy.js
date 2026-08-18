@@ -89,9 +89,9 @@ export async function proxy(req) {
 
   try {
     const token = req.cookies.get(SESSION_COOKIE)?.value;
-    const teamMemberId = token ? await verifySessionToken(token) : null;
+    const verified = token ? await verifySessionToken(token) : null;
 
-    if (!teamMemberId) {
+    if (!verified) {
       const loginUrl = new URL("/login", req.url);
       return redirectNoCache(loginUrl);
     }
@@ -100,13 +100,15 @@ export async function proxy(req) {
     const { data: member } = await db
       .from("team_members")
       .select(
-        "id, role, business_id, can_invoice, can_see_client_database, can_create_quote, can_create_job, can_create_recurring_job, can_reschedule, is_platform_admin"
+        "id, role, business_id, session_version, can_invoice, can_see_client_database, can_create_quote, can_create_job, can_create_recurring_job, can_reschedule, is_platform_admin"
       )
-      .eq("id", teamMemberId)
+      .eq("id", verified.teamMemberId)
       .eq("is_active", true)
       .maybeSingle();
 
-    if (!member) {
+    // No member, or a token from before the last password change (older
+    // session_version) - clear the stale cookie and send to login.
+    if (!member || (member.session_version ?? 0) !== verified.sessionVersion) {
       const loginUrl = new URL("/login", req.url);
       const res = redirectNoCache(loginUrl);
       res.cookies.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
