@@ -84,10 +84,10 @@ flagging is not sufficient.
 `business_id` column — uniformly, no exceptions — so deletion has one handle
 across all of them:
 
-    business_settings   ignored_duplicates  job_shares          recurring_job_shares
-    chase_log           invoices            jobs                recurring_jobs
-    customers           job_notes           message_templates   reminder_shares
-                        job_photos          personal_events     subscriptions
+    business_settings   invoices            message_templates   recurring_jobs
+    chase_log           job_notes           personal_events     reminder_shares
+    customers           job_photos          recurring_job_shares subscriptions
+    ignored_duplicates  job_shares          jobs                team_members
 
 Plus `businesses` itself (keyed on `id`), the `outstanding_invoices` VIEW, and
 three storage buckets: `job-photos`, `job-note-images`, `logos`.
