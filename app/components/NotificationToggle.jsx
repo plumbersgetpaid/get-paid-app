@@ -26,7 +26,7 @@ function isIosNotStandalone() {
   return ios && !standalone;
 }
 
-export default function NotificationToggle() {
+export default function NotificationToggle({ vapidPublicKey }) {
   const [supported, setSupported] = useState(null);
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -53,6 +53,10 @@ export default function NotificationToggle() {
   }, []);
 
   async function enable() {
+    if (!vapidPublicKey) {
+      setMsg("Notifications aren't set up on the server yet.");
+      return;
+    }
     setBusy(true);
     setMsg(null);
     try {
@@ -69,7 +73,7 @@ export default function NotificationToggle() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
       const res = await fetch("/api/push/subscribe", {
         method: "POST",

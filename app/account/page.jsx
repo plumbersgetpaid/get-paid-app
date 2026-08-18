@@ -29,7 +29,7 @@ export default async function Account() {
 
       <AccountForm currentName={currentMember.name} currentEmail={currentMember.email} />
 
-      <NotificationToggle />
+      <NotificationToggle vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null} />
 
       {/* This page is reachable by every role, unlike Settings which is
           owner/manager only - previously the only Log out button in the
