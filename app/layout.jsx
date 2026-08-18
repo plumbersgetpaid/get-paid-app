@@ -21,7 +21,7 @@ const responsiveCss = `
      screen is unchanged, there's just more room in it. */
   @media (min-width: 900px) {
     :root {
-      --page-max: 720px;
+      --page-max: 840px;
       --page-pad: 24px;
       --card-pad: 22px;
       --card-pad-tight: 18px;
