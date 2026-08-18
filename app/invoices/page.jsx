@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function AllInvoices({ searchParams }) {
+export default async function AllInvoices(props) {
+  const searchParams = await props.searchParams;
   const settings = await getBusinessSettings();
 
   // Same rule as the invoice detail page - this entire section doesn't

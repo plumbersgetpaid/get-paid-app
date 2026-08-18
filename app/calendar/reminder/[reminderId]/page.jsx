@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function ReminderDetail({ params }) {
+export default async function ReminderDetail(props) {
+  const params = await props.params;
   const { reminderId } = params;
 
   // Fetched ahead of the job itself now - the scoped client needs to

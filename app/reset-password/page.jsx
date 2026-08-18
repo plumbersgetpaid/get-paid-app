@@ -5,7 +5,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default function ResetPassword({ searchParams }) {
+export default async function ResetPassword(props) {
+  const searchParams = await props.searchParams;
   const token = searchParams?.token || "";
 
   return (

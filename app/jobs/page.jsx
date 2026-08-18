@@ -22,7 +22,8 @@ const STATUS_COLORS = {
   cancelled: "#6b7280",
 };
 
-export default async function AllJobs({ searchParams }) {
+export default async function AllJobs(props) {
+  const searchParams = await props.searchParams;
   const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);

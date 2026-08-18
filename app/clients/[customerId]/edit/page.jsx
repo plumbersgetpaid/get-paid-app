@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function EditClient({ params }) {
+export default async function EditClient(props) {
+  const params = await props.params;
   const currentMember = await getCurrentTeamMember();
   if (!canSeeClientDatabase(currentMember)) {
     notFound();

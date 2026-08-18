@@ -7,7 +7,8 @@ import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canInvoice } from "../../../../lib/permissions";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 
-export async function GET(req, { params }) {
+export async function GET(req, props) {
+  const params = await props.params;
   const { invoiceId } = params;
 
   const currentMember = await getCurrentTeamMember();

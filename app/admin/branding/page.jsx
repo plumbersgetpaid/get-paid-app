@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function AdminBranding({ searchParams }) {
+export default async function AdminBranding(props) {
+  const searchParams = await props.searchParams;
   // A 404, not a redirect to login - someone without this specific
   // flag shouldn't even learn this page exists, the same reasoning
   // used for Settings but one level more restrictive, since this

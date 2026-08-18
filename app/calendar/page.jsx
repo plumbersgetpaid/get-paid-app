@@ -86,7 +86,8 @@ function projectRecurringOccurrences(nextOccurrence, value, unit, rangeStartStr,
   return dates;
 }
 
-export default async function Calendar({ searchParams }) {
+export default async function Calendar(props) {
+  const searchParams = await props.searchParams;
   // Fetched ahead of the scoped client - it needs to know who's logged
   // in (and their business) before it can even be constructed. This
   // page previously had no explicit login check at all - middleware

@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function EditRecurringJob({ params }) {
+export default async function EditRecurringJob(props) {
+  const params = await props.params;
   const currentMember = await getCurrentTeamMember();
   if (!canCreateRecurringJob(currentMember)) {
     notFound();

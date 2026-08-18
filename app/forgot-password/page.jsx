@@ -5,7 +5,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default function ForgotPassword({ searchParams }) {
+export default async function ForgotPassword(props) {
+  const searchParams = await props.searchParams;
   // This page is reachable two ways: from the logged-out login screen,
   // or from My Account while already logged in (for someone who's
   // forgotten their actual password despite still having a valid

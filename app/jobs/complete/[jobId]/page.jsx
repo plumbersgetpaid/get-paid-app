@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function CompleteJob({ params, searchParams }) {
+export default async function CompleteJob(props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const { jobId } = params;
 
   // Fetched ahead of the job itself now - the scoped client needs to

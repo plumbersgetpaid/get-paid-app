@@ -21,7 +21,8 @@ const STATUS_COPY = {
   incomplete: "Incomplete",
 };
 
-export default async function Billing({ searchParams }) {
+export default async function Billing(props) {
+  const searchParams = await props.searchParams;
   const currentMember = await getCurrentTeamMember();
   if (!canSeeEverything(currentMember)) {
     notFound();

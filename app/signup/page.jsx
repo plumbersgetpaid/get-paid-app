@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function Signup({ searchParams }) {
+export default async function Signup(props) {
+  const searchParams = await props.searchParams;
   const settings = await getPlatformSettings();
 
   const fromMarketing = parseInt((searchParams?.team || "").toString(), 10);

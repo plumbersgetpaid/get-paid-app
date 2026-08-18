@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function QuickBook({ searchParams }) {
+export default async function QuickBook(props) {
+  const searchParams = await props.searchParams;
   const currentMember = await getCurrentTeamMember();
   if (!canCreateJob(currentMember)) {
     notFound();

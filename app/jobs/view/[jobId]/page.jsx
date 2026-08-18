@@ -72,7 +72,8 @@ function describeDuration(startIso, endIso) {
   return `${roundedHours} hour${roundedHours === 1 ? "" : "s"}`;
 }
 
-export default async function ViewJob({ params }) {
+export default async function ViewJob(props) {
+  const params = await props.params;
   const { jobId } = params;
   // Fetched ahead of the job itself now - the scoped client needs to
   // know who's logged in (and their business) before it can even be

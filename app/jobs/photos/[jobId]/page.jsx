@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function JobPhotos({ params, searchParams }) {
+export default async function JobPhotos(props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const { jobId } = params;
 
   // This page previously had no login lookup at all - middleware

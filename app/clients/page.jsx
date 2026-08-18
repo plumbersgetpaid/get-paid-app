@@ -15,7 +15,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function Clients({ searchParams }) {
+export default async function Clients(props) {
+  const searchParams = await props.searchParams;
   const settings = await getBusinessSettings();
   const currentMember = await getCurrentTeamMember();
   const showEverything = canSeeEverything(currentMember);

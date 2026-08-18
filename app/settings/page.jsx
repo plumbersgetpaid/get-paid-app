@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function Settings({ searchParams }) {
+export default async function Settings(props) {
+  const searchParams = await props.searchParams;
   // This whole page is business-wide configuration - owner/manager only.
   // The link to it was already hidden from subcontractors, but that
   // alone doesn't stop someone typing the URL directly, so this checks

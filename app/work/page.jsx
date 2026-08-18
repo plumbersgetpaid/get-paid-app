@@ -17,7 +17,8 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-export default async function Work({ searchParams }) {
+export default async function Work(props) {
+  const searchParams = await props.searchParams;
   // Fetched ahead of the client now - the scoped client needs to know
   // who's logged in (and their business) before it can even be
   // constructed, so this can no longer come after db the way it
