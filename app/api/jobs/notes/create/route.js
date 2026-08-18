@@ -53,8 +53,8 @@ export async function POST(req) {
       );
     }
 
-    const { data: publicUrlData } = adminDb.storage.from("job-note-images").getPublicUrl(path);
-    imageUrl = publicUrlData.publicUrl;
+    // Private bucket - path only, signed on read.
+    imageUrl = null;
     imageStoragePath = path;
   }
 

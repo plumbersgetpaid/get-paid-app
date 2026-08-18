@@ -4,6 +4,7 @@ import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything, canInvoice } from "../../../lib/permissions";
 import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
+import { withSignedUrls } from "../../../lib/signedMediaUrls";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -61,12 +62,19 @@ export default async function CompleteJob(props) {
     .eq("id", job.customer_id)
     .single();
 
-  const { data: importantNotes } = await db
+  const { data: importantNotesRaw } = await db
     .from("job_notes")
     .select("*")
     .eq("job_id", jobId)
     .eq("important", true)
     .order("created_at", { ascending: false });
+
+  const importantNotes = await withSignedUrls(
+    "job-note-images",
+    importantNotesRaw,
+    "image_storage_path",
+    "image_url"
+  );
 
   // Default due date: 14 days from today, in yyyy-mm-dd for the date input
   const defaultDueDate = new Date();

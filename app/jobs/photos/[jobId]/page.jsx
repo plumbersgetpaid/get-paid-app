@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import ConfirmSubmitButton from "../../../components/ConfirmSubmitButton";
+import { withSignedUrls } from "../../../lib/signedMediaUrls";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
@@ -58,8 +59,13 @@ export default async function JobPhotos(props) {
     .eq("job_id", jobId)
     .order("created_at", { ascending: true });
 
-  const beforePhotos = (photos || []).filter((p) => p.label === "before");
-  const afterPhotos = (photos || []).filter((p) => p.label === "after");
+  // The stored url column holds a stale public link from when the bucket
+  // was public. Sign from storage_path instead so old and new rows behave
+  // the same and the link expires.
+  const signedPhotos = await withSignedUrls("job-photos", photos, "storage_path", "url");
+
+  const beforePhotos = signedPhotos.filter((p) => p.label === "before");
+  const afterPhotos = signedPhotos.filter((p) => p.label === "after");
 
   return (
     <main>

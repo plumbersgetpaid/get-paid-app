@@ -2,6 +2,7 @@ import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canAccessJob } from "../../../../lib/jobAccess";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
+import { withSignedUrls } from "../../../../lib/signedMediaUrls";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -27,7 +28,7 @@ export async function GET(req) {
   if (!hasAccess) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
-  const { data: notes, error } = await db
+  const { data: notesRaw, error } = await db
     .from("job_notes")
     .select("*")
     .eq("job_id", jobId)
@@ -37,6 +38,13 @@ export async function GET(req) {
     console.error("List job notes error:", error);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  const notes = await withSignedUrls(
+    "job-note-images",
+    notesRaw,
+    "image_storage_path",
+    "image_url"
+  );
 
   const creatorIds = [...new Set((notes || []).map((n) => n.created_by).filter(Boolean))];
   const { data: creators } = creatorIds.length

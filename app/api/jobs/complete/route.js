@@ -33,11 +33,11 @@ async function uploadJobPhotos(db, adminDb, jobId, files, label, businessId) {
         return;
       }
 
-      const { data: publicUrlData } = adminDb.storage.from("job-photos").getPublicUrl(path);
-
+      // Private bucket - the storage path is the record, links are signed
+      // on read. See lib/signedMediaUrls.js.
       await db.from("job_photos").insert({
         job_id: jobId,
-        url: publicUrlData.publicUrl,
+        url: null,
         storage_path: path,
         label,
         business_id: businessId,

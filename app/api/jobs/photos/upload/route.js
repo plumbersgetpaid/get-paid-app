@@ -47,11 +47,12 @@ export async function POST(req) {
     return NextResponse.redirect(redirectUrl, 303);
   }
 
-  const { data: publicUrlData } = adminDb.storage.from("job-photos").getPublicUrl(path);
-
+  // No public URL stored: the bucket is private, and a saved link would
+  // either be dead or - worse - outlive the reason for having it. The
+  // storage path is the record; links are signed on read.
   const { error: insertError } = await db.from("job_photos").insert({
     job_id: jobId,
-    url: publicUrlData.publicUrl,
+    url: null,
     storage_path: path,
     label,
     business_id: currentMember.business_id,
