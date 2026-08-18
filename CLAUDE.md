@@ -82,41 +82,44 @@ Two things this cost, both worth remembering:
   photo on 10 Aug, before any of this. **Sweep for other unchecked writes
   during the audit** — this one proved the pattern loses real data.
 
-### 2. No deletion mechanism
+### 2. Deletion at 30 days — BUILT, migration outstanding
 
-Nothing currently deletes data at 30 days. Needs a scheduled job (a fourth Vercel
-cron) that **actually deletes** — database rows across all tables and the
-corresponding storage objects — for accounts cancelled 30+ days ago, while
-preserving Stripe billing records per the 6-year exception. Soft-delete or
-flagging is not sufficient.
+`api/cron/delete-cancelled` runs daily at 3am and deletes everything for
+accounts cancelled 30+ days ago. Storage first (the paths come from job
+ids), then one transactional call to `delete_business_data()`.
 
-**Verified inventory (Aug 2026).** Every tenant-scoped table carries a
-`business_id` column — uniformly, no exceptions — so deletion has one handle
-across all of them:
+Kept: the `subscriptions` row and the `businesses` name — the billing
+record held 6 years for UK tax. Everything else goes outright.
 
-    business_settings   invoices            message_templates   recurring_jobs
-    chase_log           job_notes           personal_events     reminder_shares
-    customers           job_photos          recurring_job_shares subscriptions
-    ignored_duplicates  job_shares          jobs                team_members
+**`supabase/delete-cancelled-business.sql` has not been run yet.** Until
+it is, `subscriptions.canceled_at` and the function don't exist, and the
+cron will error nightly without deleting anything. Run it, then do a
+`?dryRun=1` pass before trusting it.
 
-Plus `businesses` itself (keyed on `id`), the `outstanding_invoices` VIEW, and
-three storage buckets: `job-photos`, `job-note-images`, `logos`.
-`platform_settings` is platform-wide and correctly has no `business_id`.
+Ordering is dictated by the foreign keys, which are almost all NO ACTION —
+nothing cascades from the business down:
+`chase_log → invoices → jobs → customers`, with `team_members` last
+because jobs, notes, personal events and recurring jobs all reference it.
 
-`subscriptions` is the one table the 6-year Stripe exception applies to — it must
-survive the 30-day sweep.
+Test case waiting: lux plumbing cancelled 17 Aug 2026, so it comes due
+around 17 Sep 2026.
 
-### 3. No data export
+### 3. Data export — DONE (Aug 2026)
 
-Users must be able to get their data out before it is deleted. Needs:
+`/api/export/everything` returns one zip: clients, jobs, quotes, invoices
+(with payment status and dates), job notes and recurring jobs as CSV,
+plus the photos as real files in a folder per client, and a README.
 
-- **Bulk export** of clients, jobs, quotes, invoices, payment status, and photos —
-  CSVs plus the actual image files
-- A **cancellation screen** that clearly warns data will be deleted after 30 days
-  and links to the export
+Photos are the only unbounded part — 150MB budget, past which the rest
+are listed in `photos.csv` with a 7-day signed link each rather than the
+export timing out and producing nothing.
 
-Existing narrow exports to build on: `app/api/invoices/export-csv/route.js`,
-`app/api/invoices/export/route.js`, `app/api/invoices/bulk-pdf/route.js`.
+Gated on `canSeeEverything`: this is every customer, invoice and photo in
+one file.
+
+The billing page carries the cancellation warning and the export button
+together. Cancelling itself happens in Stripe's portal, which we can't
+put a warning inside — so it has to be on our side of that link.
 
 ### 4. Remove Twilio — DONE
 
