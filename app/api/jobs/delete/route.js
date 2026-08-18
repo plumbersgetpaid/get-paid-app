@@ -62,5 +62,5 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.redirect(new URL("/work?tab=jobs", req.url));
+  return NextResponse.redirect(new URL("/work?tab=jobs", req.url), 303);
 }

@@ -30,7 +30,7 @@ export async function POST(req) {
 
   if (jobErr || !job) {
     console.error("Chase quote lookup error:", jobErr);
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/", req.url), 303);
   }
 
   const { data: customer } = await db
@@ -71,5 +71,5 @@ export async function POST(req) {
     console.log("Skipped chasing quote - no email on file or Resend key missing");
   }
 
-  return NextResponse.redirect(new URL("/", req.url));
+  return NextResponse.redirect(new URL("/", req.url), 303);
 }

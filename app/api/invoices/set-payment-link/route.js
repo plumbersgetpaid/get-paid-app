@@ -28,5 +28,5 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.redirect(new URL(`/invoices/${invoiceId}`, req.url));
+  return NextResponse.redirect(new URL(`/invoices/${invoiceId}`, req.url), 303);
 }

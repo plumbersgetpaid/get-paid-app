@@ -83,5 +83,5 @@ export async function POST(req) {
     }
   }
 
-  return NextResponse.redirect(new URL("/", req.url));
+  return NextResponse.redirect(new URL("/", req.url), 303);
 }

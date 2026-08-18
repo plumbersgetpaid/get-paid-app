@@ -61,5 +61,5 @@ export async function POST(req) {
     }
   }
 
-  return NextResponse.redirect(new URL("/calendar", req.url));
+  return NextResponse.redirect(new URL("/calendar", req.url), 303);
 }

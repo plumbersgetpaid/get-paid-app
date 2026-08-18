@@ -95,7 +95,7 @@ export async function POST(req) {
       redirectUrl.searchParams.set("location", location);
       redirectUrl.searchParams.set("includeWeekends", includeWeekends ? "1" : "0");
       redirectUrl.searchParams.set("conflict", conflictMessage);
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(redirectUrl, 303);
     }
   }
 
@@ -161,5 +161,5 @@ export async function POST(req) {
     }
   }
 
-  return NextResponse.redirect(new URL("/calendar", req.url));
+  return NextResponse.redirect(new URL("/calendar", req.url), 303);
 }

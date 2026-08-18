@@ -30,5 +30,5 @@ export async function POST(req) {
   }
 
   const returnPath = from === "work" ? "/work?tab=jobs" : "/";
-  return NextResponse.redirect(new URL(returnPath, req.url));
+  return NextResponse.redirect(new URL(returnPath, req.url), 303);
 }

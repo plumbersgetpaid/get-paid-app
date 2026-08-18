@@ -9,10 +9,10 @@ export async function POST(req) {
   const settings = await getBusinessSettings();
 
   if (!settings.google_review_link) {
-    return NextResponse.redirect(new URL("/settings?testError=nolink", req.url));
+    return NextResponse.redirect(new URL("/settings?testError=nolink", req.url), 303);
   }
   if (!settings.contact_email && !settings.contact_phone) {
-    return NextResponse.redirect(new URL("/settings?testError=nocontact", req.url));
+    return NextResponse.redirect(new URL("/settings?testError=nocontact", req.url), 303);
   }
 
   const template = await getTemplate("review_request");
@@ -62,5 +62,5 @@ export async function POST(req) {
   if (emailErrorMessage) {
     redirectUrl.searchParams.set("testErrorMsg", emailErrorMessage);
   }
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.redirect(redirectUrl, 303);
 }

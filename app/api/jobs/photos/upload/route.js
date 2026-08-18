@@ -44,7 +44,7 @@ export async function POST(req) {
     console.error("Job photo upload error:", uploadError);
     const redirectUrl = new URL(`/jobs/photos/${jobId}`, req.url);
     redirectUrl.searchParams.set("error", uploadError.message || "Upload failed");
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(redirectUrl, 303);
   }
 
   const { data: publicUrlData } = adminDb.storage.from("job-photos").getPublicUrl(path);
@@ -62,5 +62,5 @@ export async function POST(req) {
     return NextResponse.json({ error: insertError.message }, { status: 400 });
   }
 
-  return NextResponse.redirect(new URL(`/jobs/photos/${jobId}`, req.url));
+  return NextResponse.redirect(new URL(`/jobs/photos/${jobId}`, req.url), 303);
 }

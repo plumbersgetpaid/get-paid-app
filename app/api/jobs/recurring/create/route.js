@@ -102,5 +102,5 @@ export async function POST(req) {
     await createRecurringOccurrence(db, settings, newRecurring);
   }
 
-  return NextResponse.redirect(new URL("/jobs/recurring", req.url));
+  return NextResponse.redirect(new URL("/jobs/recurring", req.url), 303);
 }

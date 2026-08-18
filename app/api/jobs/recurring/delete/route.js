@@ -24,5 +24,5 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.redirect(new URL("/jobs/recurring", req.url));
+  return NextResponse.redirect(new URL("/jobs/recurring", req.url), 303);
 }

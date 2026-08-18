@@ -145,5 +145,5 @@ export async function POST(req) {
     console.log("Skipped manual chase - no email on file or Resend key missing");
   }
 
-  return NextResponse.redirect(new URL("/", req.url));
+  return NextResponse.redirect(new URL("/", req.url), 303);
 }
