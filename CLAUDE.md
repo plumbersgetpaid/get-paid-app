@@ -145,6 +145,28 @@ naming is not self-explanatory, so for reference:
 Use `-01` anywhere the mark appears small — favicons, app icons, the
 sign-off mark. The lockup is unreadable below about 100px.
 
+## Service-role queries and business scoping
+
+21 API routes use `supabaseAdmin()`, which bypasses row-level security. The
+46 routes on `getScopedDb()` are protected by the database itself; these 21
+are not, and must filter by `business_id` themselves.
+
+A cross-business sweep is not automatically a bug. The rule that separates
+the two, learned from a real leak in the recurring clash check (Aug 2026):
+
+- **Safe:** each row is handled on its own terms — the daily chase reads
+  every outstanding invoice, but each email goes to that invoice's own
+  business. Same for job reminders. The set is global; the handling is not.
+- **A leak:** a row from one business is *compared against, or reported
+  to*, another. The recurring clash check searched every business's jobs
+  for a time overlap, then emailed the customer's name and job type of
+  whatever it found — so one business could be told another's customer
+  details.
+
+When reviewing a `supabaseAdmin()` query, the question is not "does this
+read other businesses' rows" but "does anything from another business end
+up in front of this one".
+
 ## Other known issues
 
 - **`app/package.json` is a second, divergent manifest.** It still pins
