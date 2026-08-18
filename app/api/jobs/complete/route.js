@@ -35,13 +35,23 @@ async function uploadJobPhotos(db, adminDb, jobId, files, label, businessId) {
 
       // Private bucket - the storage path is the record, links are signed
       // on read. See lib/signedMediaUrls.js.
-      await db.from("job_photos").insert({
+      const { error: insertError } = await db.from("job_photos").insert({
         job_id: jobId,
         url: null,
         storage_path: path,
         label,
         business_id: businessId,
       });
+
+      // This used to be unchecked, which hid a real failure: the file
+      // uploaded, the row was rejected, and the photo simply never
+      // appeared - no error anywhere, on a screen the user had already
+      // left. Log it loudly and remove the now-unreferenced file rather
+      // than leaving it orphaned in the bucket.
+      if (insertError) {
+        console.error(`Job photo record failed (${label}), removing orphan:`, insertError);
+        await adminDb.storage.from("job-photos").remove([path]);
+      }
     })
   );
 }
