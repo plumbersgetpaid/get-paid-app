@@ -2,6 +2,7 @@ import { getTemplate, renderTemplate } from "./getTemplate";
 import { textToEmailHtml } from "./emailHtml";
 import { getEmailFrom } from "./emailFrom";
 import { advanceDate } from "./duration";
+import { narrowToRealClashes } from "./jobConflicts";
 import { Resend } from "resend";
 
 export async function createRecurringOccurrence(db, settings, r) {
@@ -54,28 +55,8 @@ export async function createRecurringOccurrence(db, settings, r) {
       return start < oEnd && end > oStart;
     });
 
-    if (overlapping.length > 0) {
-      // Overlapping in time isn't enough. A two-person business booking
-      // two jobs at 9am is running normally, not double-booked. It's only
-      // a clash if someone is expected at both - or if both are
-      // unassigned, in which case both fall to whoever runs the business.
-      const { data: shares } = await db
-        .from("job_shares")
-        .select("job_id, team_member_id")
-        .in("job_id", overlapping.map((o) => o.id));
-
-      const assigneesByJob = new Map();
-      for (const share of shares || []) {
-        if (!assigneesByJob.has(share.job_id)) assigneesByJob.set(share.job_id, new Set());
-        assigneesByJob.get(share.job_id).add(share.team_member_id);
-      }
-
-      conflict = overlapping.find((o) => {
-        const theirs = assigneesByJob.get(o.id) || new Set();
-        if (assigneeIds.size === 0 && theirs.size === 0) return true;
-        return [...assigneeIds].some((id) => theirs.has(id));
-      });
-    }
+    const realClashes = await narrowToRealClashes(db, overlapping, assigneeIds);
+    conflict = realClashes[0] || null;
   }
 
   const { data: job, error: jobErr } = await db

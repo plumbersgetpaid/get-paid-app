@@ -1,6 +1,7 @@
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { computeScheduleEnd } from "../../../lib/duration";
+import { narrowToRealClashes, assigneesForJob } from "../../../lib/jobConflicts";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getCurrentTeamMember } from "../../../lib/auth";
@@ -55,11 +56,16 @@ export async function POST(req) {
       .not("scheduled_start", "is", null)
       .neq("id", jobId);
 
-    const conflicts = (others || []).filter((o) => {
+    const overlapping = (others || []).filter((o) => {
       const oStart = new Date(o.scheduled_start);
       const oEnd = new Date(o.scheduled_end);
       return start < oEnd && end > oStart;
     });
+
+    // Overlapping in time isn't enough - it's only a clash if the same
+    // person is expected at both.
+    const ownAssignees = await assigneesForJob(db, jobId, jobForCheck?.assigned_to);
+    const conflicts = await narrowToRealClashes(db, overlapping, ownAssignees);
 
     if (conflicts.length > 0) {
       const conflictCustomerIds = [...new Set(conflicts.map((c) => c.customer_id))];

@@ -1,6 +1,7 @@
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { computeScheduleEnd } from "../../../lib/duration";
+import { narrowToRealClashes } from "../../../lib/jobConflicts";
 import { findExistingCustomer } from "../../../lib/findCustomer";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
@@ -52,11 +53,15 @@ export async function POST(req) {
       .eq("status", "in_progress")
       .not("scheduled_start", "is", null);
 
-    const conflicts = (others || []).filter((o) => {
+    const overlapping = (others || []).filter((o) => {
       const oStart = new Date(o.scheduled_start);
       const oEnd = new Date(o.scheduled_end);
       return start < oEnd && end > oStart;
     });
+
+    // Only a clash if whoever this job is being assigned to is already
+    // expected somewhere else at that time.
+    const conflicts = await narrowToRealClashes(db, overlapping, assignedToIds);
 
     if (conflicts.length > 0) {
       const conflictCustomerIds = [...new Set(conflicts.map((c) => c.customer_id))];
