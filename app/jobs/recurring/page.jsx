@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import ConfirmSubmitButton from "../../components/ConfirmSubmitButton";
+import ReloadOnBack from "../../components/ReloadOnBack";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -38,6 +39,7 @@ export default async function RecurringJobs() {
 
   return (
     <main>
+      <ReloadOnBack />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BackButton fallbackHref="/work?tab=jobs" />
         <h1 style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>Recurring jobs</h1>

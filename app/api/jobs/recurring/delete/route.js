@@ -2,6 +2,7 @@ import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canCreateRecurringJob } from "../../../../lib/permissions";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
+import { redirectAfterMutation } from "../../../../lib/redirectAfterMutation";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -24,5 +25,5 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.redirect(new URL("/jobs/recurring", req.url), 303);
+  return redirectAfterMutation(req, "/jobs/recurring");
 }
