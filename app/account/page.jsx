@@ -2,6 +2,7 @@ import { getCurrentTeamMember } from "../lib/auth";
 import { redirect } from "next/navigation";
 import BackButton from "../components/BackButton";
 import AccountForm from "./AccountForm";
+import NotificationToggle from "../components/NotificationToggle";
 import LogoutButton from "../components/LogoutButton";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,8 @@ export default async function Account() {
       </section>
 
       <AccountForm currentName={currentMember.name} currentEmail={currentMember.email} />
+
+      <NotificationToggle />
 
       {/* This page is reachable by every role, unlike Settings which is
           owner/manager only - previously the only Log out button in the

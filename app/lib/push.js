@@ -1,0 +1,51 @@
+import webpush from "web-push";
+import { supabaseAdmin } from "./supabaseClient";
+
+let configured = false;
+function ensureConfigured() {
+  if (configured) return true;
+  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const priv = process.env.VAPID_PRIVATE_KEY;
+  const subject = process.env.VAPID_SUBJECT || "mailto:hello@getpatchup.co.uk";
+  if (!pub || !priv) return false;
+  webpush.setVapidDetails(subject, pub, priv);
+  configured = true;
+  return true;
+}
+
+// Sends one notification to every device a team member has enabled. A
+// subscription that comes back 404/410 (the browser dropped it) is deleted,
+// so dead devices don't accumulate. Returns { sent, removed }.
+export async function sendPushToMember(teamMemberId, payload) {
+  if (!ensureConfigured()) {
+    console.error("Push not configured - VAPID keys missing");
+    return { sent: 0, removed: 0 };
+  }
+  const db = supabaseAdmin();
+  const { data: subs } = await db
+    .from("push_subscriptions")
+    .select("id, endpoint, p256dh, auth")
+    .eq("team_member_id", teamMemberId);
+
+  let sent = 0;
+  let removed = 0;
+  const body = JSON.stringify(payload);
+
+  for (const s of subs || []) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+        body
+      );
+      sent += 1;
+    } catch (e) {
+      if (e.statusCode === 404 || e.statusCode === 410) {
+        await db.from("push_subscriptions").delete().eq("id", s.id);
+        removed += 1;
+      } else {
+        console.error("Push send error:", e.statusCode, e.body || e.message);
+      }
+    }
+  }
+  return { sent, removed };
+}
