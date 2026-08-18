@@ -1,5 +1,6 @@
 import BottomNav from "./components/BottomNav";
 import { getCurrentTeamMember } from "./lib/auth";
+import { getPlatformSettings } from "./lib/getPlatformSettings";
 import { poppins, mono, c } from "./lib/theme";
 import {
   canCreateQuote,
@@ -30,10 +31,17 @@ const responsiveCss = `
   }
 `;
 
-export const metadata = {
-  title: "PatchUp",
-  description: "Never chase an invoice by hand again",
-};
+// generateMetadata rather than a static `metadata` object so the browser
+// tab icon can be swapped from Platform branding without a code change.
+// Falls back to the emblem bundled in /public when nothing is uploaded.
+export async function generateMetadata() {
+  const platformSettings = await getPlatformSettings();
+  return {
+    title: "PatchUp",
+    description: "Never chase an invoice by hand again",
+    icons: { icon: platformSettings.favicon_url || "/patchup-emblem.png" },
+  };
+}
 
 export default async function RootLayout({ children }) {
   const currentMember = await getCurrentTeamMember();

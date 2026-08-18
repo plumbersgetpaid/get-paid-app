@@ -4,6 +4,7 @@ const DEFAULTS = {
   id: 1,
   app_logo_url: null,
   sign_off_logo_url: null,
+  favicon_url: null,
 };
 
 // Platform-wide, not per-business - there's exactly one row, id=1,

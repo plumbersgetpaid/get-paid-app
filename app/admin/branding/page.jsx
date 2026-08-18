@@ -22,6 +22,7 @@ export default async function AdminBranding({ searchParams }) {
   const settings = await getPlatformSettings();
   const savedApp = searchParams?.saved === "app";
   const savedSignoff = searchParams?.saved === "signoff";
+  const savedFavicon = searchParams?.saved === "favicon";
 
   return (
     <main>
@@ -92,6 +93,38 @@ export default async function AdminBranding({ searchParams }) {
         )}
 
         <AppLogoUploadForm uploadEndpoint="/api/admin/upload-signoff-logo" savedParam="signoff" />
+      </section>
+
+      <section style={cardStyle}>
+        <h2 style={{ fontSize: 15, fontWeight: 500, margin: "0 0 10px" }}>Favicon</h2>
+        <p style={{ fontSize: 12, color: "#888", marginTop: 0, marginBottom: 12 }}>
+          The small icon in the browser tab. It renders at about 16
+          pixels, so use the emblem on its own - a logo with the wordmark
+          in it turns to mush at that size. Square PNG works best.
+        </p>
+
+        {savedFavicon && (
+          <div style={successBannerStyle}>
+            Favicon updated - browsers cache these hard, so you may need
+            a fresh tab to see it.
+          </div>
+        )}
+
+        {settings.favicon_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={settings.favicon_url}
+            alt="Current favicon"
+            style={{ width: 32, height: 32, display: "block", marginBottom: 12 }}
+          />
+        ) : (
+          <p style={{ fontSize: 12, color: "#888", marginBottom: 12 }}>
+            Nothing uploaded - currently showing the built-in PatchUp
+            emblem.
+          </p>
+        )}
+
+        <AppLogoUploadForm uploadEndpoint="/api/admin/upload-favicon" savedParam="favicon" />
       </section>
     </main>
   );
