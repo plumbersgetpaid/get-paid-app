@@ -83,12 +83,17 @@ export async function GET(req) {
   }
 
   // ---- personal reminders starting soon ----
-  const { data: events } = await db
+  const { data: events, error: eventsErr } = await db
     .from("personal_events")
     .select("id, title, scheduled_start, created_by")
     .is("reminder_sent_at", null)
     .gt("scheduled_start", nowIso)
     .lte("scheduled_start", windowEnd);
+  if (eventsErr) {
+    // Don't let a reminders-query problem (e.g. the column not migrated yet)
+    // sink the jobs nudges that already ran.
+    console.error("starting-soon: personal_events query failed:", eventsErr.message);
+  }
 
   for (const ev of events || []) {
     if (ev.created_by) {

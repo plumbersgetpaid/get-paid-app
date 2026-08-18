@@ -7,8 +7,19 @@ function ensureConfigured() {
   const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const priv = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT || "mailto:hello@getpatchup.co.uk";
-  if (!pub || !priv) return false;
-  webpush.setVapidDetails(subject, pub, priv);
+  if (!pub || !priv) {
+    console.error("Push not configured - VAPID public or private key missing");
+    return false;
+  }
+  try {
+    // setVapidDetails THROWS on a malformed key or a subject that isn't a
+    // mailto:/https URL. Catch it so a bad env var degrades to "no push"
+    // instead of 500-ing the whole cron.
+    webpush.setVapidDetails(subject, pub, priv);
+  } catch (e) {
+    console.error("Push not configured - VAPID details rejected:", e.message);
+    return false;
+  }
   configured = true;
   return true;
 }
