@@ -151,7 +151,9 @@ const navStyle = {
   borderTop: `1px solid ${c.hairline}`,
   display: "flex",
   justifyContent: "space-around",
-  padding: "9px 0 11px",
+  // Extra bottom padding for the iPhone home indicator (safe-area inset);
+  // falls back to the plain 11px where there's no inset.
+  padding: "9px 0 calc(11px + env(safe-area-inset-bottom, 0px))",
   zIndex: 10,
 };
 

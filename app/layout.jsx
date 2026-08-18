@@ -66,6 +66,10 @@ export async function generateMetadata() {
 // Drives the browser/status-bar tint on the installed app.
 export const viewport = {
   themeColor: "#111111",
+  // Required for env(safe-area-inset-*) to report real values on iPhones
+  // with a home indicator - without it the insets are always 0 and the
+  // bottom nav sits under the indicator.
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }) {
