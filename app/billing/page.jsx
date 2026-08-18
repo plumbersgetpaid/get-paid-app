@@ -96,9 +96,57 @@ export default async function Billing(props) {
         </p>
         <BillingActions hasSubscription={Boolean(subscription?.stripe_subscription_id)} />
       </section>
+
+      {/* Cancelling happens inside Stripe's portal, which we don't control
+          and can't put a warning inside. So the warning has to be here,
+          before anyone gets that far - and next to the export, because
+          "your data will be deleted" is only fair if taking it with you is
+          one tap away rather than something to go and find. */}
+      <section style={cardStyle}>
+        <div className={mono.className} style={labelStyle}>
+          IF YOU LEAVE
+        </div>
+        <p style={bodyStyle}>
+          Cancel whenever you like - there&apos;s no notice period and no exit
+          fee. You keep access until the end of the period you&apos;ve paid for.
+        </p>
+        <p style={bodyStyle}>
+          <strong>Thirty days after you cancel, everything is deleted.</strong>{" "}
+          Clients, jobs, quotes, invoices, photos, notes - permanently, from
+          our systems and our backups. We keep only the billing record, which
+          UK tax rules require us to hold for six years.
+        </p>
+        <p style={bodyStyle}>
+          Download your records first. Your invoices are your own tax
+          documents and HMRC expects you to keep them for six years, so this
+          isn&apos;t something to leave until afterwards - afterwards is too
+          late.
+        </p>
+        <a href="/api/export/everything" style={exportButtonStyle}>
+          Download everything
+        </a>
+        <p style={{ ...bodyStyle, fontSize: 12, marginTop: 10, marginBottom: 0 }}>
+          One zip file: spreadsheets of your clients, jobs, quotes and
+          invoices with payment dates, plus the job photos. Opens in Excel,
+          Numbers or Google Sheets. Large libraries may take a minute.
+        </p>
+      </section>
     </main>
   );
 }
+
+const exportButtonStyle = {
+  display: "block",
+  textAlign: "center",
+  background: c.ink,
+  color: c.paper,
+  padding: "14px",
+  borderRadius: 2,
+  textDecoration: "none",
+  fontWeight: 500,
+  fontSize: 14.5,
+  marginTop: 4,
+};
 
 const cardStyle = {
   background: c.paper,
