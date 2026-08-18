@@ -39,7 +39,17 @@ export async function generateMetadata() {
   return {
     title: "PatchUp",
     description: "Never chase an invoice by hand again",
-    icons: { icon: platformSettings.favicon_url || "/patchup-emblem.png" },
+    // SVG first so it stays crisp on any display, PNG behind it for
+    // browsers that don't take an SVG favicon. An uploaded one wins over
+    // both.
+    icons: {
+      icon: platformSettings.favicon_url
+        ? [{ url: platformSettings.favicon_url }]
+        : [
+            { url: "/patchup-emblem.svg", type: "image/svg+xml" },
+            { url: "/patchup-emblem.png", type: "image/png" },
+          ],
+    },
   };
 }
 

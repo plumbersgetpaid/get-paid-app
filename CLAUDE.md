@@ -125,6 +125,26 @@ Two follow-ups still open:
 - The `notify_whatsapp` column on `recurring_jobs` is no longer written. Drop it
   once confirmed nothing depends on it.
 
+## Brand assets
+
+`public/` holds the emblem used as the default browser-tab icon, generated
+from the vector source rather than traced by hand:
+
+- `patchup-emblem.svg` — square, rounded black tile, white emblem
+- `patchup-emblem.png` — 512px render of the same, fallback for browsers
+  that won't take an SVG favicon
+
+The full brand pack (six colourways — black, white, silver, orange, red,
+baby blue — each as .ai/.eps/.pdf/.svg/.png/.jpg) is not in the repo. Its
+naming is not self-explanatory, so for reference:
+
+- `-01` = emblem only (the jigsaw parallelogram)
+- `-02` = wordmark only ("PatchUp" set in the brand face)
+- `-03` = full lockup, emblem above wordmark
+
+Use `-01` anywhere the mark appears small — favicons, app icons, the
+sign-off mark. The lockup is unreadable below about 100px.
+
 ## Other known issues
 
 - **No Node.js / lockfile in the local dev setup.** Changes have historically gone
