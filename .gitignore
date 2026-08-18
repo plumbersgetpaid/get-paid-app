@@ -1,0 +1,18 @@
+# Secrets - never commit these
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+build/
+
+# Vercel
+.vercel
+
+# macOS
+.DS_Store
