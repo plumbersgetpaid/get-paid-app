@@ -41,7 +41,9 @@ export default function BottomNav({
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/setup") ||
-    pathname.startsWith("/signup")
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms")
   ) {
     return null;
   }

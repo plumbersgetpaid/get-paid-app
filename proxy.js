@@ -13,6 +13,8 @@ import {
 } from "./app/lib/permissions";
 
 const PUBLIC_PATHS = [
+  "/privacy",
+  "/terms",
   "/login",
   "/setup",
   "/signup",

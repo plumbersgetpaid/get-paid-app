@@ -42,6 +42,13 @@ export default async function Signup(props) {
           Log in
         </Link>
       </p>
+
+      <p style={{ ...footerStyle, fontSize: 11.5, marginTop: 10 }}>
+        By creating an account you agree to the{" "}
+        <Link href="/terms" style={{ color: "#000" }}>Terms of Service</Link>{" "}
+        and{" "}
+        <Link href="/privacy" style={{ color: "#000" }}>Privacy Policy</Link>.
+      </p>
     </main>
   );
 }
