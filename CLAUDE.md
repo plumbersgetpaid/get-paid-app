@@ -80,6 +80,22 @@ corresponding storage objects — for accounts cancelled 30+ days ago, while
 preserving Stripe billing records per the 6-year exception. Soft-delete or
 flagging is not sufficient.
 
+**Verified inventory (Aug 2026).** Every tenant-scoped table carries a
+`business_id` column — uniformly, no exceptions — so deletion has one handle
+across all of them:
+
+    business_settings   ignored_duplicates  job_shares          recurring_job_shares
+    chase_log           invoices            jobs                recurring_jobs
+    customers           job_notes           message_templates   reminder_shares
+                        job_photos          personal_events     subscriptions
+
+Plus `businesses` itself (keyed on `id`), the `outstanding_invoices` VIEW, and
+three storage buckets: `job-photos`, `job-note-images`, `logos`.
+`platform_settings` is platform-wide and correctly has no `business_id`.
+
+`subscriptions` is the one table the 6-year Stripe exception applies to — it must
+survive the 30-day sweep.
+
 ### 3. No data export
 
 Users must be able to get their data out before it is deleted. Needs:
