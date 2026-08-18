@@ -34,6 +34,29 @@ async function syncSubscription(db, businessId, sub) {
     return;
   }
 
+  // Ignore events about a subscription this business isn't on.
+  //
+  // A failed or abandoned checkout can leave orphaned subscriptions on
+  // the same Stripe customer. Without this check, an event about one of
+  // those would overwrite the status of the subscription the business
+  // is actually paying for. A null stored id is fine - that's the first
+  // checkout completing.
+  const { data: existing } = await db
+    .from("subscriptions")
+    .select("stripe_subscription_id")
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  if (existing?.stripe_subscription_id && existing.stripe_subscription_id !== sub.id) {
+    console.log(
+      "Stripe webhook: ignoring event for stale subscription",
+      sub.id,
+      "- business is on",
+      existing.stripe_subscription_id
+    );
+    return;
+  }
+
   const seats = sub?.items?.data?.[0]?.quantity ?? null;
 
   const patch = {
@@ -127,28 +150,41 @@ export async function POST(req) {
 
       case "customer.subscription.deleted": {
         const sub = event.data.object;
-        const businessId = await businessIdFor(db, sub);
-        if (businessId) {
-          await db
-            .from("subscriptions")
-            .update({
-              status: "canceled",
-              updated_at: new Date().toISOString(),
-            })
-            .eq("business_id", businessId);
+        // Matched on the subscription id, not the business. Cancelling
+        // an old abandoned subscription must not mark a business
+        // cancelled when they're paying on a different one - that would
+        // lock a paying customer out because of someone else's tidy-up.
+        const { error: delErr } = await db
+          .from("subscriptions")
+          .update({
+            status: "canceled",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("stripe_subscription_id", sub.id);
+        if (delErr) {
+          console.error("Stripe webhook: cancel update failed", sub.id, delErr);
         }
         break;
       }
 
       case "invoice.payment_failed": {
         const invoice = event.data.object;
-        const customerId =
-          typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
-        if (customerId) {
+        // Scoped to the subscription rather than the customer. One
+        // customer can end up with several subscriptions, and a failed
+        // payment on an abandoned one shouldn't put a live account into
+        // past_due.
+        const subId =
+          typeof invoice.subscription === "string"
+            ? invoice.subscription
+            : invoice.subscription?.id;
+
+        if (subId) {
           await db
             .from("subscriptions")
             .update({ status: "past_due", updated_at: new Date().toISOString() })
-            .eq("stripe_customer_id", customerId);
+            .eq("stripe_subscription_id", subId);
+        } else {
+          console.log("Stripe webhook: payment_failed with no subscription", invoice.id);
         }
         break;
       }
