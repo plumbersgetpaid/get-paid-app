@@ -43,7 +43,7 @@ async function syncSubscription(db, businessId, sub) {
   // checkout completing.
   const { data: existing } = await db
     .from("subscriptions")
-    .select("stripe_subscription_id")
+    .select("stripe_subscription_id, canceled_at")
     .eq("business_id", businessId)
     .maybeSingle();
 
@@ -75,6 +75,20 @@ async function syncSubscription(db, businessId, sub) {
     patch.trial_ends_at = null;
   } else if (sub.trial_end) {
     patch.trial_ends_at = new Date(sub.trial_end * 1000).toISOString();
+  }
+
+  // A cancellation can also arrive as a status change on
+  // subscription.updated rather than subscription.deleted. Stamp the
+  // clock here too, once, and never overwrite an existing stamp.
+  if (sub.status === "canceled" && !existing?.canceled_at) {
+    patch.canceled_at = new Date().toISOString();
+  }
+
+  // Coming back from cancelled - a resubscribe - has to clear the clock,
+  // or the account would be deleted 30 days after a cancellation it has
+  // since reversed.
+  if (sub.status !== "canceled" && existing?.canceled_at) {
+    patch.canceled_at = null;
   }
 
   const { error } = await db.from("subscriptions").update(patch).eq("business_id", businessId);
@@ -154,13 +168,26 @@ export async function POST(req) {
         // an old abandoned subscription must not mark a business
         // cancelled when they're paying on a different one - that would
         // lock a paying customer out because of someone else's tidy-up.
+        // canceled_at starts the 30-day retention clock and is only set
+        // if it isn't already - re-running this must not push the
+        // deletion date back. See supabase/delete-cancelled-business.sql.
         const { error: delErr } = await db
           .from("subscriptions")
           .update({
             status: "canceled",
+            canceled_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
-          .eq("stripe_subscription_id", sub.id);
+          .eq("stripe_subscription_id", sub.id)
+          .is("canceled_at", null);
+
+        // Status still needs setting even where canceled_at was already
+        // stamped by an earlier event.
+        await db
+          .from("subscriptions")
+          .update({ status: "canceled", updated_at: new Date().toISOString() })
+          .eq("stripe_subscription_id", sub.id)
+          .not("canceled_at", "is", null);
         if (delErr) {
           console.error("Stripe webhook: cancel update failed", sub.id, delErr);
         }
