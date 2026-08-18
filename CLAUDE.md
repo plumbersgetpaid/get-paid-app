@@ -211,6 +211,32 @@ up in front of this one".
   for day-to-day work (the verified inventory above is the reference), but
   a fresh deploy from this repo would produce a broken database.
 
+## Notifications
+
+Two channels, by design:
+
+- **Email daily brief** (`api/cron/daily-brief`, 17:00 UTC): tomorrow's jobs,
+  invoices due tomorrow, quotes awaiting a reply. One email per business,
+  skipped when empty. Reaches everyone regardless of device.
+- **Web push** (installable PWA): `lib/push.js` sends via web-push; the
+  service worker (`public/sw.js`) shows the notification and deep-links on
+  tap. Per-device opt-in on the account page (`NotificationToggle`).
+  Subscriptions in `push_subscriptions`; dead ones auto-pruned on 404/410.
+  `api/cron/starting-soon` (every 15 min) nudges ~1h before a job or
+  personal reminder, keyed on `reminder_sent_at` so each fires once (a
+  reschedule clears it). iPhone push only works when installed to the home
+  screen.
+
+VAPID keys live in env: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (read at runtime and
+passed to the client as a prop — NOT relied on for build-time inlining),
+`VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (must be a mailto: or https URL).
+`sendPushToMember` degrades to a no-op with a log if VAPID is misconfigured
+rather than throwing.
+
+Crons now: recurring-jobs (6am), chase (9am), delete-cancelled (3am),
+daily-brief (17:00), starting-soon (*/15). Needs Vercel Pro for the
+sub-daily one.
+
 ## Time and timezones
 
 Scheduled times (`jobs.scheduled_start/scheduled_end`, `personal_events`,
