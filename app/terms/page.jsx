@@ -94,7 +94,9 @@ export default function TermsOfService() {
       <p style={{ ...pStyle, marginTop: 32 }}>
         <Link href="/privacy" style={linkStyle}>Privacy Policy</Link>
         {" · "}
-        <Link href="/login" style={linkStyle}>Back to PatchUp</Link>
+        <a href="https://getpatchup.co.uk" style={linkStyle}>getpatchup.co.uk</a>
+        {" · "}
+        <Link href="/login" style={linkStyle}>Log in</Link>
       </p>
     </main>
   );

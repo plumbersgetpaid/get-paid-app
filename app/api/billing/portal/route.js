@@ -26,15 +26,21 @@ export async function POST(req) {
   }
 
   try {
-    // No return_url on purpose.
+    // The return_url points at a page whose only job is window.close().
     //
-    // Stripe only renders its "return to..." link when a return URL is
-    // set, so omitting it removes the button entirely. That's what we
-    // want here: the portal opens in its own tab, so the way back is
-    // to close it. Offering a link that navigates the tab to the app
-    // instead just recreates the back-button mess in the new tab.
+    // History of this decision: originally there was no return_url at
+    // all, so Stripe showed no "return" button and the way back was
+    // closing the tab by hand. On mobile nobody closes tabs - they tap
+    // back, walk into expired Stripe pages, and loop. A return link
+    // that navigated to the app recreated the same mess one layer down.
+    // The missing piece: this tab was opened by window.open(), and a
+    // script-opened tab may close itself. So the return button now
+    // lands on /billing/portal-return, the tab closes, and the person
+    // is back in the original tab with no Stripe history anywhere.
+    const origin = new URL(req.url).origin;
     const session = await getStripe().billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
+      return_url: `${origin}/billing/portal-return`,
     });
     return NextResponse.json({ url: session.url });
   } catch (e) {

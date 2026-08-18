@@ -112,7 +112,9 @@ export default function PrivacyPolicy() {
       <p style={{ ...pStyle, marginTop: 32 }}>
         <Link href="/terms" style={linkStyle}>Terms of Service</Link>
         {" · "}
-        <Link href="/login" style={linkStyle}>Back to PatchUp</Link>
+        <a href="https://getpatchup.co.uk" style={linkStyle}>getpatchup.co.uk</a>
+        {" · "}
+        <Link href="/login" style={linkStyle}>Log in</Link>
       </p>
     </main>
   );

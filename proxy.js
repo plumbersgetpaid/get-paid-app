@@ -15,6 +15,10 @@ import {
 const PUBLIC_PATHS = [
   "/privacy",
   "/terms",
+  // Contains nothing but window.close() - and must run even when the
+  // session expired while the person was inside the Stripe portal,
+  // otherwise the tab shows a login page instead of closing.
+  "/billing/portal-return",
   "/login",
   "/setup",
   "/signup",
