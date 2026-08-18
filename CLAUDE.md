@@ -53,24 +53,34 @@ new tables and buckets need to be reachable by the deletion job.
 
 These four items block launch. They are known gaps, not bugs to rediscover.
 
-### 1. Job photos are in public buckets
+### 1. Job photos in public buckets — DONE (Aug 2026)
 
-Photos are uploaded to Supabase Storage and served via `getPublicUrl()`, which
-produces permanent, unauthenticated URLs — anyone with the link can view the
-inside of a customer's home. Must move to **private buckets with signed,
-time-limited URLs**.
+`job-photos` and `job-note-images` are private. Links are signed on read
+via `lib/signedMediaUrls.js` — one hour for browsing, five minutes for a
+PDF being generated server-side in the same request. Both tables already
+recorded `storage_path`, so the path is the record and the `url` /
+`image_url` columns are no longer written or read.
 
-Affects two buckets, `job-photos` and `job-note-images`:
+Signing runs on the admin client, because creating a signed URL needs
+storage permissions the scoped client doesn't carry. **Callers must have
+already established access** — every current call site sits behind
+`canAccessJob`, a permission gate, or the proxy. Signing hands out a
+short-lived link to something already authorised; it does not authorise.
 
-- `app/api/jobs/photos/upload/route.js`
-- `app/api/jobs/complete/route.js`
-- `app/api/jobs/notes/create/route.js`
-- plus every read path that renders a stored URL, and
-  `app/lib/getJobPhotosForPdf.js` for PDF embedding
+Moving this to storage-level policies keyed on `business_id` would be
+stronger — database-enforced rather than app-enforced — but needs every
+existing object relocated to a path structure containing the business.
+Worth revisiting in the audit.
 
-Note stored URLs are persisted in the database, so this needs a migration of
-existing rows, not just a code change. (The `logos` bucket is business branding,
-not personal data — lower priority.)
+Two things this cost, both worth remembering:
+
+- `job_photos.url` was `NOT NULL`. Writing null to it broke every photo
+  insert. Check column constraints before changing what a write puts in
+  them.
+- That insert's error was never checked, so the failure was invisible:
+  file uploaded, row rejected, photo silently gone. It had already lost a
+  photo on 10 Aug, before any of this. **Sweep for other unchecked writes
+  during the audit** — this one proved the pattern loses real data.
 
 ### 2. No deletion mechanism
 
