@@ -19,21 +19,63 @@ export async function createRecurringOccurrence(db, settings, r) {
   const start = new Date(`${r.next_occurrence}T${timeToUse}:00`);
   const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
 
+  // Who this occurrence is for. Worked out up front because the clash
+  // check below needs it - two jobs at the same time are only a problem
+  // if the same person is expected at both.
+  const assigneeIds = new Set();
+  if (r.assigned_to) assigneeIds.add(r.assigned_to);
+  const { data: recurringShares } = await db
+    .from("recurring_job_shares")
+    .select("team_member_id")
+    .eq("recurring_job_id", r.id);
+  for (const s of recurringShares || []) {
+    assigneeIds.add(s.team_member_id);
+  }
+
   let conflict = null;
   if (timeIsConfirmed) {
     const { data: sameDay } = await db
       .from("jobs")
       .select("id, job_type, customer_id, scheduled_start, scheduled_end")
+      // This runs on the service-role client, which bypasses row-level
+      // security, so the business has to be filtered explicitly. Without
+      // it the search covered every business on the platform - and the
+      // warning email below names the clashing customer, so one business
+      // could be told another's customer name and job type.
+      .eq("business_id", r.business_id)
       .eq("status", "in_progress")
       .not("scheduled_start", "is", null)
       .gte("scheduled_start", `${r.next_occurrence}T00:00:00`)
       .lte("scheduled_start", `${r.next_occurrence}T23:59:59`);
 
-    conflict = (sameDay || []).find((o) => {
+    const overlapping = (sameDay || []).filter((o) => {
       const oStart = new Date(o.scheduled_start);
       const oEnd = new Date(o.scheduled_end);
       return start < oEnd && end > oStart;
     });
+
+    if (overlapping.length > 0) {
+      // Overlapping in time isn't enough. A two-person business booking
+      // two jobs at 9am is running normally, not double-booked. It's only
+      // a clash if someone is expected at both - or if both are
+      // unassigned, in which case both fall to whoever runs the business.
+      const { data: shares } = await db
+        .from("job_shares")
+        .select("job_id, team_member_id")
+        .in("job_id", overlapping.map((o) => o.id));
+
+      const assigneesByJob = new Map();
+      for (const share of shares || []) {
+        if (!assigneesByJob.has(share.job_id)) assigneesByJob.set(share.job_id, new Set());
+        assigneesByJob.get(share.job_id).add(share.team_member_id);
+      }
+
+      conflict = overlapping.find((o) => {
+        const theirs = assigneesByJob.get(o.id) || new Set();
+        if (assigneeIds.size === 0 && theirs.size === 0) return true;
+        return [...assigneeIds].some((id) => theirs.has(id));
+      });
+    }
   }
 
   const { data: job, error: jobErr } = await db
@@ -60,15 +102,6 @@ export async function createRecurringOccurrence(db, settings, r) {
     return { created: false };
   }
 
-  const assigneeIds = new Set();
-  if (r.assigned_to) assigneeIds.add(r.assigned_to);
-  const { data: recurringShares } = await db
-    .from("recurring_job_shares")
-    .select("team_member_id")
-    .eq("recurring_job_id", r.id);
-  for (const s of recurringShares || []) {
-    assigneeIds.add(s.team_member_id);
-  }
   if (assigneeIds.size > 0) {
     const { error: sharesErr } = await db.from("job_shares").insert(
       [...assigneeIds].map((teamMemberId) => ({
