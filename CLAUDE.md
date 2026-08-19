@@ -233,6 +233,27 @@ send from their own domain — Resend supports multiple domains via API, and
 auto-setup (Entri) makes the DNS near one-click, but it's opt-in and only
 for tenants who own a domain. Default (name + reply-to) works for everyone.
 
+## Offline plan + retry protection
+
+The offline-first build is scoped in **docs/offline-plan.md** (read it
+before touching this area). Phase 0 is DONE (Aug 2026): every create/send
+action carries a client-generated `request_id`; twelve routes claim it
+atomically in `processed_requests` via `lib/idempotency.js` before acting.
+Replays get the success response; failures after claiming release the id.
+Verified live: five parallel submits of one action = one row.
+
+Rules this creates:
+- A NEW mutating route that creates or sends anything MUST take a
+  `request_id` (forms: render `<RequestIdField />`; fetch: sticky ref,
+  reset on confirmed success) and claim it. Copy the pattern from
+  clients/create.
+- Release on every post-claim failure path, or a user's legitimate retry
+  is refused as a duplicate of something that never happened.
+- `processed_requests` is purged >30 days by the delete-cancelled cron and
+  is covered by delete_business_data().
+
+Phases 1-2 (field pack, offline day view, outbox sync) are NOT built yet.
+
 ## Notifications
 
 Two channels, by design:
