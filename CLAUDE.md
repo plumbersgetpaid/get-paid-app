@@ -261,7 +261,21 @@ formatting, see the timezone note); the service worker falls back to
 /_next/static assets. Logout clears the pack. The isolation harness has a
 field-pack area — keep it passing.
 
-Phase 2 (offline outbox: complete/notes/photos with sync) is NOT built yet.
+Phase 2 is DONE (Aug 2026): `lib/outbox.js` (IndexedDB v2, cap 50) queues
+complete-job / job-note / photo actions on network failure, replayed
+oldest-first by FieldPackSync (outbox BEFORE pack refresh). Safety: entries
+reuse the action's own request_id (replays can't double-apply — proven:
+photo ×3 → 1 row, complete ×2 → 1 invoice); server rejections become
+"needs attention" on /field (Try again / Discard), never silently dropped;
+an expired session is detected via the /login redirect and the queue
+HELD; logout warns before destroying unsent work, then clears everything.
+The privacy policy's "Data stored on your device" section describes this —
+keep it true if the pack's contents change.
+
+Phase 3 remainder: nothing structural — the GDPR pieces (logout clear,
+policy disclosure) and test coverage (field-pack isolation area, replay
+proofs) shipped with Phases 1–2. Treat any new offline-capable action as:
+reuse request_id + queueAction, and extend the isolation harness.
 
 ## Notifications
 
