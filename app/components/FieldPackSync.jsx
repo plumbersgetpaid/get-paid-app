@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { saveFieldPack, kvGet, kvSet } from "../lib/fieldPackStore";
 import { syncOutbox } from "../lib/outbox";
 
@@ -9,9 +10,16 @@ import { syncOutbox } from "../lib/outbox";
 // refresh the field pack - in that order, so the saved copy reflects what
 // was just sent. Pack refresh is throttled; outbox sync never is, because
 // pending work should leave the phone at the first opportunity.
-const SYNC_EVERY_MS = 5 * 60 * 1000;
+// 45 seconds, not minutes: someone books a job and walks into a dead zone
+// straight after - the saved copy has to catch changes that fresh. The
+// pack query is a handful of small selects; cheapness is the point of it.
+const SYNC_EVERY_MS = 45 * 1000;
 
 export default function FieldPackSync() {
+  // Re-run on every navigation, not just hard loads - the layout persists
+  // across App Router navigations, so without this the effect fires once
+  // per session and booking a job would never refresh the saved copy.
+  const pathname = usePathname();
   useEffect(() => {
     let cancelled = false;
 
@@ -41,7 +49,7 @@ export default function FieldPackSync() {
       cancelled = true;
       window.removeEventListener("online", sync);
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }

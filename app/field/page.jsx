@@ -36,7 +36,25 @@ export default function FieldView() {
   const refreshOutbox = () => listOutbox().then(setOutbox).catch(() => {});
 
   useEffect(() => {
-    loadFieldPack().then((p) => setPack(p || null)).catch(() => setPack(null));
+    // Opened with signal: fetch the freshest pack directly, so "check my
+    // day, then drive into a dead zone" always leaves with current data.
+    // Any failure falls straight back to whatever the phone already holds.
+    async function freshest() {
+      if (navigator.onLine) {
+        try {
+          const res = await fetch("/api/field-pack");
+          if (res.ok && !res.redirected) {
+            const fresh = await res.json();
+            const { saveFieldPack } = await import("../lib/fieldPackStore");
+            await saveFieldPack(fresh);
+            setPack(fresh);
+            return;
+          }
+        } catch {}
+      }
+      loadFieldPack().then((p) => setPack(p || null)).catch(() => setPack(null));
+    }
+    freshest();
     refreshOutbox();
     setOnline(navigator.onLine);
     const up = () => {
