@@ -51,12 +51,6 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
   const noteRef = useRef(null);
   const [noteText, setNoteText] = useState("");
   const [noteImportant, setNoteImportant] = useState(false);
-  // photo
-  const photoRef = useRef(null);
-  const [photoLabel, setPhotoLabel] = useState("before");
-  const [photoFile, setPhotoFile] = useState(null);
-  const [fileKey, setFileKey] = useState(0);
-
   async function compressAll(files) {
     const out = [];
     for (const f of files) {
@@ -126,30 +120,6 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
     setBusy(false);
   }
 
-  async function submitPhoto(e) {
-    e.preventDefault();
-    if (!photoFile) return;
-    setBusy(true);
-    setMsg(null);
-    const [file] = await compressAll([photoFile]);
-    const fd = new FormData();
-    fd.append("jobId", job.id);
-    fd.append("label", photoLabel);
-    fd.append("photo", file, photoFile.name || "photo.jpg");
-    const r = await sendOrQueue({
-      endpoint: "/api/jobs/photos/upload",
-      label: `${photoLabel === "after" ? "After" : "Before"} photo`,
-      formData: fd,
-      requestIdRef: photoRef,
-    });
-    if (r.sent || r.queued) {
-      setPhotoFile(null);
-      setFileKey((k) => k + 1);
-    }
-    report(r, "Photo uploaded.", "Photo saved on this phone — uploads when you're back in signal.");
-    setBusy(false);
-  }
-
   return (
     <div style={{ marginTop: 10, borderTop: "1px solid #eee", paddingTop: 10 }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -160,9 +130,6 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
         )}
         <button onClick={() => setOpenForm(openForm === "note" ? null : "note")} style={btn(openForm === "note")}>
           Add note
-        </button>
-        <button onClick={() => setOpenForm(openForm === "photo" ? null : "photo")} style={btn(openForm === "photo")}>
-          Add photo
         </button>
         {online && (
           <a href={`/jobs/view/${job.id}`} style={{ ...btn(false), textDecoration: "none", display: "inline-block" }}>
@@ -216,21 +183,6 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
         </form>
       )}
 
-      {openForm === "photo" && (
-        <form onSubmit={submitPhoto} style={formStyle}>
-          <label style={lbl}>
-            Photo type
-            <select value={photoLabel} onChange={(e) => setPhotoLabel(e.target.value)} style={inp}>
-              <option value="before">Before</option>
-              <option value="after">After</option>
-            </select>
-          </label>
-          <input key={fileKey} type="file" accept="image/*" capture="environment" onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} style={{ fontSize: 13 }} />
-          <button type="submit" disabled={busy || !photoFile} style={primary}>
-            {busy ? "Saving…" : "Add photo"}
-          </button>
-        </form>
-      )}
     </div>
   );
 }
