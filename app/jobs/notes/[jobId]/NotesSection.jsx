@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { compressImage } from "../../../lib/compressImage";
+import { queueAction } from "../../../lib/outbox";
 
 function sortNotes(notes) {
   return [...notes].sort((a, b) => {
@@ -12,6 +13,7 @@ function sortNotes(notes) {
 
 export default function NotesSection({ jobId }) {
   const requestIdRef = useRef(null);
+  const [notice, setNotice] = useState(null);
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -46,7 +48,8 @@ export default function NotesSection({ jobId }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError(null);
+    setNotice(null);
+      setError(null);
     setBusy(true);
 
     try {
@@ -87,8 +90,35 @@ export default function NotesSection({ jobId }) {
       setBusy(false);
       await loadNotes();
     } catch (err) {
-      console.error("Add note error:", err);
-      setError("Couldn't reach the server. Check your connection and try again.");
+      // No signal: keep the note on the phone and send it when back online.
+      const ok = await queueAction({
+        requestId: requestIdRef.current,
+        endpoint: "/api/jobs/notes/create",
+        label: "Job note",
+        formData: (() => {
+          const fd = new FormData();
+          fd.append("jobId", jobId);
+          fd.append("note", note);
+          if (important) fd.append("important", "1");
+          // The original photo, not the compressed copy (that variable
+          // lives inside the failed try) - a slightly bigger upload later
+          // beats silently dropping someone's site photo.
+          if (file) fd.append("image", file);
+          fd.append("request_id", requestIdRef.current);
+          return fd;
+        })(),
+      }).catch(() => false);
+      if (ok) {
+        requestIdRef.current = null;
+        setNote("");
+        setImportant(false);
+        setFile(null);
+        setFileInputKey((k) => k + 1);
+        setNotice("No signal - note saved on this phone, it'll send when you're back online.");
+      } else {
+        console.error("Add note error:", err);
+        setError("Couldn't reach the server. Check your connection and try again.");
+      }
       setBusy(false);
     }
   }
@@ -114,6 +144,7 @@ export default function NotesSection({ jobId }) {
     <div>
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 8, marginTop: 16 }}>
         {error && <div style={errorBoxStyle}>{error}</div>}
+          {notice && <div style={{ background: "#111", color: "white", padding: 10, borderRadius: 6, fontSize: 12.5, marginTop: 8 }}>{notice}</div>}
         <textarea
           placeholder="Type a note for the team..."
           value={note}

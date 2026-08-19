@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { queueAction } from "../../../lib/outbox";
 import BackButton from "../../../components/BackButton";
 import { compressImage } from "../../../lib/compressImage";
 
@@ -16,6 +17,7 @@ export default function CompleteJobForm({
   showEverything,
 }) {
   const requestIdRef = useRef(null);
+  const [queued, setQueued] = useState(false);
   const [amount, setAmount] = useState(amountValue);
   const [dueDate, setDueDate] = useState(dueDateValue);
   const [note, setNote] = useState(noteValue);
@@ -103,7 +105,27 @@ export default function CompleteJobForm({
       if (!requestIdRef.current) requestIdRef.current = crypto.randomUUID();
       formData.append("request_id", requestIdRef.current);
 
-      const res = await fetch("/api/jobs/complete", { method: "POST", body: formData });
+      let res;
+      try {
+        res = await fetch("/api/jobs/complete", { method: "POST", body: formData });
+      } catch (netErr) {
+        // No signal. Keep the whole completion - photos included - on the
+        // phone and replay it automatically when the connection returns.
+        const ok = await queueAction({
+          requestId: requestIdRef.current,
+          endpoint: "/api/jobs/complete",
+          label: `Complete job${customer?.name ? ` — ${customer.name}` : ""}`,
+          formData,
+        });
+        if (!ok) {
+          setError("This phone's offline storage is full - connect to signal to send your saved work first.");
+          setBusy(false);
+          return;
+        }
+        setQueued(true);
+        setBusy(false);
+        return;
+      }
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -146,6 +168,24 @@ export default function CompleteJobForm({
       setError("Couldn't reach the AI just now - your note's been kept as you wrote it.");
       setBusy(false);
     }
+  }
+
+
+  if (queued) {
+    return (
+      <div style={{ background: "#111", color: "white", borderRadius: 8, padding: 18, marginTop: 16 }}>
+        <div style={{ fontSize: 16, fontWeight: 500 }}>Saved on this phone ✓</div>
+        <p style={{ fontSize: 13.5, lineHeight: 1.55, opacity: 0.85, margin: "8px 0 0" }}>
+          No signal right now, so this job completion - photos and all - is
+          stored safely on this phone. The moment you're back in signal it
+          sends itself: the job completes and the invoice goes to the
+          customer. Nothing else to do.
+        </p>
+        <a href="/field" style={{ color: "white", fontSize: 13.5, display: "inline-block", marginTop: 12 }}>
+          See your saved day →
+        </a>
+      </div>
+    );
   }
 
   return (

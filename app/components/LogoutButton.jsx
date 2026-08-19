@@ -2,11 +2,22 @@
 
 import { useState } from "react";
 import { clearFieldData } from "../lib/fieldPackStore";
+import { countPending } from "../lib/outbox";
 
 export default function LogoutButton() {
   const [busy, setBusy] = useState(false);
 
   async function handleLogout() {
+    // Unsent offline work is destroyed by logout (it must be - it contains
+    // customer data). Destroying it silently would be worse than the one
+    // browser confirm() this app otherwise avoids.
+    const pending = await countPending().catch(() => 0);
+    if (pending > 0) {
+      const sure = window.confirm(
+        `You have ${pending} unsent update${pending === 1 ? "" : "s"} saved on this phone (work done offline). Logging out deletes ${pending === 1 ? "it" : "them"} permanently. Get back into signal first to send ${pending === 1 ? "it" : "them"}, or log out anyway?`
+      );
+      if (!sure) return;
+    }
     setBusy(true);
     // The field pack holds customer names, phones and addresses - it must
     // not outlive the session on a shared or handed-back device.

@@ -10,7 +10,7 @@ export default function PrivacyPolicy() {
   return (
     <main style={pageStyle}>
       <h1 style={h1Style}>Privacy Policy</h1>
-      <p style={mutedStyle}>Last updated: 18 August 2026</p>
+      <p style={mutedStyle}>Last updated: 19 August 2026</p>
 
       <h2 style={h2Style}>Who we are</h2>
       <p style={pStyle}>
@@ -72,6 +72,17 @@ export default function PrivacyPolicy() {
       <p style={pStyle}>
         Some of these providers process data outside the UK. Where they do,
         the transfer is covered by their standard contractual safeguards.
+      </p>
+
+      <h2 style={h2Style}>Data stored on your device</h2>
+      <p style={pStyle}>
+        So the app still works where there&apos;s no signal, your phone keeps a
+        small offline copy of your next 7 days: your own jobs with customer
+        names, phone numbers and addresses, plus job notes. Work you record
+        while offline (job completions, notes, photos) is also held on the
+        phone until it can be sent. This all lives on your device only,
+        refreshes automatically, and is deleted when you log out - so don&apos;t
+        stay logged in on a phone that isn&apos;t yours.
       </p>
 
       <h2 style={h2Style}>How long we keep it</h2>

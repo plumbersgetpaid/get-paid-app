@@ -6,7 +6,7 @@ import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import Link from "next/link";
-import RequestIdField from "../../../components/RequestIdField";
+import PhotoUploadForm from "./PhotoUploadForm";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -95,36 +95,7 @@ export default async function JobPhotos(props) {
         </div>
       )}
 
-      <form
-        action="/api/jobs/photos/upload"
-        method="POST"
-        encType="multipart/form-data"
-        style={{ display: "grid", gap: 10, marginTop: 16 }}
-      >
-        <RequestIdField />
-        <input type="hidden" name="jobId" value={job.id} />
-
-        <label style={labelStyle}>
-          Photo type
-          <select name="label" defaultValue="before" style={inputStyle}>
-            <option value="before">Before</option>
-            <option value="after">After</option>
-          </select>
-        </label>
-
-        <input
-          type="file"
-          name="photo"
-          accept="image/*"
-          capture="environment"
-          required
-          style={{ fontSize: 14 }}
-        />
-
-        <button type="submit" style={uploadButtonStyle}>
-          Add photo
-        </button>
-      </form>
+      <PhotoUploadForm jobId={job.id} />
 
       <h2 style={{ fontSize: 16, fontWeight: 500, marginTop: 24 }}>Before ({beforePhotos.length})</h2>
       {beforePhotos.length === 0 && (
