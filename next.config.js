@@ -1,5 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        // One address, not two. The app also answers on its *.vercel.app
+        // deployment URL, which browsers treat as a completely separate
+        // site: separate logins, separate cookies, separate home-screen
+        // installs, separate offline packs. Anyone who bookmarks that URL
+        // lives a second life there. Permanently send everything to the
+        // real domain (localhost is untouched - this matches by host).
+        source: "/:path*",
+        has: [{ type: "host", value: "get-paid-app-five.vercel.app" }],
+        destination: "https://app.getpatchup.co.uk/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
