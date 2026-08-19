@@ -252,7 +252,16 @@ Rules this creates:
 - `processed_requests` is purged >30 days by the delete-cancelled cron and
   is covered by delete_business_data().
 
-Phases 1-2 (field pack, offline day view, outbox sync) are NOT built yet.
+Phase 1 is DONE (Aug 2026): `/api/field-pack` (scoped via
+filterJobsForMember) → IndexedDB via `lib/fieldPackStore.js`, kept fresh by
+`FieldPackSync`; `/field` is a PUBLIC dataless shell rendered from the
+device pack (times shown by slicing stored wall-clock strings — never Date
+formatting, see the timezone note); the service worker falls back to
+/field for failed navigations and caches only /field + immutable
+/_next/static assets. Logout clears the pack. The isolation harness has a
+field-pack area — keep it passing.
+
+Phase 2 (offline outbox: complete/notes/photos with sync) is NOT built yet.
 
 ## Notifications
 
