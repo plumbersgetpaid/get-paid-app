@@ -20,5 +20,8 @@
       "path": "/api/cron/starting-soon",
       "schedule": "*/15 * * * *"
     }
+  ],
+  "regions": [
+    "lhr1"
   ]
 }

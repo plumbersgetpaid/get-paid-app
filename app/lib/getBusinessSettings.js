@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { supabaseAdmin } from "./supabaseClient";
 import { getCurrentTeamMember } from "./auth";
 
@@ -17,7 +18,7 @@ const DEFAULTS = {
   send_review_requests: true,
 };
 
-export async function getBusinessSettings(businessId) {
+export const getBusinessSettings = cache(async function getBusinessSettings(businessId) {
   let resolvedBusinessId = businessId;
   if (!resolvedBusinessId) {
     const currentMember = await getCurrentTeamMember();
@@ -40,4 +41,4 @@ export async function getBusinessSettings(businessId) {
   }
 
   return { ...DEFAULTS, ...data };
-}
+})

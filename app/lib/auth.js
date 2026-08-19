@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "./supabaseClient";
 
@@ -99,7 +100,10 @@ export async function verifySessionToken(token) {
   return { teamMemberId, sessionVersion: Number(sessionVersion) };
 }
 
-export async function getCurrentTeamMember() {
+// Wrapped in React cache(): the layout, generateMetadata and the page all
+// need the current member, and without this each did its own database
+// round trip - triple-fetching the same row on every navigation.
+export const getCurrentTeamMember = cache(async function getCurrentTeamMember() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -123,4 +127,4 @@ export async function getCurrentTeamMember() {
   if ((data.session_version ?? 0) !== verified.sessionVersion) return null;
 
   return data;
-}
+})

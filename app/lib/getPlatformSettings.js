@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { supabaseAdmin } from "./supabaseClient";
 
 const DEFAULTS = {
@@ -14,8 +15,8 @@ const DEFAULTS = {
 // question ("what does this one business look like on its invoices"),
 // not "what does the platform itself look like before anyone's even
 // logged in to a business yet".
-export async function getPlatformSettings() {
+export const getPlatformSettings = cache(async function getPlatformSettings() {
   const db = supabaseAdmin();
   const { data } = await db.from("platform_settings").select("*").eq("id", 1).maybeSingle();
   return { ...DEFAULTS, ...data };
-}
+})
