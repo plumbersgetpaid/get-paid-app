@@ -69,7 +69,7 @@ export async function POST(req) {
         messages: [
           {
             role: "user",
-            content: `A UK tradesperson recorded a rough spoken voice note describing a job they're about to quote for. Turn it into two fields for a quote form. Reply with ONLY a JSON object, no markdown fences, no explanation, in this exact shape: {"jobType": "short professional description of the job, a few words to one short sentence", "amount": a plain number with no currency symbol if a price was mentioned, otherwise null}. Do not invent a price if none was said.\n\nTranscript: "${transcript}"`,
+            content: `A UK tradesperson recorded a rough spoken voice note describing a job they're about to quote for. Turn it into fields for a quote form. Reply with ONLY a JSON object, no markdown fences, no explanation, in this exact shape: {"customerName": "the customer's name if mentioned, or null", "customerPhone": "phone number if mentioned, digits and spaces only, or null", "customerEmail": "email address if mentioned, or null", "location": "the job's address or location if mentioned, or null", "jobType": "short professional description of the job, a few words to one short sentence", "amount": a plain number with no currency symbol if a price was mentioned, otherwise null}. Do not invent anything that was not said - use null.\n\nTranscript: "${transcript}"`,
           },
         ],
       }),
@@ -81,15 +81,31 @@ export async function POST(req) {
 
     let jobType = null;
     let amount = null;
+    let customerName = null;
+    let customerPhone = null;
+    let customerEmail = null;
+    let location = null;
     try {
       const parsed = JSON.parse(cleaned);
       jobType = parsed.jobType || null;
       amount = parsed.amount ?? null;
+      customerName = parsed.customerName || null;
+      customerPhone = parsed.customerPhone || null;
+      customerEmail = parsed.customerEmail || null;
+      location = parsed.location || null;
     } catch (e) {
       console.error("Could not parse AI extraction result:", rawText);
     }
 
-    return NextResponse.json({ transcript, jobType, amount });
+    return NextResponse.json({
+      transcript,
+      jobType,
+      amount,
+      customerName,
+      customerPhone,
+      customerEmail,
+      location,
+    });
   } catch (e) {
     console.error("Voice-to-quote error:", e);
     return NextResponse.json(

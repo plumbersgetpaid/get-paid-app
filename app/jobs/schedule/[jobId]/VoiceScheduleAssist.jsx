@@ -76,6 +76,10 @@ export default function VoiceScheduleAssist({
       } else {
         setTranscript(data.transcript || "");
         if (data.startDate) setStartDate(data.startDate);
+        if (data.location) {
+          const input = document.querySelector('input[name="location"]');
+          if (input && !input.value) input.value = data.location;
+        }
         if (data.startTime) setStartTime(data.startTime);
         if (data.durationValue !== null && data.durationValue !== undefined) {
           setDuration(String(data.durationValue));

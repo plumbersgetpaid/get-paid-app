@@ -75,6 +75,19 @@ export default function VoiceQuoteAssist({
       } else {
         setTranscript(data.transcript || "");
         if (data.jobType) setJobType(data.jobType);
+        if (data.location) setLocation(data.location);
+        // The name/phone/email inputs are server-rendered in the page,
+        // outside this component - fill them directly, and only when
+        // empty, so the voice note never overwrites something typed.
+        for (const [field, value] of [
+          ["name", data.customerName],
+          ["phone", data.customerPhone],
+          ["email", data.customerEmail],
+        ]) {
+          if (!value) continue;
+          const input = document.querySelector(`input[name="${field}"]`);
+          if (input && !input.value) input.value = value;
+        }
         if (data.amount !== null && data.amount !== undefined) {
           setAmount(String(data.amount));
         }

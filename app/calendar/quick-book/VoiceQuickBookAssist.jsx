@@ -90,6 +90,12 @@ export default function VoiceQuickBookAssist({
         if (data.customerEmail) setEmail(data.customerEmail);
         if (data.customerPhone) setPhone(data.customerPhone);
         if (data.jobType) setJobType(data.jobType);
+        // The location input is server-rendered in the page, outside this
+        // component - fill it directly, only when empty.
+        if (data.location) {
+          const input = document.querySelector('input[name="location"]');
+          if (input && !input.value) input.value = data.location;
+        }
         if (data.amount !== null && data.amount !== undefined) {
           setAmount(String(data.amount));
         }
