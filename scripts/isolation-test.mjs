@@ -63,6 +63,15 @@ async function seedTenant(label) {
     location: `${marker} Road`, completion_note: `${marker}-NOTE-TEXT`,
   }).select().single();
 
+  // A scheduled, in-progress job for tomorrow: this is what the field
+  // pack endpoint serves, so it's what a field-pack leak would expose.
+  const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10);
+  await db.from("jobs").insert({
+    business_id: bid, customer_id: customer.id, job_type: `${marker}-FIELDJOB`,
+    amount: 5, status: "in_progress", time_confirmed: true, created_by: owner.id,
+    scheduled_start: `${tomorrow}T09:00:00Z`, scheduled_end: `${tomorrow}T10:00:00Z`,
+  });
+
   const { data: invoice } = await db.from("invoices").insert({
     business_id: bid, job_id: job.id, amount: 123, status: "unpaid",
     due_date: new Date().toISOString().slice(0, 10),
@@ -200,6 +209,23 @@ async function run() {
       const leaked = res.status === 200 && text.includes(`${target.marker}-PRIVATE-NOTE`);
       record("api json", `${actor.label} -> ${target.label}'s notes`, !leaked,
         leaked ? "LEAKED note text" : `HTTP ${res.status}`);
+    }
+  }
+
+  // 4b. the field pack must contain the viewer's own field job and no one
+  //     else's - it's the offline copy of the diary, so a leak here would
+  //     persist on the wrong person's device.
+  for (const viewer of tenants) {
+    const res = await fetch(`${BASE}/api/field-pack`, { headers: { cookie: viewer.cookie } });
+    const body = res.status === 200 ? await res.text() : "";
+    record("field pack", `${viewer.label} pack contains own job`,
+      body.includes(`${viewer.marker}-FIELDJOB`),
+      body.includes(`${viewer.marker}-FIELDJOB`) ? "own job present" : `HTTP ${res.status}, own job MISSING`);
+    for (const other of tenants) {
+      if (other.bid === viewer.bid) continue;
+      record("field pack", `${viewer.label} pack free of ${other.label}`,
+        !body.includes(other.marker),
+        body.includes(other.marker) ? "CONTAINS OTHER TENANT" : "clean");
     }
   }
 

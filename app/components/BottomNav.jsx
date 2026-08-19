@@ -43,7 +43,8 @@ export default function BottomNav({
     pathname.startsWith("/setup") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/privacy") ||
-    pathname.startsWith("/terms")
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/field")
   ) {
     return null;
   }

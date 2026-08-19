@@ -15,6 +15,10 @@ import {
 const PUBLIC_PATHS = [
   "/privacy",
   "/terms",
+  // The offline day view: a dataless client-rendered shell (all content
+  // comes from the device's own IndexedDB), public so the service worker
+  // can cache and serve it with no session round-trip when offline.
+  "/field",
   // PWA assets the browser fetches without credentials. Not caught by the
   // static-asset matcher exclusion (which lists only image extensions), so
   // they must be exempted here or the proxy redirects them to /login and

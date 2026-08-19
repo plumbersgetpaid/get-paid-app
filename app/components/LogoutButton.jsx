@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { clearFieldData } from "../lib/fieldPackStore";
 
 export default function LogoutButton() {
   const [busy, setBusy] = useState(false);
 
   async function handleLogout() {
     setBusy(true);
+    // The field pack holds customer names, phones and addresses - it must
+    // not outlive the session on a shared or handed-back device.
+    await clearFieldData();
     try {
       // 5s, not 15s - this route does nothing but clear a cookie (no
       // database call at all), so it should resolve in well under a
