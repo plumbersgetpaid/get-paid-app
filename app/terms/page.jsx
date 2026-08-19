@@ -12,8 +12,8 @@ export default function TermsOfService() {
         These are the terms for using PatchUp. They're written in plain
         English on purpose - if anything is unclear, ask before you rely on
         it: {" "}
-        <a href="mailto:plumbersgetpaid@gmail.com" style={linkStyle}>
-          plumbersgetpaid@gmail.com
+        <a href="mailto:hello@getpatchup.co.uk" style={linkStyle}>
+          hello@getpatchup.co.uk
         </a>.
       </p>
 

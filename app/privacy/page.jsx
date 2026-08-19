@@ -17,8 +17,8 @@ export default function PrivacyPolicy() {
         PatchUp is a job management app for tradespeople: quotes, scheduling,
         invoicing and payment chasing. It is operated from the United Kingdom.
         Questions about this policy or your data: {" "}
-        <a href="mailto:plumbersgetpaid@gmail.com" style={linkStyle}>
-          plumbersgetpaid@gmail.com
+        <a href="mailto:hello@getpatchup.co.uk" style={linkStyle}>
+          hello@getpatchup.co.uk
         </a>.
       </p>
 
