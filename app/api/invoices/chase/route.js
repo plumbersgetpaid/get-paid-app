@@ -11,6 +11,7 @@ import { canInvoice } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
+import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 
 // Lets the plumber chase a specific invoice on demand, on top of the
 // automatic daily chase cron job.
@@ -26,6 +27,15 @@ export async function POST(req) {
   if (!invoiceId) {
     return NextResponse.json({ error: "Missing invoiceId" }, { status: 400 });
   }
+
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "invoice-chase");
+  if (claim.duplicate) {
+    return NextResponse.redirect(new URL("/", req.url), 303);
+  }
+
 
   const db = await getScopedDb(currentMember);
   // outstanding_invoices is a database view, not a direct table -
@@ -48,6 +58,7 @@ export async function POST(req) {
 
   if (fetchErr || !inv) {
     console.error("Chase lookup error:", fetchErr);
+    await releaseRequest(claim);
     return NextResponse.json({ error: "Invoice not found" }, { status: 400 });
   }
 

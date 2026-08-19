@@ -6,6 +6,7 @@ import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import BackButton from "../../../components/BackButton";
 import Link from "next/link";
+import RequestIdField from "../../../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -100,6 +101,7 @@ export default async function JobPhotos(props) {
         encType="multipart/form-data"
         style={{ display: "grid", gap: 10, marginTop: 16 }}
       >
+        <RequestIdField />
         <input type="hidden" name="jobId" value={job.id} />
 
         <label style={labelStyle}>

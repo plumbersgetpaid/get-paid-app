@@ -13,6 +13,7 @@ import ReloadOnBack from "../components/ReloadOnBack";
 import ConfirmSubmitButton from "../components/ConfirmSubmitButton";
 import Link from "next/link";
 import { nowInLondonFrame } from "../lib/today";
+import RequestIdField from "../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -212,6 +213,7 @@ async function QuotesTab({ db, settings, sub }) {
                 </button>
               </form>
               <form action="/api/jobs/chase-quote" method="POST" style={{ flex: 1 }}>
+                  <RequestIdField />
                 <input type="hidden" name="jobId" value={q.id} />
                 <button type="submit" style={secondaryButtonStyle}>
                   Chase quote
@@ -654,12 +656,14 @@ async function InvoicesTab({ db, adminDb, settings, sub, businessId }) {
               </Link>
               <div style={{ display: "flex", gap: 8 }}>
                 <form action="/api/invoices/chase" method="POST" style={{ flex: 1 }}>
+                  <RequestIdField />
                   <input type="hidden" name="invoiceId" value={inv.invoice_id} />
                   <button type="submit" style={secondaryButtonStyle}>
                     Chase now
                   </button>
                 </form>
                 <form action="/api/invoices/mark-paid" method="POST" style={{ flex: 1 }}>
+                  <RequestIdField />
                   <input type="hidden" name="invoiceId" value={inv.invoice_id} />
                   <button type="submit" style={primaryButtonStyle}>
                     Mark as paid

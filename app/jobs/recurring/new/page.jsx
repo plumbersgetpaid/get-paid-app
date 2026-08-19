@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
 import MultiAssignField from "../../../components/MultiAssignField";
+import RequestIdField from "../../../components/RequestIdField";
 
 export default function NewRecurringJob() {
   const router = useRouter();
@@ -67,6 +68,7 @@ export default function NewRecurringJob() {
       {error && <div style={errorBoxStyle}>{error}</div>}
 
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, marginTop: 16 }}>
+        <RequestIdField />
         <input name="name" placeholder="Customer name" required style={inputStyle} />
         <input name="phone" placeholder="Phone (optional)" style={inputStyle} />
         <input name="email" type="email" placeholder="Email (optional)" style={inputStyle} />

@@ -3,6 +3,7 @@ import BackButton from "../../components/BackButton";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canSeeClientDatabase } from "../../lib/permissions";
 import { notFound } from "next/navigation";
+import RequestIdField from "../../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -26,6 +27,7 @@ export default async function NewClient() {
         method="POST"
         style={{ display: "grid", gap: 12, marginTop: 16 }}
       >
+        <RequestIdField />
         <input name="name" placeholder="Name" required style={inputStyle} />
         <input name="phone" placeholder="Phone" style={inputStyle} />
         <input name="email" type="email" placeholder="Email" style={inputStyle} />

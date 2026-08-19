@@ -12,6 +12,7 @@ import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
+import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 
 async function uploadJobPhotos(db, adminDb, jobId, files, label, businessId) {
   const validFiles = files.filter((f) => f && typeof f !== "string" && f.size > 0);
@@ -240,6 +241,16 @@ export async function POST(req) {
     return NextResponse.redirect(new URL(already, req.url), 303);
   }
 
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "complete");
+  if (claim.duplicate) {
+    const already = (form.get("from") || "").toString() === "work" ? "/work?tab=jobs" : "/";
+    return NextResponse.redirect(new URL(already, req.url), 303);
+  }
+
+
   const { data: job, error: jobErr } = await db
     .from("jobs")
     .update({
@@ -253,6 +264,7 @@ export async function POST(req) {
 
   if (jobErr || !job) {
     console.error("Job update error:", jobErr);
+    await releaseRequest(claim);
     return NextResponse.json({ error: "Job not found" }, { status: 400 });
   }
 
@@ -280,6 +292,7 @@ export async function POST(req) {
 
   if (invErr) {
     console.error("Invoice insert error:", invErr);
+    await releaseRequest(claim);
     return NextResponse.json({ error: invErr.message }, { status: 400 });
   }
 

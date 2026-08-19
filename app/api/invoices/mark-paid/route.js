@@ -7,6 +7,7 @@ import { canInvoice } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
+import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -21,6 +22,15 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing invoiceId" }, { status: 400 });
   }
 
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "mark-paid");
+  if (claim.duplicate) {
+    return NextResponse.redirect(new URL("/", req.url), 303);
+  }
+
+
   const db = await getScopedDb(currentMember);
 
   const { data: invoice, error: invErr } = await db
@@ -32,6 +42,7 @@ export async function POST(req) {
 
   if (invErr) {
     console.error("Mark paid error:", invErr);
+    await releaseRequest(claim);
     return NextResponse.json({ error: invErr.message }, { status: 400 });
   }
 

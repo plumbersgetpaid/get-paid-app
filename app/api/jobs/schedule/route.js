@@ -10,6 +10,7 @@ import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
+import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 
 export async function POST(req) {
   const form = await req.formData();
@@ -105,6 +106,14 @@ export async function POST(req) {
     }
   }
 
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "schedule");
+  if (claim.duplicate) {
+    return NextResponse.redirect(new URL("/calendar", req.url), 303);
+  }
+
   const { data: updatedJob, error } = await db
     .from("jobs")
     .update({
@@ -120,6 +129,7 @@ export async function POST(req) {
 
   if (error) {
     console.error("Schedule save error:", error);
+    await releaseRequest(claim);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 

@@ -6,6 +6,7 @@ import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
+import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -19,6 +20,15 @@ export async function POST(req) {
   if (!jobId) {
     return NextResponse.json({ error: "Missing jobId" }, { status: 400 });
   }
+
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "chase-quote");
+  if (claim.duplicate) {
+    return NextResponse.redirect(new URL("/", req.url), 303);
+  }
+
 
   const db = await getScopedDb(currentMember);
 

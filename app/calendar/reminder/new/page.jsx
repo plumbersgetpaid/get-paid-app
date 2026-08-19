@@ -6,6 +6,7 @@ import { canSeeEverything } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import MultiAssignField from "../../../components/MultiAssignField";
 import VoiceReminderAssist from "./VoiceReminderAssist";
+import RequestIdField from "../../../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -48,6 +49,7 @@ export default async function NewReminder() {
         method="POST"
         style={{ display: "grid", gap: 12, marginTop: 16 }}
       >
+        <RequestIdField />
         <VoiceReminderAssist initialDate={today} />
 
         <label

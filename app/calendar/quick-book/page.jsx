@@ -7,6 +7,7 @@ import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import MultiAssignField from "../../components/MultiAssignField";
 import VoiceQuickBookAssist from "./VoiceQuickBookAssist";
+import RequestIdField from "../../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -71,6 +72,7 @@ export default async function QuickBook(props) {
         method="POST"
         style={{ display: "grid", gap: 12, marginTop: 16 }}
       >
+        <RequestIdField />
         {conflictMessage && <input type="hidden" name="force" value="1" />}
 
         <VoiceQuickBookAssist

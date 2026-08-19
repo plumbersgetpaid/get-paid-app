@@ -6,6 +6,7 @@ import { canCreateRecurringJob } from "../../../../lib/permissions";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 import { redirectAfterMutation } from "../../../../lib/redirectAfterMutation";
+import { claimRequest, releaseRequest } from "../../../../lib/idempotency";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -32,6 +33,15 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing customer name or start date" }, { status: 400 });
   }
 
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "recurring/create");
+  if (claim.duplicate) {
+    return redirectAfterMutation(req, "/jobs/recurring");
+  }
+
+
   const db = await getScopedDb(currentMember);
 
   const existingCustomer = await findExistingCustomer(db, { name, email, phone });
@@ -54,6 +64,7 @@ export async function POST(req) {
 
     if (custErr) {
       console.error("Recurring job customer insert error:", custErr);
+      await releaseRequest(claim);
       return NextResponse.json({ error: custErr.message }, { status: 400 });
     }
     customerId = newCustomer.id;
@@ -81,6 +92,7 @@ export async function POST(req) {
 
   if (error) {
     console.error("Recurring job insert error:", error);
+    await releaseRequest(claim);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 

@@ -7,6 +7,7 @@ import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import MultiAssignField from "../../components/MultiAssignField";
 import VoiceQuoteAssist from "./VoiceQuoteAssist";
+import RequestIdField from "../../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -45,6 +46,7 @@ export default async function NewQuote() {
         method="POST"
         style={{ display: "grid", gap: 12, marginTop: 16 }}
       >
+        <RequestIdField />
         <input name="name" placeholder="Customer name" required style={inputStyle} />
         <input
           name="phone"

@@ -10,6 +10,7 @@ import { canCreateJob } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
+import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -106,6 +107,14 @@ export async function POST(req) {
     }
   }
 
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "quick-book");
+  if (claim.duplicate) {
+    return NextResponse.redirect(new URL("/calendar", req.url), 303);
+  }
+
   const existingCustomer = await findExistingCustomer(db, {
     name: customerName,
     email,
@@ -139,6 +148,7 @@ export async function POST(req) {
 
     if (custErr) {
       console.error("Quick-book customer insert error:", custErr);
+      await releaseRequest(claim);
       return NextResponse.json({ error: custErr.message }, { status: 400 });
     }
     customerId = newCustomer.id;
@@ -164,6 +174,7 @@ export async function POST(req) {
 
   if (jobErr) {
     console.error("Quick-book job insert error:", jobErr);
+    await releaseRequest(claim);
     return NextResponse.json({ error: jobErr.message }, { status: 400 });
   }
 

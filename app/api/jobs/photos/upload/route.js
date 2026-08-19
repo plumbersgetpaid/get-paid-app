@@ -3,6 +3,7 @@ import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canAccessJob } from "../../../../lib/jobAccess";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
+import { claimRequest, releaseRequest } from "../../../../lib/idempotency";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -32,6 +33,15 @@ export async function POST(req) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "photos/upload");
+  if (claim.duplicate) {
+    return NextResponse.redirect(new URL(`/jobs/photos/${jobId}`, req.url), 303);
+  }
+
+
   const bytes = new Uint8Array(await photo.arrayBuffer());
   const ext = (photo.name.split(".").pop() || "jpg").toLowerCase();
   const path = `${jobId}/${label}-${Date.now()}.${ext}`;
@@ -44,6 +54,7 @@ export async function POST(req) {
     console.error("Job photo upload error:", uploadError);
     const redirectUrl = new URL(`/jobs/photos/${jobId}`, req.url);
     redirectUrl.searchParams.set("error", uploadError.message || "Upload failed");
+    await releaseRequest(claim);
     return NextResponse.redirect(redirectUrl, 303);
   }
 
@@ -60,6 +71,7 @@ export async function POST(req) {
 
   if (insertError) {
     console.error("Job photo record error:", insertError);
+    await releaseRequest(claim);
     return NextResponse.json({ error: insertError.message }, { status: 400 });
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import BackButton from "../../../components/BackButton";
 import { compressImage } from "../../../lib/compressImage";
 
@@ -15,6 +15,7 @@ export default function CompleteJobForm({
   from,
   showEverything,
 }) {
+  const requestIdRef = useRef(null);
   const [amount, setAmount] = useState(amountValue);
   const [dueDate, setDueDate] = useState(dueDateValue);
   const [note, setNote] = useState(noteValue);
@@ -96,6 +97,11 @@ export default function CompleteJobForm({
       formData.append("from", from || "");
       for (const f of compressedBefore) formData.append("beforePhotos", f);
       for (const f of compressedAfter) formData.append("afterPhotos", f);
+
+      // Same id across retries of this submission, so a flaky connection
+      // can't complete the job (and invoice the customer) twice.
+      if (!requestIdRef.current) requestIdRef.current = crypto.randomUUID();
+      formData.append("request_id", requestIdRef.current);
 
       const res = await fetch("/api/jobs/complete", { method: "POST", body: formData });
 

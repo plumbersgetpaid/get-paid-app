@@ -3,6 +3,7 @@ import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canAccessJob } from "../../../../lib/jobAccess";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
+import { claimRequest, releaseRequest } from "../../../../lib/idempotency";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -33,6 +34,15 @@ export async function POST(req) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "notes/create");
+  if (claim.duplicate) {
+    return NextResponse.json({ ok: true, duplicate: true });
+  }
+
+
   let imageUrl = null;
   let imageStoragePath = null;
 
@@ -47,6 +57,7 @@ export async function POST(req) {
 
     if (uploadError) {
       console.error("Note image upload error:", uploadError);
+      await releaseRequest(claim);
       return NextResponse.json(
         { error: `Couldn't upload the image: ${uploadError.message}` },
         { status: 400 }
@@ -70,6 +81,7 @@ export async function POST(req) {
 
   if (error) {
     console.error("Create job note error:", error);
+    await releaseRequest(claim);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 

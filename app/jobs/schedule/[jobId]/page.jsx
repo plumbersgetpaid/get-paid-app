@@ -8,6 +8,7 @@ import BackButton from "../../../components/BackButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import VoiceScheduleAssist from "./VoiceScheduleAssist";
+import RequestIdField from "../../../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -142,6 +143,7 @@ export default async function ScheduleJob(props) {
         method="POST"
         style={{ display: "grid", gap: 12 }}
       >
+        <RequestIdField />
         <input type="hidden" name="jobId" value={job.id} />
         {conflictMessage && <input type="hidden" name="force" value="1" />}
 

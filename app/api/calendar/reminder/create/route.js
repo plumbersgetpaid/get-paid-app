@@ -3,6 +3,7 @@ import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canSeeEverything } from "../../../../lib/permissions";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
+import { claimRequest, releaseRequest } from "../../../../lib/idempotency";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -26,6 +27,15 @@ export async function POST(req) {
     return NextResponse.json({ error: "Missing title or date" }, { status: 400 });
   }
 
+  // Retry protection: a resend of this exact action - flaky signal,
+  // double-tap, browser resubmit, offline replay - is answered with the
+  // success response instead of running twice. See lib/idempotency.js.
+  const claim = await claimRequest(form.get("request_id"), currentMember.business_id, "reminder/create");
+  if (claim.duplicate) {
+    return NextResponse.redirect(new URL("/calendar", req.url), 303);
+  }
+
+
   const start = new Date(`${startDate}T${startTime}:00`);
   const end = computeScheduleEnd(start, durationValue, durationUnit, includeWeekends);
 
@@ -45,6 +55,7 @@ export async function POST(req) {
 
   if (error) {
     console.error("Create reminder error:", error);
+    await releaseRequest(claim);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 

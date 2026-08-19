@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { compressImage } from "../../../lib/compressImage";
 
 function sortNotes(notes) {
@@ -11,6 +11,7 @@ function sortNotes(notes) {
 }
 
 export default function NotesSection({ jobId }) {
+  const requestIdRef = useRef(null);
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -64,6 +65,10 @@ export default function NotesSection({ jobId }) {
       formData.append("note", note);
       if (important) formData.append("important", "1");
       if (uploadFile) formData.append("image", uploadFile);
+      // Same id across retries; reset only after a confirmed save, so the
+      // next note is a new action but a retry of THIS one can't duplicate.
+      if (!requestIdRef.current) requestIdRef.current = crypto.randomUUID();
+      formData.append("request_id", requestIdRef.current);
 
       const res = await fetch("/api/jobs/notes/create", { method: "POST", body: formData });
 
@@ -74,6 +79,7 @@ export default function NotesSection({ jobId }) {
         return;
       }
 
+      requestIdRef.current = null;
       setNote("");
       setImportant(false);
       setFile(null);

@@ -69,6 +69,16 @@ export async function GET(req) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Housekeeping while we're here: idempotency records only need to
+  // outlive a retry window. 30 days is generous; past that they're noise.
+  const purgeBefore = new Date();
+  purgeBefore.setDate(purgeBefore.getDate() - 30);
+  const { error: purgeErr } = await db
+    .from("processed_requests")
+    .delete()
+    .lt("created_at", purgeBefore.toISOString());
+  if (purgeErr) console.error("Retention: processed_requests purge failed:", purgeErr.message);
+
   const results = [];
 
   for (const sub of due || []) {
