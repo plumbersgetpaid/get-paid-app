@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { enablePushOnThisDevice, urlBase64ToUint8Array } from "../lib/enablePush";
 
 // Turn push notifications on/off for this device.
 //
@@ -11,13 +12,6 @@ import { useEffect, useState } from "react";
 //  - permission denied earlier -> the browser won't ask again; tell them
 //    to change it in settings
 //  - supported and allowed -> a real toggle
-function urlBase64ToUint8Array(base64) {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(b64);
-  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
-}
-
 function isIosNotStandalone() {
   if (typeof navigator === "undefined") return false;
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -86,48 +80,16 @@ export default function NotificationToggle({ vapidPublicKey }) {
     }
     setBusy(true);
     setMsg(null);
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setMsg(
-          permission === "denied"
-            ? "Notifications are blocked. Turn them on for this site in your browser settings."
-            : "Notifications weren't allowed."
-        );
-        setBusy(false);
-        return;
-      }
-      const reg = await navigator.serviceWorker.ready;
-      let sub;
-      try {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-        });
-      } catch (subErr) {
-        // A leftover subscription on a different (rotated) key blocks new
-        // ones - clear it and try once more.
-        const stale = await reg.pushManager.getSubscription();
-        if (stale) await stale.unsubscribe().catch(() => {});
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-        });
-      }
-      const res = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(sub),
-      });
-      if (!res.ok) throw new Error("save failed");
+    const result = await enablePushOnThisDevice(vapidPublicKey);
+    if (result.ok) {
       setSubscribed(true);
       setMsg("Notifications are on for this device.");
-    } catch (e) {
-      console.error("Enable notifications failed:", e);
-      setMsg("Couldn't turn notifications on. Try again.");
-    } finally {
-      setBusy(false);
+    } else if (result.denied) {
+      setMsg("Notifications are blocked. Turn them on for this site in your browser settings.");
+    } else {
+      setMsg(result.error || "Couldn't turn notifications on. Try again.");
     }
+    setBusy(false);
   }
 
   async function disable() {

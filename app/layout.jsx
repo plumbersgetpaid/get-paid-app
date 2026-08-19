@@ -2,6 +2,7 @@ import BottomNav from "./components/BottomNav";
 import ServiceWorkerRegister from "./components/ServiceWorkerRegister";
 import InstallBanner from "./components/InstallBanner";
 import FieldPackSync from "./components/FieldPackSync";
+import NotificationNudge from "./components/NotificationNudge";
 import { getCurrentTeamMember } from "./lib/auth";
 import { getPlatformSettings } from "./lib/getPlatformSettings";
 import { poppins, mono, c } from "./lib/theme";
@@ -113,6 +114,9 @@ export default async function RootLayout({ children }) {
         <ServiceWorkerRegister />
         {currentMember && <InstallBanner />}
         {currentMember && <FieldPackSync />}
+        {currentMember && (
+          <NotificationNudge vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null} />
+        )}
       </body>
     </html>
   );
