@@ -46,6 +46,14 @@ export async function enablePushOnThisDevice(vapidPublicKey) {
     return { ok: true };
   } catch (e) {
     console.error("Enable push failed:", e);
-    return { error: "Couldn't turn notifications on. Try again." };
+    // Surface what actually went wrong - "try again" against a permanent
+    // condition (private window, push service unreachable) just loops.
+    const detail = e?.message || e?.name || "";
+    if (/denied|permission/i.test(detail)) {
+      return { denied: true };
+    }
+    return {
+      error: `Couldn't turn notifications on${detail ? ` (${detail})` : ""}. Private/incognito windows can't receive notifications - use a normal window.`,
+    };
   }
 }
