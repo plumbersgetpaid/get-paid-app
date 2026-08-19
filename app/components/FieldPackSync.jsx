@@ -15,6 +15,8 @@ import { syncOutbox } from "../lib/outbox";
 // pack query is a handful of small selects; cheapness is the point of it.
 const SYNC_EVERY_MS = 45 * 1000;
 
+let warmedThisSession = false;
+
 export default function FieldPackSync() {
   // Re-run on every navigation, not just hard loads - the layout persists
   // across App Router navigations, so without this the effect fires once
@@ -24,7 +26,7 @@ export default function FieldPackSync() {
     let cancelled = false;
 
     async function sync() {
-      if (!navigator.onLine) return;
+      if (!navigator.onLine || document.visibilityState === "hidden") return;
       try {
         const result = await syncOutbox();
         const sentSomething = (result?.sent || 0) > 0;
@@ -37,17 +39,28 @@ export default function FieldPackSync() {
         const pack = await res.json();
         await saveFieldPack(pack);
         await kvSet("lastFieldSync", Date.now());
-        navigator.serviceWorker?.controller?.postMessage({ type: "warm-field" });
+        // Warming re-fetches the /field shell and its chunks - worth doing
+        // once per session and on reconnect, not on every pack refresh.
+        if (!warmedThisSession) {
+          warmedThisSession = true;
+          navigator.serviceWorker?.controller?.postMessage({ type: "warm-field" });
+        }
       } catch {
         // Offline or flaky - the whole point is that this can fail quietly.
       }
     }
 
-    sync();
-    window.addEventListener("online", sync);
+    // A beat after navigation settles, never in its critical path.
+    const t = setTimeout(sync, 1200);
+    const onOnline = () => {
+      warmedThisSession = false; // reconnect may follow a deploy - re-warm
+      sync();
+    };
+    window.addEventListener("online", onOnline);
     return () => {
       cancelled = true;
-      window.removeEventListener("online", sync);
+      clearTimeout(t);
+      window.removeEventListener("online", onOnline);
     };
   }, [pathname]);
 

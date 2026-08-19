@@ -1,5 +1,5 @@
 import { getCurrentTeamMember } from "../../lib/auth";
-import { canSeeEverything } from "../../lib/permissions";
+import { canSeeEverything, canInvoice } from "../../lib/permissions";
 import { filterJobsForMember } from "../../lib/jobAccess";
 import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
@@ -44,7 +44,7 @@ export async function GET() {
 
   let jobsQuery = db
     .from("jobs")
-    .select("id, job_type, status, scheduled_start, scheduled_end, time_confirmed, location, customer_id")
+    .select("id, job_type, status, amount, scheduled_start, scheduled_end, time_confirmed, location, customer_id")
     .eq("status", "in_progress")
     .gte("scheduled_start", `${from}T00:00:00`)
     .lte("scheduled_start", `${to}T23:59:59`)
@@ -90,6 +90,10 @@ export async function GET() {
   return NextResponse.json(
     {
       savedAt: new Date().toISOString(),
+      // What the offline view may offer. canInvoice covers completing a
+      // job (it raises the invoice); notes and photos need job access
+      // only, which the pack's own scoping already guarantees.
+      can: { complete: canInvoice(currentMember) },
       businessName: settings.business_name,
       memberName: currentMember.name,
       from,
@@ -97,6 +101,8 @@ export async function GET() {
       jobs: (jobs || []).map((j) => ({
         id: j.id,
         jobType: j.job_type,
+        // Money is owner/manager information, same rule as the Work screen.
+        amount: canSeeEverything(currentMember) ? j.amount : null,
         start: j.scheduled_start,
         end: j.scheduled_end,
         timeConfirmed: j.time_confirmed !== false,

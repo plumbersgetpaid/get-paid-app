@@ -17,7 +17,20 @@ self.addEventListener("install", (event) => {
       .then(() => self.skipWaiting())
   );
 });
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      // Navigation preload: the browser starts the network request in
+      // parallel with waking this worker, instead of after it. Without
+      // this, every navigation pays the worker's cold-start as pure
+      // added latency - the "app feels slower" report after v2 shipped.
+      if (self.registration.navigationPreload) {
+        try { await self.registration.navigationPreload.enable(); } catch {}
+      }
+      await self.clients.claim();
+    })()
+  );
+});
 
 // Warm the /field shell and every static chunk it references, so the
 // offline view hydrates even if the person never visited it online.
@@ -68,19 +81,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Page navigations: always try the network (fresh data), and only when
-  // it's unreachable fall back to the saved /field view.
+  // Page navigations: always try the network (fresh data; preload runs it
+  // in parallel with worker wake-up), and only when it's unreachable fall
+  // back to the saved /field view.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(async () => {
-        const cached = await caches.match("/field");
-        return (
-          cached ||
-          new Response("<h1>Offline</h1><p>No saved data on this device yet.</p>", {
-            headers: { "Content-Type": "text/html" },
-          })
-        );
-      })
+      (async () => {
+        try {
+          return (await event.preloadResponse) || (await fetch(request));
+        } catch {
+          const cached = await caches.match("/field");
+          return (
+            cached ||
+            new Response("<h1>Offline</h1><p>No saved data on this device yet.</p>", {
+              headers: { "Content-Type": "text/html" },
+            })
+          );
+        }
+      })()
     );
   }
 });

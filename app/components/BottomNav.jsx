@@ -176,7 +176,10 @@ const tabMarkStyle = {
 
 const fabWrapperStyle = {
   position: "fixed",
-  bottom: 60,
+  // Must clear the nav bar, whose height now grows by the home-indicator
+  // inset - a fixed 60px left the button sagging into the tab row on
+  // iPhones, crowding Work and Calendar.
+  bottom: "calc(64px + env(safe-area-inset-bottom, 0px))",
   left: "50%",
   transform: "translateX(-50%)",
   zIndex: 20,

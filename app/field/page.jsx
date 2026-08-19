@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { loadFieldPack } from "../lib/fieldPackStore";
 import { listOutbox, retryOutboxEntry, removeOutboxEntry, syncOutbox } from "../lib/outbox";
+import FieldJobActions from "./FieldJobActions";
 
 // The offline day view. Rendered entirely from the field pack in
 // IndexedDB - the page itself is a public, dataless shell, which is what
@@ -34,6 +35,23 @@ export default function FieldView() {
   const [outbox, setOutbox] = useState([]);
 
   const refreshOutbox = () => listOutbox().then(setOutbox).catch(() => {});
+
+  // After an action from this screen: outbox changed and, if we were
+  // online, the server did too - pull both so badges and lists are honest.
+  const refreshAll = () => {
+    refreshOutbox();
+    if (navigator.onLine) {
+      fetch("/api/field-pack")
+        .then((r) => (r.ok && !r.redirected ? r.json() : null))
+        .then(async (fresh) => {
+          if (!fresh) return;
+          const { saveFieldPack } = await import("../lib/fieldPackStore");
+          await saveFieldPack(fresh);
+          setPack(fresh);
+        })
+        .catch(() => {});
+    }
+  };
 
   useEffect(() => {
     // Opened with signal: fetch the freshest pack directly, so "check my
@@ -186,6 +204,14 @@ export default function FieldView() {
                     </div>
                   ))}
                 </div>
+              )}
+              {!queuedDone && (
+                <FieldJobActions
+                  job={j}
+                  canComplete={!!pack.can?.complete}
+                  online={online}
+                  onChanged={refreshAll}
+                />
               )}
             </div>
             );
