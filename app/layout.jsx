@@ -87,6 +87,9 @@ export default async function RootLayout({ children }) {
           background: c.surface,
           color: c.ink,
           WebkitFontSmoothing: "antialiased",
+          // Stops the iOS rubber-band bounce, which is what made the fixed
+          // bottom nav appear to jitter when scrolling past the ends.
+          overscrollBehavior: "none",
         }}
       >
         <style dangerouslySetInnerHTML={{ __html: responsiveCss }} />
