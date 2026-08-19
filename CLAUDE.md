@@ -211,6 +211,28 @@ up in front of this one".
   for day-to-day work (the verified inventory above is the reference), but
   a fresh deploy from this repo would produce a broken database.
 
+## Email sending (professional domain)
+
+Domain `getpatchup.co.uk` is verified in Resend. All app email sends from
+**`notifications@getpatchup.co.uk`** (set via `RESEND_FROM_ADDRESS` in
+Vercel) — a send-only label, no mailbox needed. `getEmailFrom(businessName)`
+builds `"<Business Name> <notifications@getpatchup.co.uk>"`, and every
+customer-facing send sets **Reply-To = that business's `contact_email`**, so
+replies reach the business, never the platform. `contact_email` defaults to
+the owner's signup email and can no longer be blanked (settings/route.js
+falls back to the owner's email), so reply routing can't break.
+
+Receiving: `hello@getpatchup.co.uk` is a real iCloud Custom Email Domain
+mailbox (Apple auto-configured the GoDaddy DNS). It's the founder business's
+own contact address and where its customer replies land. Apple (root MX +
+SPF + DKIM + apple-domain TXT) and Resend (send subdomain + resend._domainkey)
+coexist; a single DMARC record on `_dmarc`.
+
+Future feature (not built): per-business sending domains so each tenant can
+send from their own domain — Resend supports multiple domains via API, and
+auto-setup (Entri) makes the DNS near one-click, but it's opt-in and only
+for tenants who own a domain. Default (name + reply-to) works for everyone.
+
 ## Notifications
 
 Two channels, by design:
