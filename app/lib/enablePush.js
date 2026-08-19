@@ -52,6 +52,15 @@ export async function enablePushOnThisDevice(vapidPublicKey) {
     if (/denied|permission/i.test(detail)) {
       return { denied: true };
     }
+    // Brave ships with Google's push service off by default and helpfully
+    // identifies itself - so name the exact fix instead of a dead end.
+    const isBrave = typeof navigator !== "undefined" && !!navigator.brave;
+    if (isBrave && /push service|registration failed/i.test(detail)) {
+      return {
+        error:
+          "Brave blocks notifications by default. In Brave, open Settings → Privacy and security, turn on \"Use Google services for push messaging\", restart Brave, then try again.",
+      };
+    }
     return {
       error: `Couldn't turn notifications on${detail ? ` (${detail})` : ""}. Private/incognito windows can't receive notifications - use a normal window.`,
     };
