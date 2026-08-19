@@ -12,7 +12,11 @@ export async function POST(req) {
   const form = await req.formData();
 
   const business_name = form.get("business_name") || "Your Plumber";
-  const contact_email = form.get("contact_email") || null;
+  // Never allow a blank contact email. It's the Reply-To on every
+  // customer email, so an empty value would send replies to PatchUp's
+  // shared address instead of the business. If cleared, fall back to the
+  // owner/manager's own login email - always the business, never us.
+  const contact_email = (form.get("contact_email") || "").trim() || currentMember.email;
   const contact_phone = form.get("contact_phone") || null;
   const accent_color = form.get("accent_color") || "#111111";
   const logo_url = form.get("logo_url") || null;
