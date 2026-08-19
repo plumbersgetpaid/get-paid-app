@@ -48,9 +48,36 @@ export default function NotificationToggle({ vapidPublicKey }) {
     if (!ok) return;
     navigator.serviceWorker.ready.then(async (reg) => {
       const sub = await reg.pushManager.getSubscription();
-      setSubscribed(!!sub);
+      if (!sub) {
+        setSubscribed(false);
+        return;
+      }
+      // Key rotation handling. The browser's subscription is bound to the
+      // VAPID key it was created with; after a rotation it looks "on" here
+      // while the server can no longer send to it. Detect the mismatch,
+      // drop the stale subscription, and show the enable button again.
+      if (vapidPublicKey && sub.options?.applicationServerKey) {
+        const current = new Uint8Array(sub.options.applicationServerKey);
+        const expected = urlBase64ToUint8Array(vapidPublicKey);
+        const same =
+          current.length === expected.length && current.every((b, i) => b === expected[i]);
+        if (!same) {
+          await sub.unsubscribe().catch(() => {});
+          setSubscribed(false);
+          setMsg("Notifications need switching back on after an app update.");
+          return;
+        }
+      }
+      setSubscribed(true);
+      // Self-heal: re-register with the server (an upsert), so a lost or
+      // cleared server row comes back without the person doing anything.
+      fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(sub),
+      }).catch(() => {});
     });
-  }, []);
+  }, [vapidPublicKey]);
 
   async function enable() {
     if (!vapidPublicKey) {
@@ -71,10 +98,22 @@ export default function NotificationToggle({ vapidPublicKey }) {
         return;
       }
       const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-      });
+      let sub;
+      try {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+      } catch (subErr) {
+        // A leftover subscription on a different (rotated) key blocks new
+        // ones - clear it and try once more.
+        const stale = await reg.pushManager.getSubscription();
+        if (stale) await stale.unsubscribe().catch(() => {});
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+      }
       const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "content-type": "application/json" },
