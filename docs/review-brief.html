@@ -1,0 +1,226 @@
+<title>PatchUp Review Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #ffffff;
+    --surface: #f6f7f9;
+    --ink: #141414;
+    --mid: #6b6b6b;
+    --line: #e2e2e2;
+    --hairline: #ededed;
+    --green: #15803d;
+    --green-bg: #e9f5ee;
+    --amber: #b45309;
+    --amber-bg: #fdf3e7;
+    --red: #b91c1c;
+    --code-bg: #f2f2f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1d1d1f;
+      --surface: #151516;
+      --ink: #ecebe8;
+      --mid: #9d9d99;
+      --line: #333335;
+      --hairline: #2a2a2c;
+      --green: #4ade80;
+      --green-bg: #16281d;
+      --amber: #f0a75a;
+      --amber-bg: #2b2115;
+      --red: #f87171;
+      --code-bg: #26262a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1d1d1f;
+    --surface: #151516;
+    --ink: #ecebe8;
+    --mid: #9d9d99;
+    --line: #333335;
+    --hairline: #2a2a2c;
+    --green: #4ade80;
+    --green-bg: #16281d;
+    --amber: #f0a75a;
+    --amber-bg: #2b2115;
+    --red: #f87171;
+    --code-bg: #26262a;
+  }
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    font-family: "Poppins", system-ui, sans-serif;
+    font-weight: 400;
+    margin: 0;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .sheet { max-width: 680px; margin: 0 auto; padding: 52px 22px 90px; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--mid); margin: 46px 0 10px;
+  }
+  header .eyebrow { margin-top: 0; }
+  h1 {
+    font-weight: 300; font-size: 34px; letter-spacing: -0.02em;
+    margin: 4px 0 6px; text-wrap: balance;
+  }
+  h1 strong { font-weight: 600; }
+  .standfirst { font-size: 15px; color: var(--mid); max-width: 56ch; margin: 0 0 8px; }
+  p { font-size: 14.5px; margin: 0 0 14px; max-width: 66ch; }
+  a { color: var(--ink); }
+  .card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+    padding: 18px 20px; margin: 14px 0;
+  }
+  .kv { display: grid; grid-template-columns: 132px 1fr; row-gap: 7px; column-gap: 16px; font-size: 13.5px; }
+  .kv dt { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mid); padding-top: 2px; margin: 0; }
+  .kv dd { margin: 0; }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12.5px;
+    background: var(--code-bg); border-radius: 3px; padding: 1px 5px;
+  }
+  .chip {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10.5px;
+    letter-spacing: 0.08em; text-transform: uppercase; border-radius: 3px;
+    padding: 2px 7px; white-space: nowrap;
+  }
+  .chip.done { color: var(--green); background: var(--green-bg); }
+  .chip.open { color: var(--amber); background: var(--amber-bg); }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--mid);
+    text-align: left; font-weight: 500; padding: 8px 14px 8px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  ul { padding-left: 20px; margin: 0 0 14px; }
+  li { font-size: 14.5px; margin-bottom: 7px; max-width: 62ch; }
+  .focus { counter-reset: focus; list-style: none; padding: 0; margin: 14px 0; }
+  .focus li {
+    counter-increment: focus; display: grid; grid-template-columns: 40px 1fr; gap: 14px;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+    padding: 15px 18px; margin-bottom: 8px; max-width: none;
+  }
+  .focus li::before {
+    content: counter(focus, decimal-leading-zero);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 15px; color: var(--mid); padding-top: 2px;
+  }
+  .focus b { font-weight: 500; display: block; margin-bottom: 3px; }
+  .focus span { font-size: 13.5px; color: var(--mid); display: block; line-height: 1.6; }
+  .note { font-size: 13px; color: var(--mid); border-left: 2px solid var(--line); padding-left: 14px; }
+  .sev { color: var(--red); font-weight: 500; }
+  footer { margin-top: 54px; border-top: 1px solid var(--line); padding-top: 18px; font-size: 13px; color: var(--mid); }
+</style>
+
+<div class="sheet">
+  <header>
+    <div class="eyebrow">PatchUp · Engagement brief · August 2026</div>
+    <h1>Pre-launch review of <strong>PatchUp</strong></h1>
+    <p class="standfirst">
+      An independent security and compliance review of a job-management app for UK
+      tradespeople, before its first real users. This brief is what we'd like you to
+      quote against: what the product is, what has already been done, and where we
+      want your hours to go.
+    </p>
+    <div class="card">
+      <dl class="kv">
+        <dt>Product</dt><dd>PatchUp — quote → schedule → complete → auto-invoice → auto-chase, for UK trades</dd>
+        <dt>App</dt><dd><a href="https://app.getpatchup.co.uk">app.getpatchup.co.uk</a> · marketing at <a href="https://getpatchup.co.uk">getpatchup.co.uk</a></dd>
+        <dt>Stack</dt><dd>Next.js 16 (App Router) on Vercel · Supabase (Postgres + Storage) · Stripe · Resend · installable PWA with offline mode</dd>
+        <dt>Auth</dt><dd>Custom: HMAC session cookie + <code>proxy.js</code> gate (not Supabase Auth)</dd>
+        <dt>State</dt><dd>Pre-launch. Test data only — no real customers yet, so testing can be aggressive.</dd>
+        <dt>Contact</dt><dd>Blaise — <a href="mailto:hello@getpatchup.co.uk">hello@getpatchup.co.uk</a></dd>
+      </dl>
+    </div>
+  </header>
+
+  <div class="eyebrow">Why the data matters</div>
+  <p>
+    Our users are tradespeople; the app also stores data about <em>their</em> customers —
+    homeowners' names, addresses, phone numbers, and photos taken inside private homes.
+    Under UK GDPR we are the <strong>processor</strong> for that data. The single question
+    behind this whole engagement: <span class="sev">can one business's data ever reach
+    another business, or the public?</span>
+  </p>
+
+  <div class="eyebrow">What has already been done</div>
+  <p>
+    An internal audit and full code review ran in August 2026. We are not asking you to
+    re-discover this list — we're telling you so you can go past it.
+  </p>
+  <div class="card tablewrap">
+    <table>
+      <tr><th>Area</th><th>State</th><th>Detail</th></tr>
+      <tr><td>Tenant isolation</td><td><span class="chip done">verified</span></td>
+        <td>Automated harness, 135 checks (direct-ID access, lists, mutations with DB re-check, JSON APIs, offline field-pack, storage) — passing against production. Re-runnable: <code>scripts/isolation-test.mjs</code></td></tr>
+      <tr><td>Anon-key exposure</td><td><span class="chip done">fixed</span></td>
+        <td>A view (<code>outstanding_invoices</code>) leaked all unpaid invoices to the bare anon key (views default to owner privileges); three tables had RLS off. Closed; browser DB client deleted so server routes are the only path.</td></tr>
+      <tr><td>Authorisation</td><td><span class="chip done">fixed</span></td>
+        <td>Per-job access gates added where missing (accept/decline quote, cross-job photo deletion); team-member creation scoping bug fixed.</td></tr>
+      <tr><td>Session security</td><td><span class="chip done">done</span></td>
+        <td>Password change/reset invalidates all other sessions (versioned HMAC tokens); per-IP login + forgot-password throttle (10 tries / 15 min).</td></tr>
+      <tr><td>GDPR machinery</td><td><span class="chip done">verified</span></td>
+        <td>Private photo buckets with signed expiring URLs; 30-day post-cancellation deletion (transactional, tested against live DB); full data export; on-device offline data cleared at logout and disclosed in the privacy policy.</td></tr>
+      <tr><td>Duplicate protection</td><td><span class="chip done">verified</span></td>
+        <td>All create/send actions idempotent via client <code>request_id</code> claims — five parallel submits produce one row (proven live). Foundation of the offline outbox.</td></tr>
+      <tr><td>Platform</td><td><span class="chip done">done</span></td>
+        <td>Next.js 14→16 (cleared 21 advisories, <code>npm audit</code> clean); crons fail closed when the secret is absent; Stripe webhook signature-verified; live mode configured.</td></tr>
+    </table>
+  </div>
+
+  <div class="eyebrow">Known-open items — handed to you, not hidden</div>
+  <ul>
+    <li><strong>26 unchecked database writes</strong> (child-row deletes, log inserts — the recoverable tail of a swept class). Listed in <code>CLAUDE.md</code>; we'd like your judgement on which matter.</li>
+    <li><strong>Storage authorisation is app-enforced</strong>: signed URLs are minted after app-level access checks. Moving to storage-level policies keyed on <code>business_id</code> would be database-enforced — needs an object-path migration. Opinion wanted: worth it now?</li>
+    <li><strong>Legacy session tokens</strong>: pre-versioning 3-part tokens still verify as version 0 until expiry (≤30 days from the change). Known, time-limited.</li>
+    <li><strong>VAPID push keypair rotation pending</strong> (private key was exposed to an internal tool transcript once; blast radius is push-send only).</li>
+    <li><strong><code>supabase/schema.sql</code> is stale</strong> — the live DB is the source of truth; a fresh deploy from the repo would not stand up correctly.</li>
+  </ul>
+
+  <div class="eyebrow">Where we want your hours</div>
+  <ol class="focus">
+    <li><div><b>The custom auth design itself</b>
+      <span>HMAC cookie sessions, the <code>proxy.js</code> gate, permission model (owner/manager/subcontractor + per-capability flags), the public-paths list. We built it; we want someone hostile to read it.</span></div></li>
+    <li><div><b>The 21 service-role routes</b>
+      <span>These bypass RLS and must scope themselves. Our rule: reading other businesses' rows can be fine; anything from one business reaching another is a leak. Check each against it — one real leak of this class was found and fixed internally.</span></div></li>
+    <li><div><b>Offline sync abuse</b>
+      <span>The outbox replays queued actions with idempotency claims. Try to break it: request-ID squatting across businesses, replay with mutated payloads, queue poisoning, the expired-session hold path.</span></div></li>
+    <li><div><b>Uploads and media</b>
+      <span>Photo uploads (multipart, compressed client-side), signed-URL lifetimes, the export zip builder, PDF generation fetching signed URLs server-side.</span></div></li>
+    <li><div><b>GDPR posture as a whole</b>
+      <span>Processor duties, the retention rule (30 days; Stripe records 6 years), the deletion job's completeness, on-device data handling — plus a solicitor's read of <a href="https://app.getpatchup.co.uk/privacy">/privacy</a> and <a href="https://app.getpatchup.co.uk/terms">/terms</a> (drafted in-house, never reviewed by counsel; liability cap and governing-law clauses in particular).</span></div></li>
+  </ol>
+
+  <div class="eyebrow">Materials and access</div>
+  <ul>
+    <li>Private GitHub repo (read access on request) — <code>CLAUDE.md</code> at the root is an honest, current map of the system including its known weaknesses; start there.</li>
+    <li>The isolation harness and its 135 checks, runnable against any deployment.</li>
+    <li>A dedicated test business with owner and subcontractor logins, on production (which holds only test data pre-launch).</li>
+    <li>All internal audit notes and the reasoning behind each fix, in the git history.</li>
+  </ul>
+  <p class="note">
+    Ground rules: production carries no real customer data yet, so testing can be intrusive —
+    but coordinate anything destructive (the deletion cron is real) and don't degrade the
+    Stripe live-mode account. Email volume goes through a shared Resend domain; go easy on sends.
+  </p>
+
+  <div class="eyebrow">What we'd like back</div>
+  <p>
+    A written findings report — severity-rated, with reproduction steps — plus a short
+    retest of whatever we fix, and your verdict on the two judgement calls above
+    (storage-level policies; the unchecked-writes list). We expect this is roughly
+    <strong>2–4 days of work</strong>; tell us if you read it differently, and quote fixed-price if you can.
+  </p>
+
+  <footer>
+    PatchUp · prepared 19&nbsp;August&nbsp;2026 · this brief and the repo's <span class="mono">CLAUDE.md</span> are the
+    canonical scope — if they disagree, ask.
+  </footer>
+</div>
