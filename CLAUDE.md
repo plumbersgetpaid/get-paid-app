@@ -303,6 +303,31 @@ Crons now: recurring-jobs (6am), chase (9am), delete-cancelled (3am),
 daily-brief (17:00), starting-soon (*/15). Needs Vercel Pro for the
 sub-daily one.
 
+## Speed is a feature
+
+Founder's product rule (Aug 2026, after side-by-side with a native
+competitor): tradespeople have short attention spans and "a bit slow" is
+always the first trial feedback. Every interaction must respond visually
+at once - if the data takes time, a skeleton shows instantly, never a
+frozen screen.
+
+What delivers it today, and must not regress:
+- Functions pinned to lhr1 beside the EU database (vercel.json `regions`)
+- `experimental.staleTimes` {dynamic:30, static:60} - recently visited
+  pages render from the client cache; mutations still appear immediately
+  because every write path busts it (revalidatePath / full 303 nav)
+- `prefetch={true}` on the four BottomNav tabs (always on screen, so
+  their pages load before the tap). Do NOT blanket this onto list rows -
+  a 50-job list would fire 50 full prefetches; row taps are covered by
+  the root loading.jsx skeleton instead
+- Per-request dedupe of member/settings lookups via React cache()
+- The service worker's navigationPreload (worker wake-up in parallel
+  with the network, not in series)
+
+The remaining gap to true native feel (every FIRST visit instant) is the
+local-first architecture - the deliberate post-launch mountain in
+docs/offline-plan.md, not something to bolt on casually.
+
 ## Time and timezones
 
 Scheduled times (`jobs.scheduled_start/scheduled_end`, `personal_events`,
