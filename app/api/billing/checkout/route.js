@@ -59,11 +59,17 @@ export async function POST(req) {
     } else {
       // No row yet - businesses created before billing existed won't
       // have one, and without it nothing can be saved against them.
+      // trial_ends_at is set to NOW, not left null: hasAccess treats
+      // "trialing with no end date" as access forever, so a legacy
+      // business that starts checkout but never completes it would gain
+      // permanent free access from this very row. An already-elapsed
+      // trial means: no access until the payment actually completes.
       const { error: insErr } = await db.from("subscriptions").insert({
         business_id: businessId,
         status: "trialing",
         seats,
         stripe_customer_id: customerId,
+        trial_ends_at: new Date().toISOString(),
       });
       if (insErr) {
         console.error("Checkout: couldn't create subscription row", businessId, insErr);

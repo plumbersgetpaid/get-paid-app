@@ -15,6 +15,7 @@ import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 import { logEmailSent } from "../../../lib/logEmail";
+import { sanitizePaymentLink } from "../../../lib/paymentLink";
 
 async function uploadJobPhotos(db, adminDb, jobId, files, label, businessId) {
   const validFiles = files.filter((f) => f && typeof f !== "string" && f.size > 0);
@@ -115,7 +116,7 @@ async function finishInvoice({
     const invoiceTemplate = await getTemplate("invoice");
     const invoiceVars = {
       customer_name: customer.name,
-      job_type: job.job_type || "Plumbing work",
+      job_type: job.job_type || "Work carried out",
       // Bare formatted number ("1,880.40") - the template writes the £ -
       // and a readable UK date ("25 August 2026"), not toDateString()'s
       // American-style "Mon Aug 25 2026".
@@ -229,7 +230,10 @@ export async function POST(req) {
   let dueDateInput = form.get("dueDate");
   let amountInput = form.get("amount");
   const noteInput = (form.get("note") || "").toString().trim();
-  let paymentLinkInput = (form.get("paymentLink") || "").toString().trim();
+  // Emailed to the homeowner as "Pay now" and baked into the PDF - only a
+  // real http(s) URL is accepted; anything else is silently dropped (the
+  // invoice still goes out, just without a broken/dangerous link).
+  let paymentLinkInput = sanitizePaymentLink(form.get("paymentLink")) || "";
   const from = (form.get("from") || "").toString();
   const beforeFiles = form.getAll("beforePhotos");
   const afterFiles = form.getAll("afterPhotos");

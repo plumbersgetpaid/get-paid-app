@@ -125,7 +125,10 @@ export async function createRecurringOccurrence(db, settings, r) {
 
   if (timeIsConfirmed && r.notify_email && customer) {
     try {
-      const template = await getTemplate("booking_confirmation");
+      // Explicit business id: this runs from the cron with no session, so
+      // the ambient lookup finds no member and silently fell back to the
+      // STOCK wording - the business's customised template was ignored.
+      const template = await getTemplate("booking_confirmation", r.business_id);
       const vars = {
         customer_name: customer.name,
         job_type: job.job_type || "your job",

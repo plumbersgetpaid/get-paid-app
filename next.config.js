@@ -33,6 +33,21 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Baseline security headers on every response. The big one is
+        // frame denial: without it the app could be embedded in a hostile
+        // iframe and its one-click POST forms clickjacked. The rest are
+        // standard hardening with no functional cost. (A full CSP is
+        // deliberately not attempted here - Next's inline runtime makes a
+        // strict one fragile; revisit with nonce support if ever needed.)
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), geolocation=(), payment=()" },
+        ],
+      },
+      {
         // The Clients pages have repeatedly shown stale "possible duplicate"
         // data after actions like merging - the most likely explanation is
         // the browser's own back-forward cache (bfcache) restoring an old

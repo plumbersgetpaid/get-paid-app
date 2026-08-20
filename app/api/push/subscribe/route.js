@@ -53,9 +53,22 @@ export async function POST(req) {
   // refreshing their subscription never hits this.
   const { data: existingRow } = await db
     .from("push_subscriptions")
-    .select("id")
+    .select("id, team_member_id")
     .eq("endpoint", endpoint)
     .maybeSingle();
+  // The upsert below keys on endpoint. If this endpoint is already
+  // registered to a DIFFERENT member (real case: a shared device where the
+  // previous user logged out without turning notifications off), the row
+  // changes owner. That's legitimate - the endpoint is an unguessable
+  // capability URL only this browser holds - but it must be an EXPLICIT,
+  // logged transfer, never a silent rewrite: the previous owner stops
+  // getting notifications on this device, which should be traceable.
+  if (existingRow && existingRow.team_member_id !== currentMember.id) {
+    console.log(
+      "Push subscribe: endpoint changing owner (shared device)",
+      { from: existingRow.team_member_id, to: currentMember.id }
+    );
+  }
   if (!existingRow) {
     const { count } = await db
       .from("push_subscriptions")

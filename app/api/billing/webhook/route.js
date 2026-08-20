@@ -72,6 +72,26 @@ async function syncSubscription(db, businessId, sub) {
     return;
   }
 
+  // Out-of-order protection: Stripe doesn't guarantee event order, and our
+  // own 500-to-retry design increases reordering. A Stripe subscription
+  // that has been DELETED is terminal - the same subscription id never
+  // becomes active again (a real resubscribe always gets a NEW id, which
+  // passes because the stored status isn't live). So a non-canceled status
+  // arriving for the SAME id we've recorded as canceled can only be a
+  // stale, delayed event - and applying it would resurrect a cancelled
+  // account and wipe its 30-day deletion clock.
+  if (
+    existing?.status === "canceled" &&
+    existing?.stripe_subscription_id === sub.id &&
+    sub.status !== "canceled"
+  ) {
+    console.log(
+      "Stripe webhook: ignoring stale out-of-order event for cancelled subscription",
+      sub.id
+    );
+    return;
+  }
+
   const seats = sub?.items?.data?.[0]?.quantity ?? null;
 
   const patch = {

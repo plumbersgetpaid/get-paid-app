@@ -1,6 +1,7 @@
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
+import { sanitizePaymentLink } from "../../../lib/paymentLink";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -11,10 +12,18 @@ export async function POST(req) {
 
   const form = await req.formData();
   const invoiceId = form.get("invoiceId");
-  const paymentLink = (form.get("paymentLink") || "").toString().trim();
+  const rawLink = (form.get("paymentLink") || "").toString().trim();
+  // Emailed to homeowners as "Pay now" - must be a real http(s) URL.
+  const paymentLink = sanitizePaymentLink(rawLink);
 
   if (!invoiceId) {
     return NextResponse.json({ error: "Missing invoiceId" }, { status: 400 });
+  }
+  if (rawLink && !paymentLink) {
+    return NextResponse.json(
+      { error: "That doesn't look like a valid link - it needs to start with https://" },
+      { status: 400 }
+    );
   }
 
   const db = await getScopedDb(currentMember);

@@ -122,7 +122,7 @@ export default async function InvoiceDetail(props) {
           <tbody>
             <tr>
               <td style={{ padding: "10px 0" }}>
-                {job?.job_type || "Plumbing work"}
+                {job?.job_type || "Work carried out"}
               </td>
               <td style={{ padding: "10px 0", textAlign: "right" }}>
                 {formatCurrency(invoice.amount, settings.currency)}

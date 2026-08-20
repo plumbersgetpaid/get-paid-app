@@ -32,7 +32,27 @@ export async function claimRequest(requestId, businessId, endpoint) {
   });
 
   if (!error) return { duplicate: false, claimed: true, id };
-  if (error.code === "23505") return { duplicate: true, id };
+  if (error.code === "23505") {
+    // The id exists - but only treat it as a duplicate if the ORIGINAL
+    // claim came from this same business. Without this check, anyone who
+    // learned (or poisoned) another tenant's request_id could silently
+    // suppress that tenant's action, and probe which UUIDs exist across
+    // the platform. On a cross-tenant collision the action proceeds
+    // WITHOUT dedup (logged loudly) - losing retry protection for one
+    // attacker-supplied id beats silently swallowing a real action.
+    const { data: existing } = await db
+      .from("processed_requests")
+      .select("business_id")
+      .eq("request_id", id)
+      .maybeSingle();
+    if (existing && existing.business_id === businessId) {
+      return { duplicate: true, id };
+    }
+    console.error(
+      `Idempotency: request_id collision across businesses (${endpoint}) - proceeding unclaimed`
+    );
+    return { duplicate: false, claimed: false };
+  }
 
   // Table missing or transient failure: never block the user's action
   // over bookkeeping - proceed without dedup, but say so in the logs.

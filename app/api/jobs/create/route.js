@@ -132,7 +132,7 @@ export async function POST(req) {
       const template = await getTemplate("quote");
       const vars = {
         customer_name: name,
-        job_type: jobType || "Plumbing work",
+        job_type: jobType || "Work carried out",
         // Bare formatted number ("1,880.40") - the template writes the £.
         // Raw numbers rendered "1880.4" in real customer emails.
         amount: formatAmountForTemplate(amount, settings.currency),

@@ -26,6 +26,43 @@ function addLinkAnnotation(pdfDoc, page, url, x, y, width, height) {
   }
 }
 
+// pdf-lib's standard Helvetica can only encode WinAnsi (Latin-1 + a few
+// extras). Any character outside it - Polish ł/ą/ś, Greek, emoji - makes
+// drawText THROW, which killed the whole invoice: email never sent, PDF
+// download 500s forever. Proven with "Łukasz". This sanitiser keeps names
+// readable instead of crashing: NFKD strips combining accents (ą->a, ś->s),
+// a small map covers letters that don't decompose (ł->l), and anything
+// still unencodable becomes "?".
+const NON_DECOMPOSING = {
+  "Ł": "L", "ł": "l", "Đ": "D", "đ": "d", "Ħ": "H", "ħ": "h",
+  "İ": "I", "ı": "i", "Ŧ": "T", "ŧ": "t", "Ø": "O", "ø": "o",
+};
+// Everything WinAnsi accepts: printable ASCII, Latin-1, and the extras.
+const WINANSI_OK = /[ -~ -ÿ€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ\n]/;
+function pdfSafe(value) {
+  if (value === undefined || value === null) return value;
+  const str = String(value);
+  let out = "";
+  for (const ch of str) {
+    if (WINANSI_OK.test(ch)) {
+      out += ch; // already encodable - ü stays ü, £ stays £
+    } else if (NON_DECOMPOSING[ch]) {
+      out += NON_DECOMPOSING[ch];
+    } else {
+      // Decompose just this character (ś -> s + accent), drop the accent,
+      // keep whatever's encodable; anything else becomes "?".
+      let repl = "";
+      for (const part of ch.normalize("NFKD")) {
+        if (/\p{M}/u.test(part)) continue;
+        if (WINANSI_OK.test(part)) repl += part;
+        else if (NON_DECOMPOSING[part]) repl += NON_DECOMPOSING[part];
+      }
+      out += repl || "?";
+    }
+  }
+  return out;
+}
+
 // Converts a hex colour like "#111111" into pdf-lib's 0-1 rgb() format.
 // Falls back to near-black if the value is missing or malformed.
 function hexToRgb(hex) {
@@ -67,18 +104,37 @@ export async function generateInvoicePdfBytes({
   vatNumber,
   business = {},
 }) {
+  // Every free-text value that reaches drawText goes through pdfSafe -
+  // one unencodable character in a name or note must never sink the
+  // invoice. (Numbers/dates come from our own formatters and are safe.)
+  customerName = pdfSafe(customerName);
+  customerEmail = pdfSafe(customerEmail);
+  customerPhone = pdfSafe(customerPhone);
+  jobType = pdfSafe(jobType);
+  location = pdfSafe(location);
+  priceChangeNote = pdfSafe(priceChangeNote);
+  paymentNote = pdfSafe(paymentNote);
+  vatNumber = pdfSafe(vatNumber);
+
   const {
-    businessName,
+    businessName: businessNameRaw,
     accentColor,
     logoUrl,
-    contactEmail,
-    contactPhone,
-    invoiceNote,
-    headerTagline,
-    paymentTerms,
-    bankDetails,
+    contactEmail: contactEmailRaw,
+    contactPhone: contactPhoneRaw,
+    invoiceNote: invoiceNoteRaw,
+    headerTagline: headerTaglineRaw,
+    paymentTerms: paymentTermsRaw,
+    bankDetails: bankDetailsRaw,
     currency,
   } = business;
+  const businessName = pdfSafe(businessNameRaw);
+  const contactEmail = pdfSafe(contactEmailRaw);
+  const contactPhone = pdfSafe(contactPhoneRaw);
+  const invoiceNote = pdfSafe(invoiceNoteRaw);
+  const headerTagline = pdfSafe(headerTaglineRaw);
+  const paymentTerms = pdfSafe(paymentTermsRaw);
+  const bankDetails = pdfSafe(bankDetailsRaw);
 
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -186,7 +242,7 @@ export async function generateInvoicePdfBytes({
   });
   y -= 22;
 
-  page.drawText(jobType || "Plumbing work", { x: left, y, size: 12, font });
+  page.drawText(jobType || "Work carried out", { x: left, y, size: 12, font });
   drawRightAligned(formatCurrency(amount, currency), y, 12, font);
   y -= 20;
 

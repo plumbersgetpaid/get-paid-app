@@ -38,7 +38,7 @@ export async function POST(req) {
   const db = supabaseAdmin();
   const { data: member } = await db
     .from("team_members")
-    .select("id, name")
+    .select("id, name, business_id")
     .eq("email", email)
     .eq("is_active", true)
     .maybeSingle();
@@ -59,7 +59,11 @@ export async function POST(req) {
         throw tokenErr;
       }
 
-      const settings = await getBusinessSettings();
+      // Resolve settings from the TARGET member's business, never from
+      // whatever session cookie the requester happens to carry - this is a
+      // public endpoint, so the ambient lookup could brand the reset email
+      // with a DIFFERENT business's name (or the "Your Plumber" default).
+      const settings = await getBusinessSettings(member.business_id);
       const resetUrl = new URL(`/reset-password?token=${token}`, req.url).toString();
       const resend = new Resend(process.env.RESEND_API_KEY);
 

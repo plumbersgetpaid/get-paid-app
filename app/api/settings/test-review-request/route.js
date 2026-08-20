@@ -1,4 +1,5 @@
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { getCurrentTeamMember } from "../../../lib/auth";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
@@ -6,6 +7,15 @@ import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
+  // Defense in depth: the proxy already requires a session for this path,
+  // but a single-layer gate is fragile - if proxy.js ever fails to load,
+  // this must not become an anonymous relay on our API keys. Checked
+  // in-route like every other mutating endpoint.
+  const currentMember = await getCurrentTeamMember();
+  if (!currentMember) {
+    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
+  }
+
   const settings = await getBusinessSettings();
 
   if (!settings.google_review_link) {

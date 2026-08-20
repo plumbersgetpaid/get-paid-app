@@ -1,4 +1,5 @@
 import { getCurrentTeamMember } from "../../../lib/auth";
+import { canAccessJob } from "../../../lib/jobAccess";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatCurrency } from "../../../lib/formatCurrency";
 import { getEmailFrom } from "../../../lib/emailFrom";
@@ -42,6 +43,15 @@ export async function POST(req) {
   if (jobErr || !job) {
     console.error("Chase quote lookup error:", jobErr);
     return NextResponse.redirect(new URL("/", req.url), 303);
+  }
+
+  // Same per-job gate as accept-quote/decline-quote: this sends a
+  // customer-facing email, so a member with no permissions and no
+  // assignment to this job must not be able to trigger it.
+  const hasAccess = await canAccessJob(db, job, currentMember);
+  if (!hasAccess) {
+    await releaseRequest(claim);
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
   const { data: customer } = await db
