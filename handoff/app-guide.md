@@ -520,8 +520,10 @@ Everything voice/AI has a typed equivalent — nothing forces you to use it.
 ## 19. Notifications (reference)
 
 Two ways PatchUp reaches you:
-- **Daily brief email** — once a day, an email with tomorrow's jobs, invoices due,
-  and quotes awaiting a reply. Reaches you regardless of device.
+- **Daily brief email** — once a day at around **6pm UK time** (5pm in winter),
+  an email to the business's contact address with tomorrow's jobs, invoices due,
+  and quotes awaiting a reply. **If there's nothing on, no brief is sent** — no
+  email means a clear day. Reaches you regardless of device.
 - **Push notifications** — if you turn them on (Section 16.4), a nudge about an
   hour before each job starts. On iPhone this only works once the app is installed
   to the home screen.

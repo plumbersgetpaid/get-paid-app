@@ -1,7 +1,13 @@
 import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { hashPassword } from "../../../lib/password";
 import { buildSessionToken, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "../../../lib/auth";
+import { getEmailFrom } from "../../../lib/emailFrom";
+import { Resend } from "resend";
 import { NextResponse } from "next/server";
+
+// Where new-signup alerts go - the founder's own mailbox, so every trial
+// signup is visible the moment it happens without checking the database.
+const PLATFORM_NOTIFY_EMAIL = "hello@getpatchup.co.uk";
 
 const TRIAL_DAYS = 14;
 
@@ -136,6 +142,26 @@ export async function POST(req) {
   });
   if (subErr) {
     console.error("Signup subscription create error:", subErr);
+  }
+
+  // Tell the founder a new trial just started. Best-effort: a failed alert
+  // must never break the signup itself.
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: getEmailFrom("PatchUp"),
+        to: PLATFORM_NOTIFY_EMAIL,
+        subject: `New trial signup: ${businessName}`,
+        html: `<div style="font-family:sans-serif; line-height:1.6;">
+          <p><strong>${businessName}</strong> just started a 14-day trial.</p>
+          <p>Owner: ${name}<br>Email: ${email}<br>Team size chosen: ${teamSize}<br>
+          Trial ends: ${trialEnds.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+        </div>`,
+      });
+    } catch (e) {
+      console.error("Signup notify email failed (non-fatal):", e);
+    }
   }
 
   let token;

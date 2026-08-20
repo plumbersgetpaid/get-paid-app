@@ -155,9 +155,21 @@ permanently deleted - so export first.
 YOUR ACCOUNT (My account, everyone): change your name, email and password, turn
 notifications on for this device, and log out.
 
-NOTIFICATIONS: a daily brief email (tomorrow's jobs, invoices due, quotes to
-chase), plus optional push notifications about an hour before each job (turn on
-under My account; on iPhone the app must be installed to the home screen first).
+NOTIFICATIONS:
+- The daily brief email goes out once a day at around 6pm UK time (5pm in
+  winter - the schedule is fixed to world clock time). It covers tomorrow's
+  jobs, invoices due tomorrow, and quotes still waiting on a reply, and is
+  sent to the business's contact email (set in Settings). If there's nothing
+  booked in and nothing due, NO brief is sent that day - no email means a
+  clear day, not a problem.
+- Push notifications (optional): a nudge about an hour before each job
+  starts. Turn on under My account > Notifications on this device; on iPhone
+  the app must be installed to the home screen first. If a job's time isn't
+  confirmed yet, there's no nudge (there's no time to nudge about).
+- The automatic invoice chasers go out at about 9am UK time on the day an
+  invoice is exactly 3, 7 or 14 days overdue.
+- Recurring jobs create their next occurrence at about 6am each day, and
+  the "starting soon" check runs every 15 minutes.
 
 VOICE & AI: on the New quote, Quick book, Schedule and New reminder screens you
 can tap the microphone and speak instead of typing. A wand button tidies typed
