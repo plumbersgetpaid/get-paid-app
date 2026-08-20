@@ -1,7 +1,7 @@
 # Live Supabase schema (reference)
 
 Probed read-only via PostgREST introspection + per-table select probes on
-20 Aug 2026. **21 tables + 1 view.** This is the accurate inventory; the
+20 Aug 2026. **23 tables + 1 view** (email_log and help_questions added 20 Aug 2026). This is the accurate inventory; the
 committed `schema.sql` covers only 4 early tables and must not be trusted or
 deployed from. Supabase itself is the source of truth — this file is a map.
 
@@ -64,13 +64,15 @@ deployed from. Supabase itself is the source of truth — this file is a map.
 
 ## invoices
 - id (uuid, NOT NULL, pk)
-- job_id (uuid, NOT NULL, fk -> jobs.id) — should carry a UNIQUE constraint (supabase/invoice-unique.sql)
+- job_id (uuid, NOT NULL, fk -> jobs.id) — UNIQUE (invoices_job_id_unique, applied 20 Aug 2026)
 - amount (numeric, NOT NULL)
 - due_date (date, NOT NULL)
 - sent_at / paid_at / created_at (timestamptz)
 - status (text, NOT NULL)
 - invoice_number (int4, NOT NULL)
 - payment_link (text)
+- vat_rate (numeric) — snapshot at creation; null = not VAT-registered then
+- vat_number (text) — snapshot at creation
 - business_id (uuid, fk -> businesses.id)
 
 ## chase_log
@@ -157,6 +159,10 @@ deployed from. Supabase itself is the source of truth — this file is a map.
 - id (int4, NOT NULL, pk)
 - business_name, contact_email, contact_phone, accent_color, logo_url, invoice_note, header_tagline, payment_terms, bank_details, currency, google_review_link (text)
 - include_weekends, send_review_requests (boolean)
+- vat_registered (boolean, NOT NULL, default false)
+- vat_number (text)
+- vat_rate (numeric, NOT NULL, default 20)
+- vat_price_entry (text, NOT NULL, default 'inclusive') — 'inclusive' | 'exclusive'
 - updated_at (timestamptz)
 - business_id (uuid, fk -> businesses.id)
 
@@ -200,7 +206,26 @@ deployed from. Supabase itself is the source of truth — this file is a map.
 - created_at (timestamptz)
 - business_id (uuid, fk -> businesses.id)
 
+## email_log
+- id (uuid, NOT NULL, pk, default gen_random_uuid())
+- business_id (uuid, NOT NULL) — no FK; service-role only (RLS on, no policies)
+- job_id (uuid)
+- customer_id (uuid)
+- email_to (text)
+- kind (text, NOT NULL) — quote | booking_confirmation | invoice | quote_chase | review_request
+- subject (text)
+- sent_at (timestamptz, NOT NULL, default now())
+
+## help_questions
+- id (uuid, NOT NULL, pk, default gen_random_uuid())
+- business_id (uuid, NOT NULL) — no FK; service-role only (RLS on, no policies)
+- team_member_id (uuid)
+- question (text, NOT NULL)
+- answer (text)
+- created_at (timestamptz, NOT NULL, default now())
+
 ## outstanding_invoices (VIEW, security_invoker)
+Excludes paid invoices AND invoices of cancelled jobs (supabase/cancelled-jobs-stop-chasing.sql).
 - invoice_id (uuid)
 - invoice_number (int4)
 - customer_name, phone, email, job_type, location (text)

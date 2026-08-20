@@ -24,11 +24,10 @@ PatchUp.
 - `proxy.js` — session check, Stripe access gate (`hasAccess`), and
   per-permission route gating
 - `supabase/schema.sql` — **stale**, covers only 4 early tables. The accurate
-  inventory is **`supabase/live-schema-reference.md`** (21 tables + 1 view,
+  inventory is **`supabase/live-schema-reference.md`** (23 tables + 1 view,
   read-only probed Aug 2026) — use that, and don't deploy from schema.sql.
-- `README.md` — **stale**, describes an early single-user email-only version and
-  lists features as unbuilt that now exist. Don't trust either file as a
-  description of current behaviour; read the code.
+- `README.md` — rewritten 20 Aug 2026 and now accurate (points here and at the
+  app guide). schema.sql above remains the one file never to trust.
 
 Five Vercel cron jobs (`vercel.json`) — see the Notifications section for the
 full list: recurring-jobs (6am), chase (9am), delete-cancelled (3am),
@@ -180,16 +179,18 @@ Still open, deliberately:
 - **26 remaining unchecked writes** — child-row deletes and log inserts,
   failure recoverable. List them for the outside review with
   `grep -rn 'await db.from' app | grep -v 'error'` and judgement.
-- **`scripts/isolation-test.mjs`** — 126 checks, re-run after any schema
+- **`scripts/isolation-test.mjs`** — 135 checks (count grows with the
+  harness; trust its own output), re-run after any schema
   or route change: `node --env-file=.env.local scripts/isolation-test.mjs`
 - New views MUST set `security_invoker = true` — the default is the trap
   that caused the worst finding of this audit.
 
 ## Service-role queries and business scoping
 
-21 API routes use `supabaseAdmin()`, which bypasses row-level security. The
-46 routes on `getScopedDb()` are protected by the database itself; these 21
-are not, and must filter by `business_id` themselves.
+~28 API routes use `supabaseAdmin()`, which bypasses row-level security. The
+~49 routes on `getScopedDb()` are protected by the database itself; the
+admin-client ones are not, and must filter by `business_id` themselves.
+(Counts drift as routes are added — the rule is what matters.)
 
 A cross-business sweep is not automatically a bug. The rule that separates
 the two, learned from a real leak in the recurring clash check (Aug 2026):
@@ -209,7 +210,7 @@ up in front of this one".
 
 ## Other known issues
 
-- **`supabase/schema.sql` is stale** — 4 tables against the live 21+view.
+- **`supabase/schema.sql` is stale** — 4 tables against the live 23+view.
   Fine for day-to-day work (`supabase/live-schema-reference.md` is the
   reference), but a fresh deploy from this repo would produce a broken
   database.
@@ -249,10 +250,14 @@ live schema) run "as if no outside reviewer follows". Code fixes landed:
   reminders, email templates, team roster, settings, and **note images**
   (previously omitted entirely).
 
-Three SQL files need running in Supabase (see each file's header):
-`supabase/login-throttle.sql`, `supabase/invoice-unique.sql`. Legal/marketing
-items (DPA, terms clauses, privacy additions, marketing-site company identity
-and overclaims) are tracked for the founder + solicitor, not code.
+All run-once SQL (login-throttle, invoice-unique, vat, help-questions,
+email-log, cancelled-jobs-stop-chasing) **has been applied to the live DB —
+verified by direct probe 20 Aug 2026** (tables/columns/RPC/view/guard all
+present). The authoritative `delete_business_data()` is the copy in
+`supabase/email-log.sql` (each redefinition supersedes the last; running an
+older file's copy would drop newer tables from the 30-day deletion).
+Legal/marketing items (DPA, terms clauses, solicitor review) are tracked for
+the founder + solicitor, not code.
 
 ## Email sending (professional domain)
 
@@ -369,7 +374,8 @@ Tradespeople have no Sent folder - mail goes out from the platform address.
 `email_log` (supabase/email-log.sql) records every customer-facing send:
 quote, booking_confirmation, invoice, quote_chase, review_request (invoice
 chasers stay in `chase_log`; the UI merges both). Logged via
-`lib/logEmail.js` at all nine send sites, best-effort AFTER the send (never
+`lib/logEmail.js` at all seven send sites (the two invoice-chase sends are
+recorded in `chase_log` instead), best-effort AFTER the send (never
 blocks it, but failures log loudly). Surfaced as "Emails sent to the
 customer" on `/jobs/view/[jobId]`, and in the export as emails-sent.csv.
 

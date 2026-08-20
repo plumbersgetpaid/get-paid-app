@@ -60,9 +60,10 @@ Both repos deploy on push to `main` via Vercel.
 ## Database changes
 
 SQL lives in `supabase/`. Run SQL files in the **Supabase SQL Editor** (not a
-terminal). The 30-day deletion routine (`delete_business_data()`, in
-`supabase/idempotency.sql`) must reach every table that stores business data —
-if you add a table, add it there and re-verify.
+terminal). The 30-day deletion routine (`delete_business_data()` — the
+authoritative copy is in `supabase/email-log.sql`; each redefinition
+supersedes the last) must reach every table that stores business data — if
+you add a table, add it there and re-verify.
 
 ## Status
 

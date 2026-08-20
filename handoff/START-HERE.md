@@ -158,7 +158,8 @@ photos of the inside of private homes); the tradesperson is the controller.
 
 - **All account data is deleted 30 days after cancellation.** Exception: Stripe
   billing records kept **6 years** for UK tax.
-- `delete_business_data()` (in `supabase/idempotency.sql`) is the deletion
+- `delete_business_data()` (authoritative copy in `supabase/email-log.sql` -
+  each redefinition supersedes the last) is the deletion
   routine — it must reach every table that stores business data. If you add a
   table, add it there and re-verify (backdate a cancellation + dry-run).
 
@@ -198,7 +199,8 @@ photos of the inside of private homes); the tradesperson is the controller.
 | What the app does, screen by screen | `docs/app-guide.md` (+ `.html`) |
 | Accurate DB schema | `supabase/live-schema-reference.md` |
 | Offline architecture | `docs/offline-plan.md` |
-| Deletion routine + idempotency table | `supabase/idempotency.sql` |
+| Deletion routine (authoritative) | `supabase/email-log.sql` |
+| Idempotency table | `supabase/idempotency.sql` |
 | Login throttle function | `supabase/login-throttle.sql` |
 | One-invoice-per-job constraint | `supabase/invoice-unique.sql` |
 | Tenant-isolation harness | `scripts/isolation-test.mjs` (`npm run test:isolation`) |
@@ -233,5 +235,5 @@ photos of the inside of private homes); the tradesperson is the controller.
 2. Confirm what's deployed vs local before changing behaviour.
 3. Follow the isolation/idempotency/timezone rules above — they are the
    easy-to-miss traps.
-4. Next planned build is the **AI help box** (§8). After that, revisit the open
+4. The AI help box is BUILT (§8). Next: revisit the open
    items in §3.
