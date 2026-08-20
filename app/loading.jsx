@@ -1,27 +1,39 @@
 // Shown the instant a navigation starts, while the server builds the page.
-// Before this existed there was no feedback at all - a ~1s wait with a
-// frozen screen reads as "broken"; the same wait with a skeleton reads as
-// "working". Matches the card shapes the real screens resolve into.
+// The first version was too faint - white cards on the grey surface read
+// as a blank screen, which is exactly the feeling this exists to prevent.
+// This one sketches the page's real anatomy (title, cards with text
+// lines) in visible grey, shimmering, so the second reads as "loading".
 export default function Loading() {
+  const line = (w, h = 12) => ({
+    height: h,
+    width: w,
+    borderRadius: 4,
+    background: "linear-gradient(90deg, #e3e3e6 25%, #d6d6da 42%, #e3e3e6 60%)",
+    backgroundSize: "200% 100%",
+    animation: "shimmer 1.2s linear infinite",
+  });
   return (
     <main aria-busy="true">
-      <div style={{ height: 28, width: 180, borderRadius: 4, background: "var(--pulse, #ececec)", animation: "pulse 1.1s ease-in-out infinite" }} />
-      {[92, 140, 120].map((h, i) => (
+      <div style={line(170, 24)} />
+      {[3, 2, 3].map((rows, i) => (
         <div
           key={i}
           style={{
-            height: h,
-            borderRadius: 3,
-            border: "1px solid #e8e8e8",
             background: "white",
+            border: "1px solid #e2e2e2",
+            borderRadius: 3,
+            padding: "var(--card-pad, 16px)",
             marginTop: 14,
-            opacity: 0.7,
-            animation: `pulse 1.1s ease-in-out ${i * 0.12}s infinite`,
           }}
-        />
+        >
+          <div style={{ ...line(110, 10), marginBottom: 14 }} />
+          {Array.from({ length: rows }).map((_, r) => (
+            <div key={r} style={{ ...line(`${88 - r * 16}%`), marginTop: r ? 10 : 0 }} />
+          ))}
+        </div>
       ))}
-      <style>{`@keyframes pulse { 0%,100% { opacity:.45 } 50% { opacity:.85 } }
-@media (prefers-reduced-motion: reduce) { main[aria-busy] * { animation: none !important } }`}</style>
+      <style>{`@keyframes shimmer { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+@media (prefers-reduced-motion: reduce) { main[aria-busy] div { animation: none !important } }`}</style>
     </main>
   );
 }
