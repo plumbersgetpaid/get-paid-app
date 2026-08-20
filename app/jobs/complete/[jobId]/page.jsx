@@ -5,6 +5,8 @@ import { canSeeEverything, canInvoice } from "../../../lib/permissions";
 import { canAccessJob } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { withSignedUrls } from "../../../lib/signedMediaUrls";
+import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { netOf } from "../../../lib/vat";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -81,9 +83,19 @@ export default async function CompleteJob(props) {
   defaultDueDate.setDate(defaultDueDate.getDate() + 14);
   const defaultDueDateStr = defaultDueDate.toISOString().slice(0, 10);
 
+  // A business in 'exclusive' VAT entry mode thinks in before-VAT prices, so
+  // the final-amount field prefills the net of the stored (gross) quote; the
+  // complete route grosses the typed figure back up on submit.
+  const settings = await getBusinessSettings();
+  const exclusiveEntry =
+    settings.vat_registered && settings.vat_price_entry === "exclusive";
+  const defaultAmount = exclusiveEntry
+    ? netOf(job.amount, settings.vat_rate ?? 20)
+    : job.amount;
+
   // If we're returning from an "Enhance with AI" round trip, keep whatever
   // the tradie had entered instead of resetting back to the defaults
-  const amountValue = searchParams?.amount || job.amount;
+  const amountValue = searchParams?.amount || defaultAmount;
   const dueDateValue = searchParams?.dueDate || defaultDueDateStr;
   const noteValue = searchParams?.note || "";
   const aiError = searchParams?.aiError === "1";
@@ -99,6 +111,7 @@ export default async function CompleteJob(props) {
       aiError={aiError}
       from={searchParams?.from || ""}
       showEverything={showEverything}
+      exclusiveVat={exclusiveEntry ? settings.vat_rate ?? 20 : null}
     />
   );
 }

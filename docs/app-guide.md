@@ -417,12 +417,15 @@ confirmation**, **Review request**, **Payment link note.** Each saves on its own
   automatic thank-you), **Payment terms**, **Bank details**, **Invoice footer
   note.** Then **Save settings.**
 - **VAT registered** — a toggle for VAT-registered businesses. Turn it on and
-  enter your **VAT number** and **VAT rate** (standard UK rate 20%). Prices you
-  enter stay the total the customer pays; invoices then show a proper
-  **Net / VAT / Total** breakdown with your VAT number, quote emails note that
-  the price includes VAT, and the accountant CSV gains net/VAT columns. Each
-  invoice keeps the rate it was issued with. Not registered? Leave it off —
-  nothing changes.
+  enter your **VAT number** and **VAT rate** (standard UK rate 20%), then pick
+  how you type prices: **"It's the total the customer pays"** (default — the
+  homeowner style) or **"It's before VAT — add VAT on top for me"** (the
+  commercial "£500 + VAT" style: type 500, the quote goes out as 600, and price
+  fields show the total that will be charged). Either way invoices show a
+  proper **Net / VAT / Total** breakdown with your VAT number, quote emails
+  note that the price includes VAT, and the accountant CSV gains net/VAT
+  columns. Each invoice keeps the rate it was issued with. Not registered?
+  Leave it off — nothing changes.
 - A **"Send a test review request to yourself"** button.
 - A **Logo** uploader (shown on your invoice PDFs; best as a PNG).
 

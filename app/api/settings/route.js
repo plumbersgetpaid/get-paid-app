@@ -32,6 +32,8 @@ export async function POST(req) {
   const vatRateRaw = parseFloat(form.get("vat_rate"));
   const vat_rate =
     Number.isFinite(vatRateRaw) && vatRateRaw >= 0 && vatRateRaw <= 100 ? vatRateRaw : 20;
+  const vat_price_entry =
+    form.get("vat_price_entry") === "exclusive" ? "exclusive" : "inclusive";
 
   const db = await getScopedDb(currentMember);
 
@@ -52,6 +54,7 @@ export async function POST(req) {
       vat_registered,
       vat_number,
       vat_rate,
+      vat_price_entry,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "business_id" }

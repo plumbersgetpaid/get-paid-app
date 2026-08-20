@@ -19,6 +19,10 @@ const DEFAULTS = {
   vat_registered: false,
   vat_number: null,
   vat_rate: 20,
+  // 'inclusive' = typed prices are the customer-facing total (domestic style);
+  // 'exclusive' = typed prices are before VAT and the app adds it (commercial
+  // "£500 + VAT" style). Only meaningful when vat_registered.
+  vat_price_entry: "inclusive",
 };
 
 export const getBusinessSettings = cache(async function getBusinessSettings(businessId) {

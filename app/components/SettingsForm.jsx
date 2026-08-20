@@ -162,9 +162,27 @@ export default function SettingsForm({ settings }) {
                 style={inputStyle}
               />
               <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}>
-                Standard UK rate is 20%. The prices you enter are treated as
-                the total the customer pays (VAT included) - invoices show the
-                net/VAT split worked out from that total.
+                Standard UK rate is 20%.
+              </span>
+            </label>
+            <label style={labelStyle}>
+              When you type a price
+              <select
+                name="vat_price_entry"
+                defaultValue={settings.vat_price_entry || "inclusive"}
+                style={inputStyle}
+              >
+                <option value="inclusive">
+                  It's the total the customer pays (VAT already included)
+                </option>
+                <option value="exclusive">
+                  It's before VAT - add VAT on top for me
+                </option>
+              </select>
+              <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}>
+                Quote homeowners a total price? Keep the first option. Quote
+                commercial work as "£500 + VAT"? Pick the second and PatchUp
+                does the maths - type 500 and the quote goes out as 600.
               </span>
             </label>
           </>

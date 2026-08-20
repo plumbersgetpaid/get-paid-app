@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canCreateRecurringJob } from "../../../../lib/permissions";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
+import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
+import { netOf } from "../../../../lib/vat";
 import BackButton from "../../../../components/BackButton";
 import MultiAssignField from "../../../../components/MultiAssignField";
 import Link from "next/link";
@@ -56,6 +58,19 @@ export default async function EditRecurringJob(props) {
     .eq("id", recurring.customer_id)
     .single();
 
+  // The stored amount is always the VAT-inclusive gross. A business in
+  // 'exclusive' entry mode types before-VAT prices, so the prefill must show
+  // the net - the update route grosses it back up, and an untouched resubmit
+  // round-trips to the same stored value instead of adding VAT twice.
+  const settings = await getBusinessSettings();
+  const exclusiveEntry =
+    settings.vat_registered && settings.vat_price_entry === "exclusive";
+  const amountPrefill = recurring.amount
+    ? exclusiveEntry
+      ? netOf(recurring.amount, settings.vat_rate ?? 20)
+      : recurring.amount
+    : "";
+
   return (
     <main>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -91,10 +106,15 @@ export default async function EditRecurringJob(props) {
           name="amount"
           type="number"
           step="0.01"
-          placeholder="Price"
-          defaultValue={recurring.amount || ""}
+          placeholder={exclusiveEntry ? "Price before VAT" : "Price"}
+          defaultValue={amountPrefill}
           style={inputStyle}
         />
+        {exclusiveEntry && (
+          <span style={{ fontSize: 12, color: "#888" }}>
+            Before VAT - {settings.vat_rate ?? 20}% is added automatically.
+          </span>
+        )}
 
         <label style={{ fontSize: 13, color: "#666" }}>
           Preferred start time

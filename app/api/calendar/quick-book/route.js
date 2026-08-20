@@ -1,5 +1,6 @@
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
+import { toStoredAmount } from "../../../lib/vat";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { narrowToRealClashes } from "../../../lib/jobConflicts";
 import { findExistingCustomer } from "../../../lib/findCustomer";
@@ -160,7 +161,10 @@ export async function POST(req) {
       customer_id: customerId,
       job_type: jobType || null,
       location: location || null,
-      amount: amountInput ? parseFloat(amountInput) : 0,
+      // toStoredAmount adds VAT for 'exclusive'-mode businesses; the raw
+      // input above stays raw so the clash-warning redirect re-fills the
+      // form with exactly what was typed.
+      amount: amountInput ? toStoredAmount(amountInput, settings) : 0,
       status: "in_progress",
       accepted_at: new Date().toISOString(),
       scheduled_start: start.toISOString(),

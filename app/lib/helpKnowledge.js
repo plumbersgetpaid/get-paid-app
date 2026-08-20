@@ -109,11 +109,17 @@ details, invoice footer, and your logo.
 
 VAT (Settings, owner/manager): if your business is VAT registered, turn on
 "VAT registered" in Settings and enter your VAT number and rate (standard UK
-rate is 20%). The prices you enter stay the total the customer pays (VAT
-included) - invoices then show a Net / VAT / Total breakdown and your VAT
-number, quote emails say the price includes VAT, and the accountant CSV gets
-net and VAT columns. Each invoice keeps the rate it was issued with, so old
-invoices never change. If you're not VAT registered, leave it off and nothing
+rate is 20%). Then choose how you type prices under "When you type a price":
+- "It's the total the customer pays" (the default) - for quoting homeowners a
+  single all-in price.
+- "It's before VAT - add VAT on top for me" - for commercial-style "£500 +
+  VAT" quoting: type 500 and PatchUp automatically sends the quote and
+  invoice as 600. Price fields then say "before VAT" and show the total that
+  will be charged.
+Either way, invoices show a Net / VAT / Total breakdown and your VAT number,
+quote emails say the price includes VAT, and the accountant CSV gets net and
+VAT columns. Each invoice keeps the rate it was issued with, so old invoices
+never change. If you're not VAT registered, leave it all off and nothing
 changes.
 
 BILLING (Settings > Billing, owner/manager): your plan and status; "Set up

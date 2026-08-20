@@ -1,6 +1,6 @@
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
-import { vatBreakdown } from "../../../lib/vat";
+import { vatBreakdown, toStoredAmount } from "../../../lib/vat";
 import { formatCurrency } from "../../../lib/formatCurrency";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { findExistingCustomer } from "../../../lib/findCustomer";
@@ -23,7 +23,7 @@ export async function POST(req) {
   const phone = form.get("phone");
   const email = form.get("email");
   const jobType = form.get("jobType");
-  const amount = form.get("amount");
+  const amountRaw = form.get("amount");
   const assignedToIds = form.getAll("assignedTo").filter(Boolean);
   const location = (form.get("location") || "").toString().trim();
   const proposedDate = form.get("proposedDate");
@@ -34,6 +34,11 @@ export async function POST(req) {
 
   const db = await getScopedDb(currentMember);
   const settings = await getBusinessSettings();
+
+  // Businesses that quote "£500 + VAT" (vat_price_entry = 'exclusive') type
+  // the before-VAT figure; the app adds VAT here, once, on the way in.
+  // Storage stays VAT-inclusive everywhere.
+  const amount = amountRaw ? toStoredAmount(amountRaw, settings) : amountRaw;
 
   // Retry protection: a resend of this exact action - flaky signal,
   // double-tap, browser resubmit, offline replay - is answered with the

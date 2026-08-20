@@ -1,4 +1,5 @@
 import { findExistingCustomer } from "../../../../lib/findCustomer";
+import { toStoredAmount } from "../../../../lib/vat";
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
 import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurrence";
 import { getCurrentTeamMember } from "../../../../lib/auth";
@@ -20,7 +21,11 @@ export async function POST(req) {
   const email = (form.get("email") || "").toString().trim();
   const jobType = (form.get("jobType") || "").toString().trim();
   const location = (form.get("location") || "").toString().trim();
-  const amount = form.get("amount");
+  // 'Exclusive'-mode VAT businesses type before-VAT prices; store the gross.
+  // (getBusinessSettings is per-request cached, so the later call dedupes.)
+  const amountEntrySettings = await getBusinessSettings();
+  const amountRaw = form.get("amount");
+  const amount = amountRaw ? toStoredAmount(amountRaw, amountEntrySettings) : amountRaw;
   const startDate = form.get("startDate");
   const preferredTime = form.get("preferredTime") || "09:00";
   const frequencyValue = parseInt(form.get("frequencyValue") || "1", 10);

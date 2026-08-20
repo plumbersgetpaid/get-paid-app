@@ -1,4 +1,5 @@
 import { getBusinessSettings } from "../../../../lib/getBusinessSettings";
+import { toStoredAmount } from "../../../../lib/vat";
 import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurrence";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canCreateRecurringJob } from "../../../../lib/permissions";
@@ -16,7 +17,12 @@ export async function POST(req) {
   const recurringId = form.get("recurringId");
   const jobType = (form.get("jobType") || "").toString().trim();
   const location = (form.get("location") || "").toString().trim();
-  const amount = form.get("amount");
+  // In 'exclusive' VAT mode the edit form PREFILLS the before-VAT figure
+  // (see the edit page), so converting here round-trips an untouched form
+  // back to the same stored gross - no double-VAT on resubmit.
+  const amountEntrySettings = await getBusinessSettings();
+  const amountRaw = form.get("amount");
+  const amount = amountRaw ? toStoredAmount(amountRaw, amountEntrySettings) : amountRaw;
   const preferredTime = form.get("preferredTime") || "09:00";
   const confirmTimeLater = form.get("confirmTimeLater") === "1";
   const frequencyValue = parseInt(form.get("frequencyValue") || "1", 10);

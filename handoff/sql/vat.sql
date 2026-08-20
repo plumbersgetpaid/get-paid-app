@@ -15,6 +15,13 @@ alter table business_settings
   add column if not exists vat_number text,
   add column if not exists vat_rate numeric not null default 20;
 
+-- How this business types prices: 'inclusive' (typed price IS the customer
+-- total - homeowner style) or 'exclusive' (typed price is before VAT and the
+-- app adds it - commercial "£500 + VAT" style). Entry-time conversion only;
+-- stored amounts are always the gross total either way.
+alter table business_settings
+  add column if not exists vat_price_entry text not null default 'inclusive';
+
 alter table invoices
   add column if not exists vat_rate numeric,
   add column if not exists vat_number text;

@@ -3,7 +3,7 @@ import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatCurrency, formatInvoiceNumber } from "../../../lib/formatCurrency";
-import { vatBreakdown } from "../../../lib/vat";
+import { vatBreakdown, toStoredAmount } from "../../../lib/vat";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
@@ -288,14 +288,20 @@ export async function POST(req) {
   }
 
   const quotedAmount = Number(job.amount);
-  const finalAmount = amountInput ? Number(amountInput) : quotedAmount;
-  const priceChanged = Math.abs(finalAmount - quotedAmount) > 0.001;
+  // In 'exclusive' VAT entry mode the form shows and takes before-VAT
+  // figures (the prefill is the net of the stored gross quote); gross it
+  // back up here so storage stays VAT-inclusive everywhere.
+  const vatSettings = await getBusinessSettings();
+  const finalAmount = amountInput ? Number(toStoredAmount(amountInput, vatSettings)) : quotedAmount;
+  // 1p tolerance: a net prefill grossed back up can drift a penny on odd
+  // totals, and a 1p difference isn't a "price change" worth flagging to
+  // the customer anyway.
+  const priceChanged = Math.abs(finalAmount - quotedAmount) > 0.011;
 
   // Snapshot the business's VAT position onto the invoice at creation.
   // Invoices are tax documents: a later rate change or deregistration must
   // never rewrite one already issued, so displays read the invoice's own
   // vat_rate/vat_number, not current settings.
-  const vatSettings = await getBusinessSettings();
   const vatFields = vatSettings.vat_registered
     ? { vat_rate: vatSettings.vat_rate ?? 20, vat_number: vatSettings.vat_number || null }
     : { vat_rate: null, vat_number: null };

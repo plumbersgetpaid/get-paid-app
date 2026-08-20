@@ -15,6 +15,7 @@ export default function CompleteJobForm({
   aiError,
   from,
   showEverything,
+  exclusiveVat, // the VAT rate when this business types before-VAT prices, else null
 }) {
   const requestIdRef = useRef(null);
   const [queued, setQueued] = useState(false);
@@ -255,7 +256,7 @@ export default function CompleteJobForm({
         {showEverything && (
           <>
             <label style={{ fontSize: 13, color: "#666" }}>
-              Final invoice amount
+              {exclusiveVat ? "Final invoice amount (before VAT)" : "Final invoice amount"}
               <input
                 type="number"
                 step="0.01"
@@ -266,8 +267,14 @@ export default function CompleteJobForm({
                 style={{ ...inputStyle, marginTop: 6 }}
               />
               <span style={{ fontSize: 12, color: "#888" }}>
-                Adjust this if more or less work was done than originally quoted -
-                the customer gets an invoice for this amount, not the quote.
+                {exclusiveVat
+                  ? `Adjust this if more or less work was done. ${exclusiveVat}% VAT is added automatically` +
+                    (amount && !Number.isNaN(parseFloat(amount))
+                      ? ` - the customer's invoice total will be £${(
+                          Math.round(parseFloat(amount) * (1 + exclusiveVat / 100) * 100) / 100
+                        ).toFixed(2)}.`
+                      : ".")
+                  : "Adjust this if more or less work was done than originally quoted - the customer gets an invoice for this amount, not the quote."}
               </span>
             </label>
 
