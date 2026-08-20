@@ -166,14 +166,12 @@ photos of the inside of private homes); the tradesperson is the controller.
 
 ## 8. Roadmap decisions (agreed 20 Aug 2026)
 
-- **AI help box — WILL BUILD next (after the app guide).**
-  - **Embedded in a Settings page, NOT a floating pop-up** (Blaise was explicit).
-  - Grounded strictly on the app guide / help content — no inventing features.
-  - How-to questions only; hand billing/account/legal off to `hello@`.
-  - Log every question asked (free product-feedback signal).
-  - Reuses the Anthropic key already used for voice.
-  - After it ships, add a "Getting help" section to `docs/app-guide.md` showing
-    where it is and how to use it.
+- **AI help box — BUILT (20 Aug 2026).** "Ask PatchUp" at `/help`, linked from
+  Settings and My account (not a pop-up). Grounded strictly on
+  `app/lib/helpKnowledge.js`; hands billing/account/legal to the PatchUp team;
+  logs questions to `help_questions`. Needs `supabase/help-questions.sql` run
+  once for logging. See CLAUDE.md "Ask PatchUp". Keep `helpKnowledge.js` in sync
+  with the real app or it will describe features that don't exist.
 - **Referral program — DECLINED for now.** Blaise's call: the 14-day free trial
   already serves "try before you pay," and a cash bounty this early invites
   gaming. If revisited: two-sided free-**month credit** (not cash), gated on the

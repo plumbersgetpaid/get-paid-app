@@ -346,6 +346,23 @@ Crons now: recurring-jobs (6am), chase (9am), delete-cancelled (3am),
 daily-brief (17:00), starting-soon (*/15). Needs Vercel Pro for the
 sub-daily one.
 
+## Ask PatchUp (in-app help assistant)
+
+An AI help box at `/help`, linked from **Settings** (owner/manager) and **My
+account** (everyone) — a normal screen, deliberately NOT a floating pop-up.
+`app/api/help/ask/route.js` calls Anthropic (Haiku, same key as voice) with a
+system prompt that is grounded **strictly** on `app/lib/helpKnowledge.js` (a
+condensed mirror of `docs/app-guide.md`). Guardrails: how-to questions only;
+never invent features; hand billing/account/legal/bugs to
+`hello@getpatchup.co.uk` ("connect you to the PatchUp team"); refuse off-topic.
+
+Every question+answer is logged to **`help_questions`** (product feedback) —
+business-scoped, service-role only, and included in `delete_business_data()`.
+**If `helpKnowledge.js` drifts from the real app, the assistant will describe
+features that don't exist — update it in the same change as any UX change.**
+Needs `supabase/help-questions.sql` run once (the box still answers without it;
+it just won't log).
+
 ## Speed is a feature
 
 Founder's product rule (Aug 2026, after side-by-side with a native

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCurrentTeamMember } from "../lib/auth";
 import { redirect } from "next/navigation";
 import BackButton from "../components/BackButton";
@@ -30,6 +31,13 @@ export default async function Account() {
       <AccountForm currentName={currentMember.name} currentEmail={currentMember.email} />
 
       <NotificationToggle vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null} />
+
+      <Link href="/help" style={{ ...cardStyle, display: "block", textDecoration: "none", color: "#000" }}>
+        <div style={{ fontWeight: 500, fontSize: 14 }}>Help →</div>
+        <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+          Ask a question about how PatchUp works, any time
+        </div>
+      </Link>
 
       {/* This page is reachable by every role, unlike Settings which is
           owner/manager only - previously the only Log out button in the

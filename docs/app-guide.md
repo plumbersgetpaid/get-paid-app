@@ -502,6 +502,20 @@ Two ways PatchUp reaches you:
 
 ---
 
+## 20. Getting help — Ask PatchUp
+
+**What it's for:** an in-app assistant that instantly answers questions about how
+to use PatchUp.
+**Where it is:** **Settings → Help** (owner/manager) or **My account → Help**
+(everyone) — a normal screen, not a pop-up.
+**On screen:** a simple chat. Type a question ("How do I send a quote?") or tap
+one of the example questions, and get a short, plain-English answer.
+**What it does — and doesn't:** it explains how features work, grounded only on
+this guide, so it won't make things up. For billing, account issues, or anything
+not working, it points you to the PatchUp team at `hello@getpatchup.co.uk`.
+
+---
+
 ## Appendix A — Colour & status key (for consistent on-screen labelling)
 
 - **Amber** = a quote (waiting / needs chasing), or an important note.

@@ -119,6 +119,25 @@ export default async function Settings(props) {
         </div>
       </Link>
 
+      <Link
+        href="/help"
+        style={{
+          display: "block",
+          background: "white",
+          borderRadius: 3,
+          padding: 16,
+          margin: "16px 0",
+          textDecoration: "none",
+          color: "#000",
+          border: "1px solid #e2e2e2",
+        }}
+      >
+        <div style={{ fontWeight: 500, fontSize: 14 }}>Help →</div>
+        <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+          Ask a question about how PatchUp works, any time
+        </div>
+      </Link>
+
       {saved && (
         <div
           style={{
