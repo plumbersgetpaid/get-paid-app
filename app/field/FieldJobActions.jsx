@@ -74,11 +74,39 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
 
   async function submitComplete(e) {
     e.preventDefault();
+    // Same guard as the main complete screen: this is the one irreversible,
+    // customer-facing action (the invoice email can't be unsent). The field
+    // view keeps it to a native confirm - it must work offline and stay
+    // lightweight, but the number still gets shown so a wrong one jumps out.
+    const fmtMoney = (n) =>
+      `£${Number(n).toLocaleString("en-GB", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    // Untouched -> the stored (VAT-inclusive) total; typed -> their figure,
+    // labelled as entered because this device doesn't know the business's
+    // VAT entry mode (the server applies it).
+    const amountLine =
+      amount === ""
+        ? job.amount !== undefined && job.amount !== null
+          ? `Invoice total: ${fmtMoney(job.amount)}\n`
+          : ""
+        : `Amount entered: ${fmtMoney(amount)}\n`;
+    const ok = window.confirm(
+      `Finish this job for ${job.customer?.name || "the customer"}?\n${amountLine}` +
+        `The invoice goes to the customer and can't be unsent.`
+    );
+    if (!ok) return;
     setBusy(true);
     setMsg(null);
     const fd = new FormData();
     fd.append("jobId", job.id);
-    fd.append("amount", amount === "" ? String(job.amount ?? "") : String(amount));
+    // Only send an amount the user actually TYPED. Sending the stored
+    // amount back when untouched double-applied VAT for businesses in
+    // before-VAT entry mode: the stored figure is already the gross, but
+    // the server treats a submitted amount as typed (and grosses it up).
+    // With no amount sent, the server falls back to the stored quote.
+    if (amount !== "") fd.append("amount", String(amount));
     fd.append("note", note);
     fd.append("from", "");
     for (const f of await compressAll(beforeFiles)) fd.append("beforePhotos", f, f.name || "before.jpg");

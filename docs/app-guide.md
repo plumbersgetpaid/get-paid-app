@@ -207,8 +207,11 @@ the customer gets a confirmation email.
 - **Before / after photos (optional)** — two camera buttons (**Before**, **After**),
   each takes multiple photos. These become a permanent part of the invoice PDF.
 - Button: **"Mark done & send invoice."**
-**What happens:** the job is marked complete, an invoice PDF is generated (with
-your logo and any photos) and emailed to the customer automatically.
+**What happens:** a **confirmation card** appears first — customer, invoice
+total, due date, photo count, and "the invoice will be emailed to … — it can't
+be unsent" (it also flags if the amount differs from the quote). Tap **"Confirm
+& send invoice"** and the job is marked complete, an invoice PDF is generated
+(with your logo and any photos) and emailed to the customer automatically.
 **Offline note:** if there's no phone signal, the whole thing — photos included —
 is saved on the phone and a black **"Saved on this phone ✓"** panel appears; it
 sends itself the moment you're back online (Section 17).

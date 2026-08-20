@@ -28,6 +28,13 @@ export default function CompleteJobForm({
   const [busy, setBusy] = useState(false);
   const [busyLabel, setBusyLabel] = useState("");
   const [error, setError] = useState(null);
+  // Completing is the one irreversible, customer-facing action in the app -
+  // the invoice email can't be unsent. So the submit button first opens a
+  // review overlay showing exactly what's about to happen (amount, who it
+  // emails), and only "Confirm & send" actually fires. A bare "are you
+  // sure?" would get clicked through on autopilot; showing the number is
+  // what makes a wrong one jump out.
+  const [confirming, setConfirming] = useState(false);
 
   // Adds to whatever's already selected rather than replacing it - the
   // native file picker's own onChange always reports only the files
@@ -70,8 +77,16 @@ export default function CompleteJobForm({
     return compressed;
   }
 
-  async function handleMarkDone(e) {
+  // The form's real submit: opens the review overlay. Using the form's own
+  // submit event means the browser's required-field validation (amount, due
+  // date) still runs BEFORE the review appears.
+  function handleShowConfirm(e) {
     e.preventDefault();
+    setError(null);
+    setConfirming(true);
+  }
+
+  async function handleMarkDone() {
     setError(null);
     setBusy(true);
     setBusyLabel(
@@ -120,6 +135,7 @@ export default function CompleteJobForm({
         });
         if (!ok) {
           setError("This phone's offline storage is full - connect to signal to send your saved work first.");
+          setConfirming(false);
           setBusy(false);
           return;
         }
@@ -131,6 +147,7 @@ export default function CompleteJobForm({
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Something went wrong saving this.");
+        setConfirming(false);
         setBusy(false);
         return;
       }
@@ -139,6 +156,7 @@ export default function CompleteJobForm({
     } catch (err) {
       console.error("Mark done error:", err);
       setError("Couldn't reach the server. Check your connection and try again.");
+      setConfirming(false);
       setBusy(false);
     }
   }
@@ -252,7 +270,7 @@ export default function CompleteJobForm({
 
       {error && <div style={aiErrorBoxStyle}>{error}</div>}
 
-      <form onSubmit={handleMarkDone} style={{ display: "grid", gap: 12 }}>
+      <form onSubmit={handleShowConfirm} style={{ display: "grid", gap: 12 }}>
         {showEverything && (
           <>
             <label style={{ fontSize: 13, color: "#666" }}>
@@ -415,9 +433,140 @@ export default function CompleteJobForm({
           </button>
         </div>
       </form>
+
+      {confirming && (() => {
+        const fmt = (n) =>
+          `£${Number(n || 0).toLocaleString("en-GB", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`;
+        // In before-VAT entry mode the typed figure is net; the customer's
+        // invoice total is the grossed-up amount - show THAT, it's what
+        // the email will say.
+        const rate = exclusiveVat ? Number(exclusiveVat) : 0;
+        const typed = parseFloat(amount);
+        const invoiceTotal = exclusiveVat
+          ? Math.round(typed * (1 + rate / 100) * 100) / 100
+          : typed;
+        const changedFromQuote =
+          showEverything &&
+          Number.isFinite(invoiceTotal) &&
+          Math.abs(invoiceTotal - Number(job.amount)) > 0.011;
+        const photoCount = beforeFiles.length + afterFiles.length;
+
+        return (
+          <div style={overlayStyle} role="dialog" aria-modal="true" aria-label="Confirm completion">
+            <div style={confirmCardStyle}>
+              <div style={{ fontWeight: 500, fontSize: 16, marginBottom: 12 }}>
+                Ready to finish this job?
+              </div>
+
+              <div style={confirmRowStyle}>
+                <span style={confirmLabelStyle}>Customer</span>
+                <span>{customer?.name || "Customer"}</span>
+              </div>
+              {showEverything && Number.isFinite(invoiceTotal) && (
+                <div style={confirmRowStyle}>
+                  <span style={confirmLabelStyle}>Invoice total</span>
+                  <span style={{ fontWeight: 600 }}>
+                    {fmt(invoiceTotal)}
+                    {exclusiveVat ? " inc VAT" : ""}
+                  </span>
+                </div>
+              )}
+              {changedFromQuote && (
+                <div style={{ ...confirmRowStyle, color: "#b45309" }}>
+                  <span style={confirmLabelStyle}>Changed from quote</span>
+                  <span>was {fmt(job.amount)}</span>
+                </div>
+              )}
+              {showEverything && dueDate && (
+                <div style={confirmRowStyle}>
+                  <span style={confirmLabelStyle}>Payment due</span>
+                  <span>
+                    {new Date(dueDate).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                      timeZone: "UTC",
+                    })}
+                  </span>
+                </div>
+              )}
+              {photoCount > 0 && (
+                <div style={confirmRowStyle}>
+                  <span style={confirmLabelStyle}>Photos on the invoice</span>
+                  <span>
+                    {photoCount} photo{photoCount === 1 ? "" : "s"}
+                  </span>
+                </div>
+              )}
+
+              <p style={{ fontSize: 13, color: customer?.email ? "#666" : "#b45309", margin: "12px 0 16px", lineHeight: 1.5 }}>
+                {customer?.email
+                  ? `The invoice will be emailed to ${customer.email} straight away - it can't be unsent.`
+                  : "No email on file - the invoice will be created but NOT emailed to the customer."}
+              </p>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  disabled={busy}
+                  style={{ ...cancelButtonStyle, flex: 1 }}
+                >
+                  Go back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleMarkDone}
+                  disabled={busy}
+                  style={{ ...submitButtonStyle, flex: 2 }}
+                >
+                  {busy ? busyLabel : showEverything ? "Confirm & send invoice" : "Confirm - mark done"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </main>
   );
 }
+
+const overlayStyle = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.45)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 20,
+  zIndex: 100,
+};
+
+const confirmCardStyle = {
+  background: "white",
+  borderRadius: 8,
+  padding: 20,
+  width: "100%",
+  maxWidth: 420,
+  boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+};
+
+const confirmRowStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 12,
+  fontSize: 14,
+  padding: "7px 0",
+  borderBottom: "1px solid #f0f0f0",
+};
+
+const confirmLabelStyle = {
+  color: "#888",
+  fontSize: 13,
+};
 
 const inputStyle = {
   padding: "12px",

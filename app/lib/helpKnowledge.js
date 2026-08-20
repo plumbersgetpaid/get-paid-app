@@ -62,8 +62,11 @@ COMPLETE A JOB / GET THE INVOICE OUT (Mark done, needs the invoice permission)
 - Open the job and tap "Mark done". You can adjust the final amount, set the
   payment due date (defaults to 14 days), add a payment link, write a completion
   note (with an AI tidy-up button), and attach Before/After photos.
-- Tap "Mark done & send invoice": the job is completed and an invoice PDF (with
-  your logo and any photos) is emailed to the customer automatically.
+- Tap "Mark done & send invoice": a confirmation first shows you the invoice
+  total, who it will be emailed to, and any photos - tap "Confirm & send
+  invoice" and the job is completed and the invoice PDF (with your logo and
+  any photos) is emailed to the customer automatically. Sending can't be
+  undone, which is why the confirmation shows you the details first.
 - No signal? It saves on your phone and sends itself when you're back online.
 
 CANCELLING vs DELETING A JOB (from View job, owner/manager): a job with no
