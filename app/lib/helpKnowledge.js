@@ -66,6 +66,13 @@ COMPLETE A JOB / GET THE INVOICE OUT (Mark done, needs the invoice permission)
   your logo and any photos) is emailed to the customer automatically.
 - No signal? It saves on your phone and sends itself when you're back online.
 
+CANCELLING vs DELETING A JOB (from View job, owner/manager): a job with no
+invoice can be deleted outright. Once a job has an invoice it can only be
+CANCELLED - the invoice stays on record (full history, exports), but if it's
+unpaid PatchUp stops the automatic payment reminders and it no longer counts
+in the money you're owed. There's no undo for completing a job - if one was
+completed by mistake, cancel it.
+
 GET PAID (Work > Invoices)
 - Each unpaid invoice has "Chase now" (emails the customer the chaser with the
   PDF) and "Mark as paid".

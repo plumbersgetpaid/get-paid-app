@@ -380,7 +380,7 @@ export default async function ViewJob(props) {
             <input type="hidden" name="from" value="work" />
             <ConfirmSubmitButton
               style={cancelButtonStyle}
-              confirmText="Cancel this job? The invoice raised against it stays on record, so this doesn't undo the billing."
+              confirmText="Cancel this job? The invoice raised against it stays on record, but if it's unpaid PatchUp will stop chasing it and it won't count as money you're owed."
               confirmLabel="Yes, cancel the job"
               cancelLabel="Leave it as is"
             >
@@ -400,6 +400,8 @@ export default async function ViewJob(props) {
         <p style={{ fontSize: 12, color: "#888", marginTop: 8, textAlign: "center" }}>
           This has an invoice attached, so it can't be deleted - cancelling
           keeps it and the invoice on record, just out of your active jobs.
+          If the invoice is unpaid, cancelling also stops the automatic
+          payment reminders.
         </p>
       )}
     </main>
