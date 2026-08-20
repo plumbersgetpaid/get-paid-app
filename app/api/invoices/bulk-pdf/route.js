@@ -118,6 +118,8 @@ export async function GET(req) {
       createdAt: inv.created_at,
       paymentLink: inv.payment_link || undefined,
       paymentNote: paymentNote || undefined,
+      vatRate: inv.vat_rate,
+      vatNumber: inv.vat_number,
       business: { ...business, beforePhotos, afterPhotos },
     });
 

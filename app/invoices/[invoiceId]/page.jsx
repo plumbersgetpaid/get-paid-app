@@ -1,5 +1,6 @@
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { formatCurrency, formatInvoiceNumber } from "../../lib/formatCurrency";
+import { vatBreakdown } from "../../lib/vat";
 import { notFound } from "next/navigation";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canInvoice } from "../../lib/permissions";
@@ -84,6 +85,7 @@ export default async function InvoiceDetail(props) {
         <div style={{ color: "#888", marginBottom: 20, fontSize: 13 }}>
           {formatInvoiceNumber(invoice.invoice_number)} ·{" "}
           {new Date(invoice.created_at).toLocaleDateString("en-GB")}
+          {invoice.vat_number ? ` · VAT No: ${invoice.vat_number}` : ""}
         </div>
 
         <div style={{ marginBottom: 20 }}>
@@ -128,6 +130,36 @@ export default async function InvoiceDetail(props) {
             </tr>
           </tbody>
         </table>
+
+        {(() => {
+          // Uses the rate snapshotted on this invoice at creation - never the
+          // current setting, so old invoices don't change retroactively.
+          const vat = vatBreakdown(invoice.amount, invoice.vat_rate);
+          if (!vat) return null;
+          const rowStyle = {
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 14,
+            color: "#666",
+            marginBottom: 6,
+          };
+          return (
+            <div style={{ borderTop: "1px solid #eee", paddingTop: 12, marginBottom: 12 }}>
+              <div style={rowStyle}>
+                <span>Net</span>
+                <span>{formatCurrency(vat.net, settings.currency)}</span>
+              </div>
+              <div style={rowStyle}>
+                <span>VAT ({vat.rate}%)</span>
+                <span>{formatCurrency(vat.vat, settings.currency)}</span>
+              </div>
+              <div style={{ ...rowStyle, color: "#000", fontWeight: 500 }}>
+                <span>Total</span>
+                <span>{formatCurrency(vat.gross, settings.currency)}</span>
+              </div>
+            </div>
+          );
+        })()}
 
         <div style={{ borderTop: "1px solid #eee", paddingTop: 12 }}>
           <div

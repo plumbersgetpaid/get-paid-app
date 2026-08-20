@@ -68,7 +68,7 @@ export async function POST(req) {
       const settings = await getBusinessSettings();
       const { data: invoiceRow } = await db
         .from("invoices")
-        .select("job_id, payment_link")
+        .select("job_id, payment_link, vat_rate, vat_number")
         .eq("id", invoiceId)
         .single();
       const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, invoiceRow?.job_id);
@@ -113,6 +113,8 @@ export async function POST(req) {
         status: "unpaid",
         paymentLink: invoiceRow?.payment_link || undefined,
         paymentNote: paymentNote || undefined,
+        vatRate: invoiceRow?.vat_rate,
+        vatNumber: invoiceRow?.vat_number,
         business,
       });
 

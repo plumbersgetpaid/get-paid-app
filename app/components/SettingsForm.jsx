@@ -5,6 +5,7 @@ import { useState } from "react";
 export default function SettingsForm({ settings }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [vatOn, setVatOn] = useState(!!settings.vat_registered);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -118,6 +119,57 @@ export default function SettingsForm({ settings }) {
           blank to turn this off.
         </span>
       </label>
+
+      <div style={{ border: "1px solid #e2e2e2", borderRadius: 4, padding: 14, display: "grid", gap: 12 }}>
+        <label style={{ ...labelStyle, flexDirection: "row", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            name="vat_registered"
+            value="1"
+            checked={vatOn}
+            onChange={(e) => setVatOn(e.target.checked)}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>
+            VAT registered
+            <span style={{ display: "block", fontWeight: 400, color: "#888", fontSize: 12 }}>
+              Turn this on to show a VAT breakdown and your VAT number on
+              invoices and quotes.
+            </span>
+          </span>
+        </label>
+
+        {vatOn && (
+          <>
+            <label style={labelStyle}>
+              VAT number
+              <input
+                name="vat_number"
+                placeholder="e.g. GB123456789"
+                defaultValue={settings.vat_number || ""}
+                style={inputStyle}
+              />
+            </label>
+            <label style={labelStyle}>
+              VAT rate (%)
+              <input
+                name="vat_rate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                defaultValue={settings.vat_rate ?? 20}
+                style={inputStyle}
+              />
+              <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}>
+                Standard UK rate is 20%. The prices you enter are treated as
+                the total the customer pays (VAT included) - invoices show the
+                net/VAT split worked out from that total.
+              </span>
+            </label>
+          </>
+        )}
+      </div>
 
       <label style={labelStyle}>
         Payment terms (optional, shown on every invoice)

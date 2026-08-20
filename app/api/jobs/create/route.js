@@ -1,5 +1,7 @@
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
+import { vatBreakdown } from "../../../lib/vat";
+import { formatCurrency } from "../../../lib/formatCurrency";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { findExistingCustomer } from "../../../lib/findCustomer";
 import { textToEmailHtml } from "../../../lib/emailHtml";
@@ -133,6 +135,17 @@ export async function POST(req) {
       let bodyText = renderTemplate(template.body, vars);
       if (location) {
         bodyText += `\n\nJob location: ${location}`;
+      }
+      // A VAT-registered business shows the customer that the quoted total
+      // already includes VAT (amounts in the app are VAT-inclusive).
+      if (settings.vat_registered) {
+        const vat = vatBreakdown(amount, settings.vat_rate ?? 20);
+        if (vat) {
+          bodyText += `\n\nThe quoted price includes VAT at ${vat.rate}% (${formatCurrency(
+            vat.vat,
+            settings.currency
+          )}).${settings.vat_number ? ` VAT No: ${settings.vat_number}` : ""}`;
+        }
       }
       const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(
         bodyText

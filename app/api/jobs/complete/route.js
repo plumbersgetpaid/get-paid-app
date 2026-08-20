@@ -3,6 +3,7 @@ import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatCurrency, formatInvoiceNumber } from "../../../lib/formatCurrency";
+import { vatBreakdown } from "../../../lib/vat";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
@@ -140,6 +141,8 @@ async function finishInvoice({
       priceChangeNote: priceChanged ? noteInput : undefined,
       paymentLink: paymentLinkInput || undefined,
       paymentNote: paymentNote || undefined,
+      vatRate: invoice.vat_rate,
+      vatNumber: invoice.vat_number,
       business,
     });
 
@@ -150,6 +153,17 @@ async function finishInvoice({
     let bodyText = renderTemplate(invoiceTemplate.body, invoiceVars);
     if (job.location) {
       bodyText += `\n\nJob location: ${job.location}`;
+    }
+    // Mirror the PDF's VAT breakdown in the email body, using the snapshot
+    // stamped on the invoice at creation.
+    if (invoice.vat_rate) {
+      const vat = vatBreakdown(invoice.amount, invoice.vat_rate);
+      if (vat) {
+        bodyText += `\n\nThe total includes VAT at ${vat.rate}% (${formatCurrency(
+          vat.vat,
+          settings.currency
+        )}).${invoice.vat_number ? ` VAT No: ${invoice.vat_number}` : ""}`;
+      }
     }
     if (priceChanged) {
       bodyText += `\n\nOriginally quoted ${formatCurrency(
@@ -277,6 +291,15 @@ export async function POST(req) {
   const finalAmount = amountInput ? Number(amountInput) : quotedAmount;
   const priceChanged = Math.abs(finalAmount - quotedAmount) > 0.001;
 
+  // Snapshot the business's VAT position onto the invoice at creation.
+  // Invoices are tax documents: a later rate change or deregistration must
+  // never rewrite one already issued, so displays read the invoice's own
+  // vat_rate/vat_number, not current settings.
+  const vatSettings = await getBusinessSettings();
+  const vatFields = vatSettings.vat_registered
+    ? { vat_rate: vatSettings.vat_rate ?? 20, vat_number: vatSettings.vat_number || null }
+    : { vat_rate: null, vat_number: null };
+
   const { data: invoice, error: invErr } = await db
     .from("invoices")
     .insert({
@@ -286,6 +309,7 @@ export async function POST(req) {
       status: "unpaid",
       payment_link: paymentLinkInput || null,
       business_id: currentMember.business_id,
+      ...vatFields,
     })
     .select()
     .single();

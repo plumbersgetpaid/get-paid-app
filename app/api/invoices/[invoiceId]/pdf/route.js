@@ -84,6 +84,8 @@ export async function GET(req, props) {
     createdAt: invoice.created_at,
     paymentLink: invoice.payment_link || undefined,
     paymentNote: paymentNote || undefined,
+    vatRate: invoice.vat_rate,
+    vatNumber: invoice.vat_number,
     business,
   });
 

@@ -16,6 +16,9 @@ const DEFAULTS = {
   include_weekends: true,
   google_review_link: null,
   send_review_requests: true,
+  vat_registered: false,
+  vat_number: null,
+  vat_rate: 20,
 };
 
 export const getBusinessSettings = cache(async function getBusinessSettings(businessId) {

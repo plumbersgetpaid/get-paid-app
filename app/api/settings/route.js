@@ -26,6 +26,12 @@ export async function POST(req) {
   const bank_details = form.get("bank_details") || null;
   const currency = form.get("currency") || "GBP";
   const google_review_link = form.get("google_review_link") || null;
+  const vat_registered = form.get("vat_registered") === "1";
+  const vat_number = (form.get("vat_number") || "").trim() || null;
+  // Clamp the rate to something sane; a nonsense value falls back to 20.
+  const vatRateRaw = parseFloat(form.get("vat_rate"));
+  const vat_rate =
+    Number.isFinite(vatRateRaw) && vatRateRaw >= 0 && vatRateRaw <= 100 ? vatRateRaw : 20;
 
   const db = await getScopedDb(currentMember);
 
@@ -43,6 +49,9 @@ export async function POST(req) {
       bank_details,
       currency,
       google_review_link,
+      vat_registered,
+      vat_number,
+      vat_rate,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "business_id" }

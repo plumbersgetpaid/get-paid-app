@@ -1,5 +1,6 @@
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
+import { vatBreakdown } from "../../../lib/vat";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
@@ -61,7 +62,11 @@ export async function GET(req) {
     "Customer Phone",
     "Job Description",
     "Job Location",
-    "Amount",
+    "Net Amount",
+    "VAT Rate %",
+    "VAT Amount",
+    "Total Amount",
+    "VAT Number",
     "Currency",
     "Date Issued",
     "Due Date",
@@ -74,6 +79,9 @@ export async function GET(req) {
   for (const inv of rows) {
     const job = jobById[inv.job_id];
     const customer = job ? customerById[job.customer_id] : null;
+    // Per-invoice snapshot: a non-VAT invoice exports its full amount as net
+    // with blank VAT columns, so accountant tools sum both kinds correctly.
+    const vat = vatBreakdown(inv.amount, inv.vat_rate);
 
     lines.push(
       [
@@ -83,7 +91,11 @@ export async function GET(req) {
         customer?.phone || "",
         job?.job_type || "",
         job?.location || "",
+        vat ? vat.net.toFixed(2) : Number(inv.amount).toFixed(2),
+        vat ? vat.rate : "",
+        vat ? vat.vat.toFixed(2) : "",
         Number(inv.amount).toFixed(2),
+        inv.vat_number || "",
         settings.currency || "GBP",
         inv.created_at ? inv.created_at.slice(0, 10) : "",
         inv.due_date || "",

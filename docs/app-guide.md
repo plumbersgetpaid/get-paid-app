@@ -409,13 +409,20 @@ confirmation**, **Review request**, **Payment link note.** Each saves on its own
 ## 14. Business settings (`/settings`)  *(owner/manager only)*
 
 **What it's for:** how your business appears to customers, and on your invoices.
-**On screen:** a "logged in as" card with **Log out**; three nav cards (**Billing**,
-**Team**, **Message templates**); then the settings form:
+**On screen:** a "logged in as" card with **Log out**; nav cards (**Billing**,
+**Team**, **Message templates**, **Help**); then the settings form:
 - **Business name**, **Header tagline** (on PDFs), **Contact email** and **Contact
   phone** (shown to customers), **Accent colour** (used on invoice PDFs),
   **Currency** (£/$/€), **Google review link** (paid customers then get an
   automatic thank-you), **Payment terms**, **Bank details**, **Invoice footer
   note.** Then **Save settings.**
+- **VAT registered** — a toggle for VAT-registered businesses. Turn it on and
+  enter your **VAT number** and **VAT rate** (standard UK rate 20%). Prices you
+  enter stay the total the customer pays; invoices then show a proper
+  **Net / VAT / Total** breakdown with your VAT number, quote emails note that
+  the price includes VAT, and the accountant CSV gains net/VAT columns. Each
+  invoice keeps the rate it was issued with. Not registered? Leave it off —
+  nothing changes.
 - A **"Send a test review request to yourself"** button.
 - A **Logo** uploader (shown on your invoice PDFs; best as a PNG).
 

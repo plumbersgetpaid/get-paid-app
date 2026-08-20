@@ -40,7 +40,7 @@ export async function GET(req) {
     if (templateKey && inv.email && resend) {
       const { data: invoiceRow } = await db
         .from("invoices")
-        .select("job_id, payment_link, business_id")
+        .select("job_id, payment_link, business_id, vat_rate, vat_number")
         .eq("id", inv.invoice_id)
         .single();
 
@@ -97,6 +97,8 @@ export async function GET(req) {
         status: "unpaid",
         paymentLink: invoiceRow?.payment_link || undefined,
         paymentNote: paymentNote || undefined,
+        vatRate: invoiceRow?.vat_rate,
+        vatNumber: invoiceRow?.vat_number,
         business: { ...business, beforePhotos, afterPhotos },
       });
 

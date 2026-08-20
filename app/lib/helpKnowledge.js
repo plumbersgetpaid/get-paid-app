@@ -107,6 +107,15 @@ BUSINESS SETTINGS (Settings, owner/manager): business name, tagline, contact
 email/phone, accent colour, currency, Google review link, payment terms, bank
 details, invoice footer, and your logo.
 
+VAT (Settings, owner/manager): if your business is VAT registered, turn on
+"VAT registered" in Settings and enter your VAT number and rate (standard UK
+rate is 20%). The prices you enter stay the total the customer pays (VAT
+included) - invoices then show a Net / VAT / Total breakdown and your VAT
+number, quote emails say the price includes VAT, and the accountant CSV gets
+net and VAT columns. Each invoice keeps the rate it was issued with, so old
+invoices never change. If you're not VAT registered, leave it off and nothing
+changes.
+
 BILLING (Settings > Billing, owner/manager): your plan and status; "Set up
 payment" / "Manage billing" open Stripe (card details never touch PatchUp);
 "Download everything" gives you a single zip of all your data. Cancelling is done

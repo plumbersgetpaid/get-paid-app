@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, PDFName, PDFString } from "pdf-lib";
 import { formatCurrency } from "./formatCurrency";
+import { vatBreakdown } from "./vat";
 
 // Adds a real clickable link annotation over a rectangle on the page -
 // pdf-lib has no high-level helper for this, so it's built directly from
@@ -62,6 +63,8 @@ export async function generateInvoicePdfBytes({
   priceChangeNote,
   paymentLink,
   paymentNote,
+  vatRate,
+  vatNumber,
   business = {},
 }) {
   const {
@@ -124,6 +127,10 @@ export async function generateInvoicePdfBytes({
   const meta = [
     invoiceNumber ? `Invoice #${invoiceNumber}` : null,
     createdAt ? new Date(createdAt).toLocaleDateString("en-GB") : null,
+    // A VAT-registered business is legally required to show its VAT number
+    // on invoices - it sits with the invoice number where HMRC (and
+    // customers reclaiming VAT) expect to find it.
+    vatNumber ? `VAT No: ${vatNumber}` : null,
   ]
     .filter(Boolean)
     .join(" \u00b7 ");
@@ -219,6 +226,25 @@ export async function generateInvoicePdfBytes({
         y -= 13;
       }
     }
+  }
+
+  // VAT breakdown for a registered business - the amount above is the
+  // VAT-inclusive total, split here into Net / VAT / Total so the invoice
+  // is a valid UK VAT invoice. Uses the rate SNAPSHOTTED on the invoice at
+  // creation, never the current setting.
+  const vat = vatBreakdown(amount, vatRate);
+  if (vat) {
+    y -= 2;
+    const vatRow = (label, value, useBold) => {
+      const f = useBold ? bold : font;
+      page.drawText(label, { x: right - 170, y, size: 10, font: f, color: useBold ? rgb(0.07, 0.07, 0.07) : grey });
+      drawRightAligned(value, y, 10, f, useBold ? rgb(0.07, 0.07, 0.07) : grey);
+      y -= 15;
+    };
+    vatRow("Net", formatCurrency(vat.net, currency));
+    vatRow(`VAT (${vat.rate}%)`, formatCurrency(vat.vat, currency));
+    vatRow("Total", formatCurrency(vat.gross, currency), true);
+    y -= 4;
   }
 
   y -= 8;
