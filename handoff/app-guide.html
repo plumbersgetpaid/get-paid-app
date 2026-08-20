@@ -1,0 +1,780 @@
+<title>PatchUp App Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ground: #f4f6f8;
+    --surface: #ffffff;
+    --surface-2: #eef1f5;
+    --ink: #171b21;
+    --muted: #5a6472;
+    --faint: #8a929d;
+    --line: #e2e6ec;
+    --line-strong: #cdd3db;
+    --accent: #b4640f;
+    --accent-soft: #f3e3d1;
+    --accent-ink: #7c440a;
+    /* the app's own status language, used as functional colour */
+    --quote: #b6771a;
+    --job: #2c63a6;
+    --overdue: #c23d2e;
+    --paid: #2f7d53;
+    --reminder: #6b57a6;
+    --gold: #9c7620;
+    --shadow: 0 1px 2px rgba(23,27,33,.05), 0 6px 20px -12px rgba(23,27,33,.18);
+    --radius: 12px;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #0f1216;
+      --surface: #161b21;
+      --surface-2: #1d232b;
+      --ink: #e7eaee;
+      --muted: #9aa4b0;
+      --faint: #6b7480;
+      --line: #262c34;
+      --line-strong: #333b45;
+      --accent: #e0913f;
+      --accent-soft: #33261a;
+      --accent-ink: #e7a862;
+      --quote: #d9a24d;
+      --job: #5f95d6;
+      --overdue: #e0685a;
+      --paid: #5eb283;
+      --reminder: #9b88d1;
+      --gold: #c8a256;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1216;
+    --surface: #161b21;
+    --surface-2: #1d232b;
+    --ink: #e7eaee;
+    --muted: #9aa4b0;
+    --faint: #6b7480;
+    --line: #262c34;
+    --line-strong: #333b45;
+    --accent: #e0913f;
+    --accent-soft: #33261a;
+    --accent-ink: #e7a862;
+    --quote: #d9a24d;
+    --job: #5f95d6;
+    --overdue: #e0685a;
+    --paid: #5eb283;
+    --reminder: #9b88d1;
+    --gold: #c8a256;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 244px minmax(0, 1fr);
+    gap: 56px;
+    align-items: start;
+  }
+
+  /* ---------- masthead ---------- */
+  header.top {
+    grid-column: 1 / -1;
+    padding: 64px 0 40px;
+    border-bottom: 1px solid var(--line);
+  }
+  .kicker {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .mark {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--ink); color: var(--ground);
+    display: grid; place-items: center; flex: 0 0 auto;
+    font-family: "Archivo", sans-serif; font-weight: 800; font-size: 15px;
+    transform: skewX(-9deg);
+  }
+  .mark span { transform: skewX(9deg); }
+  h1 {
+    font-family: "Archivo", sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.3rem, 5.4vw, 3.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0 0 18px;
+    max-width: 16ch;
+    text-wrap: balance;
+  }
+  header.top .lede {
+    font-size: 1.14rem;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0 0 26px;
+  }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 13px;
+  }
+  .tag b { color: var(--ink); font-weight: 500; }
+
+  /* ---------- sidebar TOC ---------- */
+  nav.toc {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+    padding: 8px 0;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+  nav.toc h2 {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 14px 12px;
+  }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; }
+  nav.toc a {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 4px;
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.3;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border-left: 2px solid transparent;
+    transition: color .15s, background .15s;
+  }
+  nav.toc a .num { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--faint); padding-top: 1px; }
+  nav.toc a:hover { color: var(--ink); background: var(--surface-2); }
+  nav.toc a.appendix { color: var(--faint); }
+  nav.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  main { padding: 44px 0 120px; min-width: 0; }
+
+  section.block { margin-bottom: 60px; scroll-margin-top: 24px; }
+  section.block > .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 8px;
+  }
+  section.block > h2 {
+    font-family: "Archivo", sans-serif;
+    font-weight: 700;
+    font-size: 1.85rem;
+    letter-spacing: -0.015em;
+    margin: 0 0 16px;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+  section.block > p { max-width: 66ch; margin: 0 0 16px; }
+  .lead { font-size: 1.06rem; color: var(--muted); max-width: 66ch; }
+  strong { font-weight: 600; }
+  a.inline { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+
+  /* route + gate chips */
+  code, .route {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.86em;
+  }
+  p code, dd code, li code {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 1px 6px;
+    color: var(--accent-ink);
+    white-space: nowrap;
+  }
+
+  /* screen card */
+  .screen {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px 8px;
+    margin: 18px 0;
+    box-shadow: var(--shadow);
+  }
+  .screen-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 12px; margin-bottom: 4px; }
+  .screen-head h3 {
+    font-family: "Archivo", sans-serif; font-weight: 700; font-size: 1.16rem;
+    margin: 0; letter-spacing: -0.01em; flex: 1 1 auto; min-width: 40%;
+  }
+  .route {
+    background: var(--ink); color: var(--ground);
+    border-radius: 6px; padding: 3px 9px; font-size: 12.5px; white-space: nowrap;
+  }
+  .gate {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: var(--accent-ink); background: var(--accent-soft);
+    border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+  }
+  .scene { margin: 14px 0 0; display: grid; gap: 0; }
+  .scene > div {
+    display: grid; grid-template-columns: 132px 1fr; gap: 18px;
+    padding: 12px 0; border-top: 1px solid var(--line);
+  }
+  .scene dt {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--faint); padding-top: 2px;
+  }
+  .scene dd { margin: 0; }
+  .scene dd ul { margin: 4px 0 0; padding-left: 18px; }
+  .scene dd li { margin-bottom: 4px; }
+
+  /* callout */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 0.96rem;
+  }
+  .note b { color: var(--accent-ink); }
+
+  /* the loop strip */
+  .loop {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin: 22px 0;
+    box-shadow: var(--shadow);
+  }
+  .loop-track { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+  .step {
+    flex: 1 1 110px;
+    border: 1px solid var(--line-strong);
+    border-radius: 9px;
+    padding: 12px 12px;
+    position: relative;
+    background: var(--surface);
+    min-width: 100px;
+  }
+  .step .s-num { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--faint); }
+  .step .s-name { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 0.98rem; margin: 2px 0 2px; }
+  .step .s-sub { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+  .step[data-c="quote"] { border-top: 3px solid var(--quote); }
+  .step[data-c="job"] { border-top: 3px solid var(--job); }
+  .step[data-c="overdue"] { border-top: 3px solid var(--overdue); }
+  .step[data-c="paid"] { border-top: 3px solid var(--paid); }
+
+  /* colour key */
+  .key { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 16px 0; }
+  .key .k { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 11px 13px; }
+  .swatch { width: 16px; height: 16px; border-radius: 5px; flex: 0 0 auto; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+  .key .k b { font-weight: 600; font-size: 0.92rem; }
+  .key .k span { display: block; font-size: 12px; color: var(--muted); }
+
+  /* running order */
+  ol.running { counter-reset: ro; list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; }
+  ol.running li {
+    counter-increment: ro;
+    display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 13px 16px;
+  }
+  ol.running li::before {
+    content: counter(ro);
+    font-family: "Archivo", sans-serif; font-weight: 800; font-size: 1rem;
+    color: var(--accent); background: var(--accent-soft);
+    width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+  }
+
+  footer.foot {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line);
+    padding: 28px 0 60px;
+    color: var(--faint);
+    font-size: 13px;
+    font-family: "IBM Plex Mono", monospace;
+    display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between;
+  }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; gap: 0; }
+    nav.toc {
+      position: static; max-height: none; overflow: visible;
+      border: 1px solid var(--line); border-radius: var(--radius);
+      background: var(--surface); padding: 16px; margin-top: 28px;
+    }
+    nav.toc ol { columns: 2; column-gap: 8px; }
+    nav.toc a { break-inside: avoid; }
+    main { padding-top: 8px; }
+    header.top { padding-top: 44px; }
+  }
+  @media (max-width: 560px) {
+    .shell { padding: 0 16px; }
+    .scene > div { grid-template-columns: 1fr; gap: 4px; }
+    .scene dt { padding-top: 8px; }
+    nav.toc ol { columns: 1; }
+  }
+</style>
+
+<div class="shell">
+
+  <header class="top">
+    <p class="kicker"><span class="mark"><span>P</span></span> PatchUp · Field manual for a filmmaker</p>
+    <h1>The PatchUp App, Screen by Screen</h1>
+    <p class="lede">A complete, plain-English walkthrough of every screen — written so someone who has <em>never</em> used PatchUp can film a full walkthrough from it. Each screen is a scene: what it's for, what's on screen, what to tap, and what happens next.</p>
+    <div class="meta-row">
+      <span class="tag"><b>20</b> screens &amp; flows</span>
+      <span class="tag">Ordered by the <b>user's journey</b></span>
+      <span class="tag">Colour key &amp; <b>video running order</b> inside</span>
+      <span class="tag">Updated <b>20 Aug 2026</b></span>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#big-picture"><span class="num">00</span><span>The big picture</span></a></li>
+      <li><a href="#users"><span class="num">01</span><span>Two kinds of user</span></a></li>
+      <li><a href="#getting-in"><span class="num">02</span><span>Getting in</span></a></li>
+      <li><a href="#around"><span class="num">03</span><span>Finding your way around</span></a></li>
+      <li><a href="#loop"><span class="num">04</span><span>The core loop</span></a></li>
+      <li><a href="#today"><span class="num">05</span><span>Today (dashboard)</span></a></li>
+      <li><a href="#work"><span class="num">06</span><span>Work</span></a></li>
+      <li><a href="#calendar"><span class="num">07</span><span>Calendar</span></a></li>
+      <li><a href="#job-sub"><span class="num">08</span><span>Job notes &amp; photos</span></a></li>
+      <li><a href="#recurring"><span class="num">09</span><span>Recurring jobs</span></a></li>
+      <li><a href="#clients"><span class="num">10</span><span>Clients</span></a></li>
+      <li><a href="#invoices"><span class="num">11</span><span>Invoices</span></a></li>
+      <li><a href="#team"><span class="num">12</span><span>Team &amp; permissions</span></a></li>
+      <li><a href="#templates"><span class="num">13</span><span>Message templates</span></a></li>
+      <li><a href="#settings"><span class="num">14</span><span>Business settings</span></a></li>
+      <li><a href="#billing"><span class="num">15</span><span>Billing</span></a></li>
+      <li><a href="#account"><span class="num">16</span><span>Your account</span></a></li>
+      <li><a href="#offline"><span class="num">17</span><span>Working offline</span></a></li>
+      <li><a href="#voice"><span class="num">18</span><span>Voice &amp; AI</span></a></li>
+      <li><a href="#notifications"><span class="num">19</span><span>Notifications</span></a></li>
+      <li><a href="#key" class="appendix"><span class="num">A</span><span>Colour &amp; status key</span></a></li>
+      <li><a href="#running" class="appendix"><span class="num">B</span><span>Video running order</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <!-- 0 -->
+    <section class="block" id="big-picture">
+      <p class="eyebrow">00 · The big picture</p>
+      <h2>What PatchUp does</h2>
+      <p class="lead">PatchUp is a job-management app for UK tradespeople — plumbers, electricians, builders. It runs on your phone and handles everything between winning a job and getting paid for it. The whole product is built around one loop.</p>
+      <div class="loop" aria-label="The core loop">
+        <div class="loop-track">
+          <div class="step" data-c="quote"><div class="s-num">01</div><div class="s-name">Quote</div><div class="s-sub">Send a priced quote</div></div>
+          <div class="step" data-c="quote"><div class="s-num">02</div><div class="s-name">Accept</div><div class="s-sub">Customer says yes</div></div>
+          <div class="step" data-c="job"><div class="s-num">03</div><div class="s-name">Book in</div><div class="s-sub">Put it on the calendar</div></div>
+          <div class="step" data-c="job"><div class="s-num">04</div><div class="s-name">Complete</div><div class="s-sub">Mark done, add photos</div></div>
+          <div class="step" data-c="overdue"><div class="s-num">05</div><div class="s-name">Invoice</div><div class="s-sub">Goes out automatically</div></div>
+          <div class="step" data-c="overdue"><div class="s-num">06</div><div class="s-name">Chase</div><div class="s-sub">Auto-chased until paid</div></div>
+          <div class="step" data-c="paid"><div class="s-num">07</div><div class="s-name">Paid</div><div class="s-sub">Money in</div></div>
+        </div>
+      </div>
+      <p>Everything else — clients, calendar, team, settings — supports that loop. If you film nothing else, film the loop (Section 04). The one line to open a video with: <strong>"You finish the job. PatchUp handles getting paid."</strong></p>
+    </section>
+
+    <!-- 1 -->
+    <section class="block" id="users">
+      <p class="eyebrow">01 · Before you film</p>
+      <h2>Two kinds of user (this changes what's on screen)</h2>
+      <p>The app looks different depending on who's logged in, so decide which view a shot is showing:</p>
+      <div class="screen">
+        <div class="screen-head"><h3>Owner / Manager</h3><span class="gate">sees everything</span></div>
+        <p style="margin:10px 0 0;color:var(--muted)">The boss. Sees money, all jobs, all clients, invoices, settings and billing. Film as an owner when you want the full app. (Owner and Manager are near-identical — an owner just can't be demoted or removed.)</p>
+      </div>
+      <div class="screen">
+        <div class="screen-head"><h3>Subcontractor ("your lads")</h3><span class="gate">only their jobs</span></div>
+        <p style="margin:10px 0 0;color:var(--muted)">Sees only the jobs assigned to them — no money, no client list, no settings. The owner can switch on up to six extra abilities one at a time (Section 12). Film this view for the stripped-back "just my jobs" experience.</p>
+      </div>
+      <p>Throughout this guide, anything marked <span class="gate" style="display:inline-block">owner/manager</span> is hidden for a plain subcontractor.</p>
+    </section>
+
+    <!-- 2 -->
+    <section class="block" id="getting-in">
+      <p class="eyebrow">02 · Getting in</p>
+      <h2>Signup, the free trial, and login</h2>
+
+      <div class="screen">
+        <div class="screen-head"><h3>Sign up for a free trial</h3><span class="route">/signup</span></div>
+        <dl class="scene">
+          <div><dt>What it's for</dt><dd>A new tradesperson starting their 14-day free trial.</dd></div>
+          <div><dt>On screen</dt><dd>The logo, heading <strong>"Set up your business,"</strong> and <strong>"Free for 14 days. No card needed."</strong> Then: <strong>Business name</strong> ("This goes on your quotes and invoices"), <strong>Your name</strong>, <strong>Email</strong>, <strong>Password</strong>, <strong>Confirm password</strong>, and <strong>"How many of you are there?"</strong> — number pills (1–10) with a live price underneath.</dd></div>
+          <div><dt>To do it</dt><dd>Fill it in → tap <strong>"Start 14-day free trial."</strong></dd></div>
+          <div><dt>What happens</dt><dd>The account is created and you land on <strong>Today</strong>. No card is asked for.</dd></div>
+        </dl>
+      </div>
+      <div class="note"><b>Pricing to show:</b> £19 a month covers one person; every extra person is £8. So two people = £27, three = £35.</div>
+
+      <div class="screen">
+        <div class="screen-head"><h3>Log in</h3><span class="route">/login</span></div>
+        <dl class="scene">
+          <div><dt>On screen</dt><dd>Logo, <strong>Email</strong>, <strong>Password</strong>, a <strong>"Forgot password?"</strong> link, and <strong>"Log in."</strong> Below: "New here? <strong>Start a free trial</strong>."</dd></div>
+          <div><dt>What happens</dt><dd>Lands on <strong>Today</strong>.</dd></div>
+        </dl>
+      </div>
+
+      <div class="screen">
+        <div class="screen-head"><h3>Forgot / reset password</h3><span class="route">/forgot-password</span></div>
+        <dl class="scene">
+          <div><dt>On screen</dt><dd>One <strong>Email</strong> box and <strong>"Send reset link."</strong> Whatever you type, it always says "If that email has an account, a reset link is on its way" — so it can't be used to discover who has an account. The emailed link opens <code>/reset-password</code>: <strong>New password</strong> + <strong>Confirm</strong> → <strong>"Set new password."</strong></dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="block" id="around">
+      <p class="eyebrow">03 · Orientation</p>
+      <h2>Finding your way around</h2>
+      <p>These appear on every logged-in screen — film them once, early.</p>
+
+      <div class="screen">
+        <div class="screen-head"><h3>The bottom navigation bar</h3></div>
+        <p style="margin:10px 0 0;color:var(--muted)">Fixed to the bottom, four tabs left to right: <strong>Today</strong> (home), <strong>Work</strong> (quotes/jobs/invoices/reminders), <strong>Calendar</strong>, and <strong>Clients</strong>. The active tab has a silver underline. <span class="gate" style="display:inline-block">note</span> Clients only appears if the user can see the client database — hidden for basic subcontractors.</p>
+      </div>
+      <div class="screen">
+        <div class="screen-head"><h3>The "+" button (create anything)</h3></div>
+        <p style="margin:10px 0 0;color:var(--muted)">A round silver <strong>+</strong> floats in the middle above the nav. Tapping it dims the screen and opens a menu: <strong>New quote</strong>, <strong>Quick book a job</strong>, <strong>Personal reminder</strong>, <strong>Recurring job</strong> (each shown only if that user is allowed it). The fastest way to start almost anything — a good recurring shot.</p>
+      </div>
+      <div class="screen">
+        <div class="screen-head"><h3>"Install PatchUp" &amp; "Never miss a job"</h3></div>
+        <p style="margin:10px 0 0;color:var(--muted)">Two one-time cards appear above the nav. <strong>Install PatchUp</strong> adds the app to the home screen (Android shows the native prompt; iPhone shows "Tap Share → Add to Home Screen"). <strong>Never miss a job</strong> turns on notifications for a nudge an hour before each job. Both are dismissible.</p>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="block" id="loop">
+      <p class="eyebrow">04 · The heart of the app</p>
+      <h2>The core loop, step by step</h2>
+      <p class="lead">Film this in order — it's the film. Quote → accept → book → complete → auto-invoice → chase → paid.</p>
+
+      <div class="screen">
+        <div class="screen-head"><h3>4.1 · Add a client</h3><span class="route">/clients/new</span></div>
+        <dl class="scene">
+          <div><dt>What it's for</dt><dd>Adding a customer. You usually don't need to — a client is created automatically the first time you quote or book them. This is for adding one by hand.</dd></div>
+          <div><dt>On screen</dt><dd><strong>Name</strong> (required), <strong>Phone</strong>, <strong>Email</strong>, <strong>Address</strong> → <strong>Save client</strong>.</dd></div>
+        </dl>
+      </div>
+
+      <div class="screen">
+        <div class="screen-head"><h3>4.2 · Create and send a quote</h3><span class="route">/jobs/new</span><span class="gate">quote permission</span></div>
+        <dl class="scene">
+          <div><dt>What it's for</dt><dd>Sending a customer a priced quote — the top of the loop.</dd></div>
+          <div><dt>On screen</dt><dd><ul>
+            <li><strong>Customer name</strong> (required), <strong>Phone</strong>, <strong>Email</strong>.</li>
+            <li>A <strong>"Record voice note"</strong> mic — speak the details and the AI fills the fields (Section 18).</li>
+            <li><strong>Job type</strong> (with a <strong>wand</strong> button that tidies the wording with AI), <strong>Quoted amount (£)</strong> (required), <strong>Job location</strong>.</li>
+            <li>A collapsible <strong>"Proposed date &amp; duration"</strong> — set a date here and accepting the quote books it automatically.</li>
+            <li><strong>Assign to</strong> — tick which team members it's for.</li>
+          </ul></dd></div>
+          <div><dt>To do it</dt><dd>Fill it in → <strong>Send quote</strong>.</dd></div>
+          <div><dt>What happens</dt><dd>The customer is emailed a professional quote, the job appears under <strong>Work → Quotes</strong> (amber), and you return to Today.</dd></div>
+        </dl>
+      </div>
+
+      <div class="screen">
+        <div class="screen-head"><h3>4.3 · The customer replies</h3><span class="route">Work → Quotes</span></div>
+        <dl class="scene">
+          <div><dt>On screen</dt><dd>Each waiting quote has three buttons:
+            <ul>
+              <li><strong>Accept quote</strong> — moves it into Jobs (in progress). If a date was proposed it's already booked; otherwise book it next.</li>
+              <li><strong>Chase quote</strong> — sends a friendly "following up on your quote" email. After ~3 days a quote is flagged "worth chasing."</li>
+              <li><strong>Decline / lost job</strong> — marks it lost (asks to confirm first).</li>
+            </ul></dd></div>
+        </dl>
+      </div>
+
+      <div class="screen">
+        <div class="screen-head"><h3>4.4 · Book the job in</h3><span class="route">/jobs/schedule/[job]</span><span class="gate">reschedule permission</span></div>
+        <dl class="scene">
+          <div><dt>What it's for</dt><dd>Putting an accepted job on the calendar with a real date and time.</dd></div>
+          <div><dt>On screen</dt><dd>A <strong>"Book by voice"</strong> mic; <strong>Start date</strong>, <strong>Start time</strong>, <strong>Expected duration</strong> (number + unit); <strong>location</strong>; an <strong>"Include weekends"</strong> tick; and <strong>"Let the client know"</strong> (an email tick that sends a booking confirmation). If it clashes with another job, an <strong>amber warning</strong> shows and the button becomes <strong>"Book anyway."</strong></dd></div>
+          <div><dt>To do it</dt><dd>Set date/time → <strong>Confirm booking</strong>.</dd></div>
+          <div><dt>What happens</dt><dd>The job shows on the calendar and on Today, and (if ticked) the customer gets a confirmation email.</dd></div>
+        </dl>
+      </div>
+      <div class="note"><b>Shortcut — Quick book</b> (<code>/calendar/quick-book</code>): book a job on the spot with no quote first (e.g. standing in the customer's kitchen). Same fields plus name/price; creates the booked job in one go. Invoice it properly later.</div>
+
+      <div class="screen">
+        <div class="screen-head"><h3>4.5 · Do the job, then mark it done</h3><span class="route">/jobs/complete/[job]</span><span class="gate">invoice permission</span></div>
+        <dl class="scene">
+          <div><dt>What it's for</dt><dd>Finishing a job — this is where the invoice is born.</dd></div>
+          <div><dt>On screen</dt><dd><ul>
+            <li>A summary; any <strong>important notes</strong> show in an amber banner.</li>
+            <li><span class="gate" style="display:inline-block">owner/manager</span> <strong>Final invoice amount</strong> (pre-filled with the quote — change it if the work changed), <strong>Payment due date</strong> (defaults +14 days), <strong>Payment link</strong> (adds a "Pay now" button).</li>
+            <li><strong>Completion note</strong> with an <strong>"Enhance note with AI"</strong> button.</li>
+            <li><strong>Before / after photos</strong> — two camera buttons; these become a permanent part of the invoice PDF.</li>
+          </ul></dd></div>
+          <div><dt>To do it</dt><dd><strong>"Mark done &amp; send invoice."</strong></dd></div>
+          <div><dt>What happens</dt><dd>The job is completed, an invoice PDF (with your logo and any photos) is generated and emailed to the customer automatically.</dd></div>
+        </dl>
+      </div>
+      <div class="note"><b>Offline moment worth filming:</b> with no signal, the whole completion — photos included — saves on the phone and a black <strong>"Saved on this phone ✓"</strong> panel appears. It sends itself the moment you're back online (Section 17).</div>
+
+      <div class="screen">
+        <div class="screen-head"><h3>4.6 · The invoice</h3><span class="route">/invoices/[invoice]</span></div>
+        <dl class="scene">
+          <div><dt>On screen</dt><dd>The rendered invoice (number, customer, line item, due date, status), with <strong>Download PDF</strong>, a <strong>payment link</strong> editor, and a <strong>CSV</strong> download for the accountant.</dd></div>
+        </dl>
+      </div>
+
+      <div class="screen">
+        <div class="screen-head"><h3>4.7 · Get paid</h3><span class="route">Work → Invoices</span></div>
+        <dl class="scene">
+          <div><dt>On screen</dt><dd>Each unpaid invoice has <strong>Chase now</strong> (emails the customer the chaser with the PDF) and <strong>Mark as paid</strong> (records it paid, and triggers the "please leave a review" email if a Google review link is set).</dd></div>
+          <div><dt>Automatic</dt><dd>You don't have to remember — PatchUp emails overdue customers by itself at <strong>3, 7 and 14 days overdue</strong>, in wording you control.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="block" id="today">
+      <p class="eyebrow">05 · Home</p>
+      <h2>Today — the dashboard</h2>
+      <p>The <code>/</code> screen you land on after login: an at-a-glance "what do I need to deal with." Cards, top to bottom:</p>
+      <div class="screen">
+        <dl class="scene">
+          <div><dt>Trial banner</dt><dd><span class="gate" style="display:inline-block">owner/manager</span> In the last week of the trial: e.g. "3 DAYS LEFT" with "Set up payment →." Turns urgent (amber) at ≤3 days.</dd></div>
+          <div><dt>Today's schedule</dt><dd>Time-ordered jobs and reminders (or "TBC"). Tapping a job goes to complete it, or to book it if it still needs a time. Empty: "Nothing booked in for today."</dd></div>
+          <div><dt>Action needed</dt><dd>A self-building to-do: quotes needing a reply, jobs running late, jobs needing a time, jobs to book, invoices due/overdue — each taps through. If nothing's pending, an all-clear card.</dd></div>
+          <div><dt>Outstanding payments</dt><dd><span class="gate" style="display:inline-block">owner/manager</span> A big £ total awaiting payment, any overdue amount in red, "View invoices →."</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="block" id="work">
+      <p class="eyebrow">06 · The control centre</p>
+      <h2>Work — quotes, jobs, invoices, reminders</h2>
+      <p>The working list of everything on the go (<code>/work</code>), across four tabs:</p>
+      <div class="screen">
+        <dl class="scene">
+          <div><dt>Quotes</dt><dd><span class="gate" style="display:inline-block">owner/manager</span> Sub-tabs "Waiting response" / "Already chased." Amber cards with <strong>Accept</strong>, <strong>Chase</strong>, <strong>Decline</strong> (Section 4.3).</dd></div>
+          <div><dt>Jobs</dt><dd>Sub-tabs "Today &amp; overdue / Upcoming / Unscheduled / Completed." Blue cards (red if late, green when done), a <strong>"View job"</strong> button (amber "!" if there's an important note), and an inline <strong>assign/share</strong> control for owner/manager.</dd></div>
+          <div><dt>Invoices</dt><dd><span class="gate" style="display:inline-block">invoice permission</span> Sub-tabs "Overdue / Awaiting / Paid." Red cards with <strong>Chase now</strong> and <strong>Mark as paid</strong>.</dd></div>
+          <div><dt>Reminders</dt><dd>Your personal calendar reminders (not jobs), with "+ Reminder" and Upcoming/Past sub-tabs.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section class="block" id="calendar">
+      <p class="eyebrow">07 · By date</p>
+      <h2>Calendar</h2>
+      <p>Everything by date in one place (<code>/calendar</code>): <strong>+ Quick book</strong> and <strong>+ Reminder</strong> buttons, <strong>Today / Week / Month</strong> views, and a ‹ › stepper. Day-by-day cards, colour-coded:</p>
+      <div class="key">
+        <div class="k"><span class="swatch" style="background:var(--job)"></span><div><b>Blue</b><span>Booked job (red if overdue)</span></div></div>
+        <div class="k"><span class="swatch" style="background:var(--overdue)"></span><div><b>Red</b><span>Invoice payment due</span></div></div>
+        <div class="k"><span class="swatch" style="background:var(--reminder)"></span><div><b>Purple</b><span>Personal reminder</span></div></div>
+        <div class="k"><span class="swatch" style="background:var(--gold)"></span><div><b>Gold</b><span>Projected recurring job</span></div></div>
+      </div>
+      <p><strong>Reminders</strong> (<code>/calendar/reminder/new</code>): title, notes, date/time, duration, an "Include weekends" tick, and — for owner/manager — an "Also share with" list. Can be created by voice; opening one lets you edit or delete it.</p>
+    </section>
+
+    <!-- 8 -->
+    <section class="block" id="job-sub">
+      <p class="eyebrow">08 · Inside a job</p>
+      <h2>Job details, notes &amp; photos</h2>
+      <div class="screen">
+        <div class="screen-head"><h3>Job details</h3><span class="route">/jobs/view/[job]</span></div>
+        <p style="margin:10px 0 0;color:var(--muted)">Contact info (tap to call/email), status, location, timing, who it's assigned to, price (owner/manager), completion note. Buttons: <strong>Job notes</strong>, <strong>Reschedule / Book in</strong>, <strong>Mark done</strong>, and <strong>Delete</strong> (if no invoice) or <strong>Cancel</strong> (if an invoice exists).</p>
+      </div>
+      <div class="screen">
+        <div class="screen-head"><h3>Job notes</h3><span class="route">/jobs/notes/[job]</span></div>
+        <p style="margin:10px 0 0;color:var(--muted)">Internal team notes, <strong>never shown to the customer</strong> (grey banner says so). Type a note, optionally mark it <strong>Important</strong> (shows amber and surfaces on the complete screen), attach a photo, tap <strong>Add</strong>. Works offline.</p>
+      </div>
+      <div class="screen">
+        <div class="screen-head"><h3>Job photos</h3><span class="route">/jobs/photos/[job]</span></div>
+        <p style="margin:10px 0 0;color:var(--muted)">A <strong>Before / After</strong> type dropdown, a camera button, and Before/After galleries. Photos can be deleted with a confirm. Works offline.</p>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section class="block" id="recurring">
+      <p class="eyebrow">09 · Work that repeats</p>
+      <h2>Recurring jobs</h2>
+      <p>For work that repeats — annual services, quarterly checks, monthly maintenance (<code>/jobs/recurring</code>, needs the recurring permission). Set it up once and it books itself.</p>
+      <div class="screen">
+        <dl class="scene">
+          <div><dt>The list</dt><dd>Blue = active, grey = paused. Each shows "job type · every N weeks/months," the next date, and <strong>Edit</strong>, <strong>Pause/Resume</strong>, <strong>Delete</strong>.</dd></div>
+          <div><dt>New recurring job</dt><dd>Customer details, job type, location, price, first date, preferred time (or "confirm the time closer to each one"), <strong>Repeats every</strong> N Weeks/Months/Years, a "let the client know" tick, and who it's assigned to.</dd></div>
+          <div><dt>What happens</dt><dd>On schedule, PatchUp automatically creates each occurrence as a booked job on the calendar.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section class="block" id="clients">
+      <p class="eyebrow">10 · The customer book</p>
+      <h2>Clients</h2>
+      <p><code>/clients</code> (needs the client-database permission). A search box and <strong>"+ Add client."</strong> Each card shows name, contact, "£X OUTSTANDING" (owner/manager), and a red <strong>"Possible duplicate — tap to review"</strong> flag when two records look like the same person.</p>
+      <div class="screen">
+        <dl class="scene">
+          <div><dt>Client detail</dt><dd>Contact card (with <strong>Edit</strong>), a <strong>duplicates</strong> section to <strong>Merge</strong> two records or mark "not a duplicate," and the client's full <strong>job history</strong>. A client with no jobs can be deleted (owner/manager).</dd></div>
+          <div><dt>Add / edit</dt><dd>Name (required), Phone, Email, Address.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 11 -->
+    <section class="block" id="invoices">
+      <p class="eyebrow">11 · The money record</p>
+      <h2>Invoices</h2>
+      <p><code>/invoices</code> (needs the invoice permission) — the full financial record an accountant wants. Search; a <strong>custom date range</strong>; totals for <strong>Total invoiced / Total paid / Outstanding</strong>; and download tools — pick a month (or "All invoices") and a format (<strong>PDF</strong> or <strong>CSV for QuickBooks</strong>) and <strong>Download</strong>. Each invoice detail has a <strong>payment link</strong> editor and <strong>Download PDF / CSV</strong>.</p>
+    </section>
+
+    <!-- 12 -->
+    <section class="block" id="team">
+      <p class="eyebrow">12 · Your people</p>
+      <h2>Team &amp; permissions</h2>
+      <p><code>/settings/team</code> (owner/manager). Add the people who work for you and control what they see: current team with a role dropdown (<strong>Manager / Subcontractor</strong>), a <strong>Deactivate/Reactivate</strong> button, and a <strong>Permissions</strong> link. The "Add someone new" form takes their name, email, role, and a starter password you share with them.</p>
+      <div class="screen">
+        <div class="screen-head"><h3>Subcontractor permissions</h3><span class="route">/settings/team/[member]</span></div>
+        <p style="margin:10px 0 6px;color:var(--muted)">Six on/off switches, all <strong>off by default</strong> (they start able only to view and note their own assigned jobs). Saving shows a confirmation of exactly what's changing:</p>
+        <dl class="scene">
+          <div><dt>Can invoice</dt><dd>Mark jobs done, send invoices, use the Invoices section.</dd></div>
+          <div><dt>See clients</dt><dd>Browse the whole client database.</dd></div>
+          <div><dt>Create quotes</dt><dd>Make and send new quotes.</dd></div>
+          <div><dt>Quick-book</dt><dd>Book new jobs on the spot.</dd></div>
+          <div><dt>Recurring</dt><dd>Manage recurring jobs.</dd></div>
+          <div><dt>Reschedule</dt><dd>Change job dates and times.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 13 -->
+    <section class="block" id="templates">
+      <p class="eyebrow">13 · Your wording</p>
+      <h2>Message templates</h2>
+      <p><code>/settings/templates</code> (owner/manager). The wording of every automatic email, so it sounds like you. Each has a subject and body with placeholders. Templates: <strong>New quote</strong>, <strong>Invoice</strong>, <strong>Manual chase</strong>, <strong>Auto chase 3 / 7 / 14 days</strong>, <strong>Booking confirmation</strong>, <strong>Review request</strong>, <strong>Payment link note</strong>. Each saves on its own.</p>
+    </section>
+
+    <!-- 14 -->
+    <section class="block" id="settings">
+      <p class="eyebrow">14 · Your business</p>
+      <h2>Business settings</h2>
+      <p><code>/settings</code> (owner/manager). How your business appears to customers and on invoices. A "logged in as" card with <strong>Log out</strong>; nav cards to <strong>Billing</strong>, <strong>Team</strong> and <strong>Message templates</strong>; then the form: <strong>Business name</strong>, <strong>Header tagline</strong>, <strong>Contact email/phone</strong>, <strong>Accent colour</strong>, <strong>Currency</strong> (£/$/€), <strong>Google review link</strong>, <strong>Payment terms</strong>, <strong>Bank details</strong>, <strong>Invoice footer note</strong>, and <strong>Save settings</strong>. Plus a <strong>logo uploader</strong> and a <strong>"send a test review request"</strong> button.</p>
+    </section>
+
+    <!-- 15 -->
+    <section class="block" id="billing">
+      <p class="eyebrow">15 · The plan</p>
+      <h2>Billing &amp; subscription</h2>
+      <p><code>/billing</code> (owner/manager). <strong>Current plan</strong> (a monthly total, "£X per month · N people," a status, and when the trial ends); <strong>"Set up payment"</strong> or <strong>"Manage billing"</strong> which open <strong>Stripe</strong> in a new tab (card details never touch PatchUp); and an honest <strong>"If you leave"</strong> panel — 30 days after cancelling, everything is deleted (billing records kept 6 years for tax) — with a <strong>"Download everything"</strong> button that hands you one zip of all your data.</p>
+    </section>
+
+    <!-- 16 -->
+    <section class="block" id="account">
+      <p class="eyebrow">16 · You</p>
+      <h2>Your account</h2>
+      <p><code>/account</code> (everyone). Your personal login details and this device's notifications: <strong>Your name</strong>, <strong>Your email</strong> (needs your password to change), <strong>Change password</strong>, a <strong>notifications toggle</strong>, and <strong>Log out</strong> (for a subcontractor this is the only logout button; logging out also clears the offline copy on the phone).</p>
+      <div class="note"><b>Notifications toggle:</b> "Get a nudge before a job starts…set per device." On iPhone it first asks you to install to the home screen; on a supported browser it shows "Turn on notifications," then "Turn off" and "Send a test."</div>
+    </section>
+
+    <!-- 17 -->
+    <section class="block" id="offline">
+      <p class="eyebrow">17 · No signal, no problem</p>
+      <h2>Working offline — the field view</h2>
+      <p><code>/field</code>. A special screen that works <strong>completely offline</strong> because it's saved on the phone — for vans, basements and blackspots.</p>
+      <div class="screen">
+        <dl class="scene">
+          <div><dt>The banner</dt><dd>Green "You're online — this is your saved copy" or black "No connection — showing your saved day," plus when it was last saved.</dd></div>
+          <div><dt>Waiting to send</dt><dd>Anything you did offline (completed jobs, notes, photos) queued up, each "sending…" or "when signal returns," with Try again / Discard if needed.</dd></div>
+          <div><dt>Your next 7 days</dt><dd>Each job with time, customer, tappable phone, location and notes. You can <strong>Complete job</strong> (amount, note, photos) and <strong>Add note</strong> here with no signal — it all sends itself when you're back online.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 18 -->
+    <section class="block" id="voice">
+      <p class="eyebrow">18 · Talk, don't type</p>
+      <h2>Voice &amp; AI features</h2>
+      <p>PatchUp lets you talk instead of type on four screens: <strong>New quote</strong>, <strong>Quick book</strong>, <strong>Schedule a job</strong>, and <strong>New reminder</strong>.</p>
+      <div class="screen">
+        <dl class="scene">
+          <div><dt>The voice flow</dt><dd>Tap the <strong>mic</strong> → it turns red with a pulsing dot and "Stop recording" → tap stop → "Processing recording…" → a grey <strong>"Heard: …"</strong> box appears with what you said, and the form fields fill themselves in.</dd></div>
+          <div><dt>The wand</dt><dd>A "Enhance description" / "Enhance note with AI" button tidies typed wording into a clean sentence.</dd></div>
+          <div><dt>Always optional</dt><dd>Everything voice/AI has a typed equivalent — nothing forces you to use it.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 19 -->
+    <section class="block" id="notifications">
+      <p class="eyebrow">19 · Staying on top of it</p>
+      <h2>Notifications</h2>
+      <p>Two ways PatchUp reaches you: a <strong>daily brief email</strong> once a day (tomorrow's jobs, invoices due, quotes awaiting a reply — reaches you on any device), and <strong>push notifications</strong> (if turned on, a nudge about an hour before each job starts; on iPhone only after the app is installed to the home screen).</p>
+    </section>
+
+    <!-- A -->
+    <section class="block" id="key">
+      <p class="eyebrow">Appendix A</p>
+      <h2>Colour &amp; status key</h2>
+      <p>The app speaks in colour — say this once in a video and every screen makes sense:</p>
+      <div class="key">
+        <div class="k"><span class="swatch" style="background:var(--quote)"></span><div><b>Amber</b><span>A quote, or an important note</span></div></div>
+        <div class="k"><span class="swatch" style="background:var(--job)"></span><div><b>Blue</b><span>A booked, in-progress job</span></div></div>
+        <div class="k"><span class="swatch" style="background:var(--overdue)"></span><div><b>Red</b><span>Overdue — late job or invoice</span></div></div>
+        <div class="k"><span class="swatch" style="background:var(--paid)"></span><div><b>Green</b><span>Done / paid</span></div></div>
+        <div class="k"><span class="swatch" style="background:var(--reminder)"></span><div><b>Purple</b><span>A personal reminder</span></div></div>
+        <div class="k"><span class="swatch" style="background:var(--gold)"></span><div><b>Gold</b><span>A projected recurring job</span></div></div>
+        <div class="k"><span class="swatch" style="background:var(--faint)"></span><div><b>Grey</b><span>Paused, declined or cancelled</span></div></div>
+      </div>
+    </section>
+
+    <!-- B -->
+    <section class="block" id="running">
+      <p class="eyebrow">Appendix B</p>
+      <h2>Suggested video running order</h2>
+      <ol class="running">
+        <li>The promise ("You finish the job; PatchUp gets you paid") + the loop diagram.</li>
+        <li>Sign up / the 14-day trial (Section 02).</li>
+        <li>A tour of the bottom nav and the "+" button (Section 03).</li>
+        <li><strong>The core loop, start to finish (Section 04)</strong> — this is the film.</li>
+        <li>The Today dashboard and Work tabs (Sections 05–06).</li>
+        <li>One "wow" each: <strong>voice</strong> booking (18), <strong>offline</strong> completion (17), <strong>automatic chasing</strong> (4.7).</li>
+        <li>Admin quickies: team &amp; permissions (12), templates (13), settings (14).</li>
+        <li>Billing &amp; the free-trial reassurance (15).</li>
+        <li>Close on install-to-home-screen (03) so the viewer sets it up.</li>
+      </ol>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <span>PatchUp — app guide</span>
+    <span>getpatchup.co.uk · for a walkthrough video</span>
+  </footer>
+
+</div>
