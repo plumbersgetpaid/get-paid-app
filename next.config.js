@@ -1,5 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Native-feel tab switching. By default every navigation refetches the
+  // whole page from the server (~a second); with staleTimes, a page you
+  // saw in the last 30-60s renders instantly from the client cache while
+  // anything older refetches. This is the same trade native trade-apps
+  // make (theirs show LOCAL data and sync in the background - far staler
+  // than a minute). Our own mutations still appear immediately: every
+  // create/update path busts this cache via revalidatePath or a full
+  // 303 navigation.
+  experimental: {
+    staleTimes: {
+      dynamic: 30,
+      static: 60,
+    },
+  },
   async redirects() {
     return [
       {

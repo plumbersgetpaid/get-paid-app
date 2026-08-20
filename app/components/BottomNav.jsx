@@ -111,6 +111,7 @@ export default function BottomNav({
             <Link
               key={tab.href}
               href={tab.href}
+              prefetch={true}
               style={{
                 ...navItemStyle,
                 color: active ? c.ink : "#9a9a9a",
