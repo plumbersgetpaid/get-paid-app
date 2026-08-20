@@ -85,6 +85,14 @@ JOB NOTES & PHOTOS (from a job): notes are internal to your team and never
 shown to the customer; mark a note "Important" to flag it. Photos can be Before
 or After. Both work offline.
 
+CHECKING AN EMAIL WENT: emails are sent for you from PatchUp's own address
+(replies go to your email), so they won't appear in your personal Sent folder.
+To see what's actually been sent, open the job (View job) and look at the
+"Emails sent to the customer" section - it lists every email for that job
+(quote, booking confirmation, invoice, follow-ups, payment reminders, review
+request) with the date and time it went out. Quotes also show "Sent X days
+ago" on the Work > Quotes tab, and invoices record their sent date.
+
 RECURRING JOBS (needs the recurring permission): set up repeating work (services,
 quarterly checks). It books itself onto the calendar on the schedule you choose.
 

@@ -14,6 +14,7 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { claimRequest, releaseRequest } from "../../../lib/idempotency";
+import { logEmailSent } from "../../../lib/logEmail";
 
 async function uploadJobPhotos(db, adminDb, jobId, files, label, businessId) {
   const validFiles = files.filter((f) => f && typeof f !== "string" && f.size > 0);
@@ -205,6 +206,15 @@ async function finishInvoice({
       .update({ sent_at: new Date().toISOString() })
       .eq("id", invoice.id);
     if (sentErr) console.error(`Invoice ${invoice.id} emailed but sent_at not recorded:`, sentErr);
+
+    await logEmailSent({
+      businessId,
+      jobId: job.id,
+      customerId: customer.id,
+      to: customer.email,
+      kind: "invoice",
+      subject,
+    });
   } catch (e) {
     console.error("Finish invoice error:", e);
   }

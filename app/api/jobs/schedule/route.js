@@ -11,6 +11,7 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { claimRequest, releaseRequest } from "../../../lib/idempotency";
+import { logEmailSent } from "../../../lib/logEmail";
 
 export async function POST(req) {
   const form = await req.formData();
@@ -169,6 +170,14 @@ export async function POST(req) {
             replyTo: settings.contact_email || undefined,
             subject,
             html,
+          });
+          await logEmailSent({
+            businessId: currentMember.business_id,
+            jobId: updatedJob.id,
+            customerId: customer.id,
+            to: customer.email,
+            kind: "booking_confirmation",
+            subject,
           });
         } catch (e) {
           console.error("Booking confirmation email error:", e);

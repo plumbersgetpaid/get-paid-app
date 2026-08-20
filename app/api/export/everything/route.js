@@ -1,5 +1,7 @@
 import JSZip from "jszip";
+import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { getCurrentTeamMember } from "../../../lib/auth";
+import { EMAIL_KIND_LABELS } from "../../../lib/logEmail";
 import { canSeeEverything } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
@@ -169,6 +171,27 @@ export async function GET() {
       { header: "Channel", value: (c) => c.channel },
       { header: "Sent", value: (c) => dateTime(c.sent_at) },
       { header: "Message", value: (c) => c.message },
+    ])
+  );
+
+  // Every email the app sent on the business's behalf (quotes, bookings,
+  // invoices, follow-ups, review requests - invoice chasers are in
+  // invoice-chases.csv). email_log is service-role-only, so this read uses
+  // the admin client scoped explicitly by business_id; the export is
+  // already gated on canSeeEverything above.
+  const { data: sentEmailRows } = await supabaseAdmin()
+    .from("email_log")
+    .select("kind, email_to, subject, sent_at, customer_id")
+    .eq("business_id", currentMember.business_id)
+    .order("sent_at");
+  zip.file(
+    "emails-sent.csv",
+    toCsv(sentEmailRows, [
+      { header: "Type", value: (e) => EMAIL_KIND_LABELS[e.kind] || e.kind },
+      { header: "Client", value: (e) => customerById.get(e.customer_id)?.name },
+      { header: "To", value: (e) => e.email_to },
+      { header: "Subject", value: (e) => e.subject },
+      { header: "Sent", value: (e) => dateTime(e.sent_at) },
     ])
   );
 
@@ -353,6 +376,7 @@ export async function GET() {
       `quotes.csv          the jobs you quoted for, and what happened\n` +
       `invoices.csv        every invoice, with payment status and dates\n` +
       `invoice-chases.csv  the payment reminders sent for overdue invoices\n` +
+      `emails-sent.csv     every other email sent for you (quotes, bookings, invoices)\n` +
       `job-notes.csv       notes recorded against jobs\n` +
       `note-images.csv     photos attached to notes, and whether they're here\n` +
       `recurring-jobs.csv  repeating work and its schedule\n` +

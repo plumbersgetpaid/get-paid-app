@@ -11,6 +11,8 @@ import DeleteJobButton from "../../../components/DeleteJobButton";
 import ConfirmSubmitButton from "../../../components/ConfirmSubmitButton";
 import ReloadOnBack from "../../../components/ReloadOnBack";
 import { nowInLondonFrame } from "../../../lib/today";
+import { EMAIL_KIND_LABELS } from "../../../lib/logEmail";
+import { supabaseAdmin } from "../../../lib/supabaseClient";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -130,6 +132,49 @@ export default async function ViewJob(props) {
   for (const s of shares || []) assigneeIds.add(s.team_member_id);
   const assignees = (allTeamMembers || []).filter((m) => assigneeIds.has(m.id));
   const assigneeNames = assignees.map((m) => m.name);
+
+  // Every email the app has sent the customer about this job - the
+  // tradesperson has no Sent folder (mail goes out from the platform
+  // address), so this is their proof of what was actually sent, and when.
+  // Two sources merged: email_log (quote, booking, invoice, follow-up,
+  // review) and chase_log (invoice payment chasers, keyed via the invoice).
+  //
+  // email_log is service-role-only (RLS locked, like processed_requests),
+  // so this read uses the admin client - scoped explicitly by business_id
+  // AND job_id, and only after the scoped job fetch above already proved
+  // this member can access this job. Standing service-role rule applies.
+  const { data: emailRows } = await supabaseAdmin()
+    .from("email_log")
+    .select("kind, subject, sent_at, email_to")
+    .eq("business_id", currentMember.business_id)
+    .eq("job_id", jobId)
+    .order("sent_at", { ascending: false });
+  const { data: jobInvoices } = await db
+    .from("invoices")
+    .select("id")
+    .eq("job_id", jobId);
+  const invoiceIds = (jobInvoices || []).map((i) => i.id);
+  const { data: chaseRows } = invoiceIds.length
+    ? await db
+        .from("chase_log")
+        .select("sent_at")
+        .in("invoice_id", invoiceIds)
+        .eq("channel", "email")
+    : { data: [] };
+  const sentEmails = [
+    ...(emailRows || []).map((e) => ({
+      label: EMAIL_KIND_LABELS[e.kind] || "Email",
+      sentAt: e.sent_at,
+      to: e.email_to,
+    })),
+    ...(chaseRows || []).map((c) => ({
+      label: "Payment reminder",
+      sentAt: c.sent_at,
+      to: customer?.email || null,
+    })),
+  ]
+    .filter((e) => e.sentAt)
+    .sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
 
   const durationLabel =
     job.scheduled_start && job.scheduled_end
@@ -254,6 +299,60 @@ export default async function ViewJob(props) {
           <div style={{ ...rowStyle, borderBottom: "none" }}>
             <span style={rowLabelStyle}>Completion note</span>
             <span style={rowValueStyle}>{job.completion_note}</span>
+          </div>
+        )}
+      </section>
+
+      <section style={{ ...cardStyle, marginTop: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>
+          Emails sent to the customer
+        </div>
+        <p style={{ fontSize: 12, color: "#888", margin: "0 0 10px" }}>
+          Sent for you from PatchUp&apos;s address, with replies going to your
+          own email - so they won&apos;t show in your Sent folder. This is the
+          record of what&apos;s gone out.
+        </p>
+        {sentEmails.length === 0 ? (
+          <div style={{ fontSize: 13, color: "#888" }}>
+            Nothing emailed for this job yet.
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 8 }}>
+            {sentEmails.map((e, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  fontSize: 13,
+                  borderBottom: i < sentEmails.length - 1 ? "1px solid #f0f0f0" : "none",
+                  paddingBottom: i < sentEmails.length - 1 ? 8 : 0,
+                }}
+              >
+                <span>
+                  <span style={{ fontWeight: 500 }}>{e.label}</span>
+                  {e.to && (
+                    <span style={{ color: "#888" }}> · to {e.to}</span>
+                  )}
+                </span>
+                {/* sent_at is a real UTC instant (unlike scheduled times,
+                    which are London-wall-clock) - so it needs an explicit
+                    London timeZone or BST times render an hour off */}
+                <span style={{ color: "#888", whiteSpace: "nowrap" }}>
+                  {new Date(e.sentAt).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    timeZone: "Europe/London",
+                  })}{" "}
+                  {new Date(e.sentAt).toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZone: "Europe/London",
+                  })}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </section>

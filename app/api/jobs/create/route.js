@@ -12,6 +12,7 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { claimRequest, releaseRequest } from "../../../lib/idempotency";
+import { logEmailSent } from "../../../lib/logEmail";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -162,6 +163,14 @@ export async function POST(req) {
         replyTo: settings.contact_email || undefined,
         subject,
         html,
+      });
+      await logEmailSent({
+        businessId: currentMember.business_id,
+        jobId: job.id,
+        customerId: customer.id,
+        to: email,
+        kind: "quote",
+        subject,
       });
     } catch (e) {
       console.error("Quote email send error:", e);

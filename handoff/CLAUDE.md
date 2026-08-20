@@ -363,6 +363,23 @@ features that don't exist — update it in the same change as any UX change.**
 Needs `supabase/help-questions.sql` run once (the box still answers without it;
 it just won't log).
 
+## Email log ("did that email actually send?")
+
+Tradespeople have no Sent folder - mail goes out from the platform address.
+`email_log` (supabase/email-log.sql) records every customer-facing send:
+quote, booking_confirmation, invoice, quote_chase, review_request (invoice
+chasers stay in `chase_log`; the UI merges both). Logged via
+`lib/logEmail.js` at all nine send sites, best-effort AFTER the send (never
+blocks it, but failures log loudly). Surfaced as "Emails sent to the
+customer" on `/jobs/view/[jobId]`, and in the export as emails-sent.csv.
+
+`email_log` is **service-role only** (RLS on, no policies - same posture as
+processed_requests): every read/write goes through the admin client and MUST
+filter/set `business_id` explicitly. It's in delete_business_data(). **A new
+customer-facing send site must call logEmailSent()** or the job page
+under-reports what the customer received. Note: `sent_at` is a true UTC
+instant - display with timeZone "Europe/London", unlike wall-clock job times.
+
 ## Speed is a feature
 
 Founder's product rule (Aug 2026, after side-by-side with a native

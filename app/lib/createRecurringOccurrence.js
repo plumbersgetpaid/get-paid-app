@@ -3,6 +3,7 @@ import { textToEmailHtml } from "./emailHtml";
 import { getEmailFrom } from "./emailFrom";
 import { advanceDate } from "./duration";
 import { narrowToRealClashes } from "./jobConflicts";
+import { logEmailSent } from "./logEmail";
 import { Resend } from "resend";
 
 export async function createRecurringOccurrence(db, settings, r) {
@@ -151,6 +152,14 @@ export async function createRecurringOccurrence(db, settings, r) {
           replyTo: settings.contact_email || undefined,
           subject,
           html,
+        });
+        await logEmailSent({
+          businessId: r.business_id,
+          jobId: job.id,
+          customerId: r.customer_id,
+          to: customer.email,
+          kind: "booking_confirmation",
+          subject,
         });
       }
     } catch (e) {

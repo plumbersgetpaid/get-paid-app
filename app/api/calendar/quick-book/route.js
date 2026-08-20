@@ -1,6 +1,7 @@
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { toStoredAmount } from "../../../lib/vat";
+import { logEmailSent } from "../../../lib/logEmail";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { narrowToRealClashes } from "../../../lib/jobConflicts";
 import { findExistingCustomer } from "../../../lib/findCustomer";
@@ -224,6 +225,14 @@ export async function POST(req) {
           replyTo: settings.contact_email || undefined,
           subject,
           html,
+        });
+        await logEmailSent({
+          businessId: currentMember.business_id,
+          jobId: newJob.id,
+          customerId,
+          to: customerEmail,
+          kind: "booking_confirmation",
+          subject,
         });
       } catch (e) {
         console.error("Booking confirmation email error:", e);

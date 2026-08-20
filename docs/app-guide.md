@@ -315,8 +315,13 @@ or **delete** it.
 Reached from **View job**:
 - **Job details — `/jobs/view/[job]`:** contact info (tap to call/email), status,
   location, timing, who it's assigned to, price (owner/manager), and completion
-  note. Buttons: **Job notes**, **Reschedule / Book in**, **Mark done**, and
-  **Delete** (if no invoice yet) or **Cancel** (if an invoice exists).
+  note. An **"Emails sent to the customer"** card lists every email PatchUp has
+  sent for this job — quote, booking confirmation, invoice, follow-ups, payment
+  reminders, review request — with date and time. (Emails go out from PatchUp's
+  address with replies to the business, so they never appear in the
+  tradesperson's own Sent folder — this card is the record.) Buttons: **Job
+  notes**, **Reschedule / Book in**, **Mark done**, and **Delete** (if no
+  invoice yet) or **Cancel** (if an invoice exists).
 - **Job notes — `/jobs/notes/[job]`:** internal team notes, **never shown to the
   customer** (grey banner says so). Type a note, optionally mark it **Important**
   (shows amber and surfaces on the complete screen), attach a photo, tap **Add.**

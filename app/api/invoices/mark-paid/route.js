@@ -8,6 +8,7 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { claimRequest, releaseRequest } from "../../../lib/idempotency";
+import { logEmailSent } from "../../../lib/logEmail";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -90,6 +91,14 @@ export async function POST(req) {
               replyTo: settings.contact_email || undefined,
               subject,
               html,
+            });
+            await logEmailSent({
+              businessId: currentMember.business_id,
+              jobId: invoice.job_id,
+              customerId: customer.id,
+              to: customer.email,
+              kind: "review_request",
+              subject,
             });
           }
         }
