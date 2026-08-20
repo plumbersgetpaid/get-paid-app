@@ -9,6 +9,18 @@ import { supabaseAdmin } from "./supabaseClient";
 // stops the realistic opportunistic case cheaply and, unlike an
 // email-keyed lockout, can't be used to lock a real user out of their
 // own account.
+//
+// Two things this file is careful about, both from the audit:
+//   1. login and forgot-password get SEPARATE counters (via `scope`). If
+//      they shared one, ten bad logins would disable the documented
+//      recovery path exactly when it's needed, and a flood of reset
+//      requests from a shared office/NAT IP would lock everyone out of
+//      login. The key stored is `${scope}:${ip}`.
+//   2. Counting is done by an ATOMIC database function, not a
+//      select-then-write in JS. The old read-modify-write let a burst of
+//      parallel guesses all read the same low count and overwrite each
+//      other, so the counter never reached the threshold - the exact
+//      attack the throttle exists to stop. See supabase/login-throttle.sql.
 const MAX_ATTEMPTS = 10; // failures within the window before lock-out
 const WINDOW_MS = 15 * 60 * 1000;
 const LOCKOUT_MS = 15 * 60 * 1000;
@@ -19,49 +31,43 @@ function clientIp(req) {
   return req.headers.get("x-real-ip") || "unknown";
 }
 
-// Call before checking the password. Returns { blocked, retryAfterMs }.
-export async function checkLoginAllowed(req) {
+// Call before checking the password. `scope` separates the login and
+// password-reset counters. Returns { blocked, retryAfterMs, ip, key } -
+// pass the returned `key` to recordFailedLogin / clearLoginAttempts.
+export async function checkLoginAllowed(req, scope = "login") {
   const ip = clientIp(req);
+  const key = `${scope}:${ip}`;
   const db = supabaseAdmin();
   const { data: row } = await db
     .from("login_attempts")
-    .select("attempts, window_started_at, locked_until")
-    .eq("ip", ip)
+    .select("locked_until")
+    .eq("ip", key)
     .maybeSingle();
 
   if (row?.locked_until && new Date(row.locked_until) > new Date()) {
-    return { blocked: true, retryAfterMs: new Date(row.locked_until) - new Date(), ip };
+    return { blocked: true, retryAfterMs: new Date(row.locked_until) - new Date(), ip, key };
   }
-  return { blocked: false, ip };
+  return { blocked: false, ip, key };
 }
 
-// Call after a FAILED attempt. Increments within the window and locks out
-// once the threshold is crossed.
-export async function recordFailedLogin(ip) {
+// Call after a FAILED attempt. Atomic increment + lock in one DB statement
+// (supabase/login-throttle.sql). The function also self-purges rows older
+// than a day, so IP addresses aren't retained indefinitely.
+export async function recordFailedLogin(key) {
   const db = supabaseAdmin();
-  const now = new Date();
-  const { data: row } = await db
-    .from("login_attempts")
-    .select("attempts, window_started_at")
-    .eq("ip", ip)
-    .maybeSingle();
-
-  const windowFresh = row && now - new Date(row.window_started_at) < WINDOW_MS;
-  const attempts = (windowFresh ? row.attempts : 0) + 1;
-  const patch = {
-    ip,
-    attempts,
-    window_started_at: windowFresh ? row.window_started_at : now.toISOString(),
-    locked_until: attempts >= MAX_ATTEMPTS ? new Date(now.getTime() + LOCKOUT_MS).toISOString() : null,
-  };
-  const { error } = await db.from("login_attempts").upsert(patch, { onConflict: "ip" });
+  const { error } = await db.rpc("record_login_attempt", {
+    p_key: key,
+    p_window_ms: WINDOW_MS,
+    p_max_attempts: MAX_ATTEMPTS,
+    p_lockout_ms: LOCKOUT_MS,
+  });
   if (error) console.error("recordFailedLogin failed:", error.message);
 }
 
-// Call after a SUCCESSFUL attempt - clears the counter for that IP.
-export async function clearLoginAttempts(ip) {
+// Call after a SUCCESSFUL attempt - clears the counter for that key.
+export async function clearLoginAttempts(key) {
   const db = supabaseAdmin();
-  await db.from("login_attempts").delete().eq("ip", ip);
+  await db.from("login_attempts").delete().eq("ip", key);
 }
 
 export const LOCKOUT_MINUTES = LOCKOUT_MS / 60000;

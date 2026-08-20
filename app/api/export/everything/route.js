@@ -50,18 +50,34 @@ export async function GET() {
   const db = await getScopedDb(currentMember);
   const settings = await getBusinessSettings();
 
-  const [{ data: customers }, { data: jobs }, { data: invoices }, { data: notes }, { data: recurring }, { data: photos }] =
-    await Promise.all([
-      db.from("customers").select("*").order("name"),
-      db.from("jobs").select("*").order("created_at"),
-      db.from("invoices").select("*").order("created_at"),
-      db.from("job_notes").select("*").order("created_at"),
-      db.from("recurring_jobs").select("*").order("created_at"),
-      db.from("job_photos").select("*").order("created_at"),
-    ]);
+  const [
+    { data: customers },
+    { data: jobs },
+    { data: invoices },
+    { data: notes },
+    { data: recurring },
+    { data: photos },
+    { data: chaseLog },
+    { data: reminders },
+    { data: templates },
+    { data: team },
+  ] = await Promise.all([
+    db.from("customers").select("*").order("name"),
+    db.from("jobs").select("*").order("created_at"),
+    db.from("invoices").select("*").order("created_at"),
+    db.from("job_notes").select("*").order("created_at"),
+    db.from("recurring_jobs").select("*").order("created_at"),
+    db.from("job_photos").select("*").order("created_at"),
+    db.from("chase_log").select("*").order("sent_at"),
+    db.from("personal_events").select("*").order("scheduled_start"),
+    db.from("message_templates").select("*").order("key"),
+    db.from("team_members").select("*").order("created_at"),
+  ]);
 
   const customerById = new Map((customers || []).map((c) => [c.id, c]));
   const jobById = new Map((jobs || []).map((j) => [j.id, j]));
+  const invoiceById = new Map((invoices || []).map((i) => [i.id, i]));
+  const memberById = new Map((team || []).map((m) => [m.id, m]));
   const customerForJob = (jobId) => customerById.get(jobById.get(jobId)?.customer_id);
 
   const zip = new JSZip();
@@ -136,6 +152,84 @@ export async function GET() {
     ])
   );
 
+  // Payment-chase history — the record of every reminder email sent for an
+  // overdue invoice. Part of "everything" and evidence of what a homeowner
+  // was told, so it belongs in the export.
+  zip.file(
+    "invoice-chases.csv",
+    toCsv(chaseLog, [
+      {
+        header: "Invoice number",
+        value: (c) => invoiceById.get(c.invoice_id)?.invoice_number,
+      },
+      {
+        header: "Client",
+        value: (c) => customerForJob(invoiceById.get(c.invoice_id)?.job_id)?.name,
+      },
+      { header: "Channel", value: (c) => c.channel },
+      { header: "Sent", value: (c) => dateTime(c.sent_at) },
+      { header: "Message", value: (c) => c.message },
+    ])
+  );
+
+  // Personal calendar reminders.
+  zip.file(
+    "reminders.csv",
+    toCsv(reminders, [
+      { header: "Title", value: (r) => r.title },
+      { header: "Notes", value: (r) => r.notes },
+      { header: "Start", value: (r) => dateTime(r.scheduled_start) },
+      { header: "End", value: (r) => dateTime(r.scheduled_end) },
+      { header: "Created by", value: (r) => memberById.get(r.created_by)?.name },
+      { header: "Created", value: (r) => date(r.created_at) },
+    ])
+  );
+
+  // Customised email templates (quote, invoice, chase wording).
+  zip.file(
+    "email-templates.csv",
+    toCsv(templates, [
+      { header: "Template", value: (t) => t.key },
+      { header: "Subject", value: (t) => t.subject },
+      { header: "Body", value: (t) => t.body },
+      { header: "Last edited", value: (t) => date(t.updated_at) },
+    ])
+  );
+
+  // Team roster. Deliberately excludes password hashes and reset tokens -
+  // this is a portability export, not a credential dump.
+  zip.file(
+    "team.csv",
+    toCsv(team, [
+      { header: "Name", value: (m) => m.name },
+      { header: "Email", value: (m) => m.email },
+      { header: "Role", value: (m) => m.role },
+      { header: "Active", value: (m) => (m.is_active ? "yes" : "no")  },
+      { header: "Can invoice", value: (m) => (m.can_invoice ? "yes" : "") },
+      { header: "Can see clients", value: (m) => (m.can_see_client_database ? "yes" : "") },
+      { header: "Added", value: (m) => date(m.created_at) },
+    ])
+  );
+
+  // Business settings, as a readable text file rather than a one-row CSV.
+  const settingsLines = [
+    ["Business name", settings.business_name],
+    ["Contact email", settings.contact_email],
+    ["Contact phone", settings.contact_phone],
+    ["Currency", settings.currency],
+    ["Payment terms", settings.payment_terms],
+    ["Bank details", settings.bank_details],
+    ["Invoice note", settings.invoice_note],
+    ["Header tagline", settings.header_tagline],
+    ["Google review link", settings.google_review_link],
+    ["Include weekends", settings.include_weekends ? "yes" : "no"],
+    ["Send review requests", settings.send_review_requests ? "yes" : "no"],
+  ]
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => `${k}: ${v}`)
+    .join("\n");
+  zip.file("settings.txt", `${settings.business_name || "Your business"} settings\n\n${settingsLines}\n`);
+
   // ---- photos -------------------------------------------------------
   const photoList = photos || [];
   const paths = photoList.map((p) => p.storage_path).filter(Boolean);
@@ -172,6 +266,62 @@ export async function GET() {
     }
   }
 
+  // ---- note images --------------------------------------------------
+  // Photos attached to job notes live in a separate bucket and were left
+  // out of the export entirely. Embed them under the same remaining budget,
+  // into a note-images/ folder, and list them (with links for any skipped).
+  const noteImageRows = (notes || []).filter((n) => n.image_storage_path);
+  const notePaths = noteImageRows.map((n) => n.image_storage_path);
+  const noteSigned = await signPaths("job-note-images", notePaths, LINK_TTL);
+  const noteSkipped = [];
+  let noteEmbedded = 0;
+
+  for (const note of noteImageRows) {
+    const url = noteSigned.get(note.image_storage_path);
+    if (!url) continue;
+
+    const client = customerForJob(note.job_id)?.name || "unknown-client";
+    const safeClient = client.replace(/[^a-zA-Z0-9 _-]/g, "").trim() || "client";
+    const ext = (note.image_storage_path.split(".").pop() || "jpg").toLowerCase();
+    const name = `note-images/${safeClient}/note-${date(note.created_at)}-${note.id.slice(0, 6)}.${ext}`;
+
+    if (bytesUsed >= PHOTO_BYTE_BUDGET) {
+      noteSkipped.push({ note, url, name });
+      continue;
+    }
+    try {
+      const res = await fetch(url);
+      if (!res.ok) { noteSkipped.push({ note, url, name }); continue; }
+      const buf = await res.arrayBuffer();
+      bytesUsed += buf.byteLength;
+      zip.file(name, buf);
+      noteEmbedded += 1;
+    } catch (e) {
+      console.error("Export: note image fetch failed", note.image_storage_path, e.message);
+      noteSkipped.push({ note, url, name });
+    }
+  }
+
+  if (noteImageRows.length) {
+    zip.file(
+      "note-images.csv",
+      toCsv(noteImageRows, [
+        { header: "Client", value: (n) => customerForJob(n.job_id)?.name },
+        { header: "Job", value: (n) => jobById.get(n.job_id)?.job_type },
+        { header: "Note", value: (n) => n.note },
+        { header: "Taken", value: (n) => date(n.created_at) },
+        {
+          header: "In this download",
+          value: (n) => (noteSkipped.some((s) => s.note.id === n.id) ? "no - see link" : "yes"),
+        },
+        {
+          header: "Link (expires in 7 days)",
+          value: (n) => noteSkipped.find((s) => s.note.id === n.id)?.url || "",
+        },
+      ])
+    );
+  }
+
   zip.file(
     "photos.csv",
     toCsv(photoList, [
@@ -202,10 +352,17 @@ export async function GET() {
       `jobs.csv            every job, with dates and status\n` +
       `quotes.csv          the jobs you quoted for, and what happened\n` +
       `invoices.csv        every invoice, with payment status and dates\n` +
+      `invoice-chases.csv  the payment reminders sent for overdue invoices\n` +
       `job-notes.csv       notes recorded against jobs\n` +
+      `note-images.csv     photos attached to notes, and whether they're here\n` +
       `recurring-jobs.csv  repeating work and its schedule\n` +
-      `photos.csv          every photo, and whether it's in this file\n` +
-      `photos/             the images, in a folder per client (${embedded} included)\n` +
+      `reminders.csv       your personal calendar reminders\n` +
+      `email-templates.csv your customised quote/invoice/chase wording\n` +
+      `team.csv            the people on your team and what they can do\n` +
+      `settings.txt        your business settings\n` +
+      `photos.csv          every job photo, and whether it's in this file\n` +
+      `photos/             the job images, in a folder per client (${embedded} included)\n` +
+      `note-images/        photos attached to notes (${noteEmbedded} included)\n` +
       skippedNote +
       `\nThe CSV files open in Excel, Numbers or Google Sheets.\n\n` +
       `Keep this safe. If you cancel your PatchUp account, everything here\n` +

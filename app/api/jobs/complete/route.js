@@ -291,6 +291,18 @@ export async function POST(req) {
     .single();
 
   if (invErr) {
+    // Two devices completing the same job (office submit racing an offline
+    // outbox replay, each with its own request_id) can both pass the
+    // existing-invoice check above and reach this insert. The unique
+    // constraint on invoices.job_id (supabase/invoice-unique.sql) makes the
+    // database the final arbiter: the loser gets a 23505 unique violation,
+    // which means the invoice already exists. Treat completion as done and
+    // redirect quietly instead of erroring or double-emailing. The claim is
+    // left in place (not released) because the action's outcome is achieved.
+    if (invErr.code === "23505") {
+      const already = from === "work" ? "/work?tab=jobs" : "/";
+      return NextResponse.redirect(new URL(already, req.url), 303);
+    }
     console.error("Invoice insert error:", invErr);
     await releaseRequest(claim);
     return NextResponse.json({ error: invErr.message }, { status: 400 });

@@ -54,7 +54,13 @@ async function warmField() {
 }
 
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "warm-field") event.waitUntil?.(warmField()) ?? warmField();
+  if (event.data?.type !== "warm-field") return;
+  // waitUntil exists on message events and returns undefined, so the old
+  // `waitUntil?.(warmField()) ?? warmField()` ran warmField() TWICE - two
+  // /field fetches and two asset-warming passes on exactly the metered
+  // mobile connections the offline layer is built for. Call it once.
+  if (event.waitUntil) event.waitUntil(warmField());
+  else warmField();
 });
 
 self.addEventListener("fetch", (event) => {

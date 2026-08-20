@@ -33,6 +33,22 @@ export async function sendPushToMember(teamMemberId, payload) {
     return { sent: 0, removed: 0 };
   }
   const db = supabaseAdmin();
+
+  // A deactivated member keeps their push_subscriptions rows (toggle-active
+  // only flips is_active), so without this guard a fired subcontractor's
+  // personal phone keeps receiving job nudges carrying homeowner names and
+  // addresses — a UK GDPR data-processor exposure. Gate every push on the
+  // member still being active, here at the one choke point all sends pass
+  // through rather than at each call site.
+  const { data: member } = await db
+    .from("team_members")
+    .select("is_active")
+    .eq("id", teamMemberId)
+    .maybeSingle();
+  if (!member?.is_active) {
+    return { sent: 0, removed: 0 };
+  }
+
   const { data: subs } = await db
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth")

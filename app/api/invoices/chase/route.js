@@ -142,13 +142,21 @@ export async function POST(req) {
         ],
       });
 
-      // business_id set explicitly - same requirement as any other insert
-      await db.from("chase_log").insert({
+      // business_id set explicitly - same requirement as any other insert.
+      // The email is already out; chase_log is the ONLY record it happened.
+      // If this insert is lost silently, the invoice history shows "never
+      // chased", the tradesperson chases again, and the homeowner gets a
+      // duplicate payment demand. Can't unsend the email, but a lost record
+      // must be loud, not invisible.
+      const { error: logErr } = await db.from("chase_log").insert({
         invoice_id: inv.invoice_id,
         message: bodyText,
         channel: "email",
         business_id: currentMember.business_id,
       });
+      if (logErr) {
+        console.error("Manual chase: email sent but chase_log insert FAILED", inv.invoice_id, logErr);
+      }
     } catch (e) {
       console.error("Manual chase send error:", e);
     }

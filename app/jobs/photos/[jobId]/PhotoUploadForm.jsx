@@ -57,11 +57,25 @@ export default function PhotoUploadForm({ jobId }) {
       return;
     }
 
-    requestIdRef.current = null;
     setBusy(false);
-    // Server-rendered gallery: a full reload shows the new photo (or the
-    // route's ?error= message).
-    window.location.href = res.url || `/jobs/photos/${jobId}`;
+    // The upload route redirects to the gallery on success (res.redirected,
+    // res.url = the gallery). On failure it returns JSON 400/403 - res.url is
+    // then the raw POST-only API URL, and navigating there lands the
+    // tradesperson on a 405/error page mid-job with no way back. So only
+    // follow a real redirect; otherwise send them to the gallery with a
+    // message, and KEEP the request id so a genuine retry isn't refused as a
+    // duplicate of an upload that never saved.
+    if (res.redirected && res.url) {
+      requestIdRef.current = null;
+      window.location.href = res.url;
+    } else if (res.ok) {
+      requestIdRef.current = null;
+      window.location.href = `/jobs/photos/${jobId}`;
+    } else {
+      window.location.href = `/jobs/photos/${jobId}?error=${encodeURIComponent(
+        "That photo didn't save - please try again."
+      )}`;
+    }
   }
 
   return (

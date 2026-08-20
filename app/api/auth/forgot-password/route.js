@@ -20,18 +20,20 @@ export async function POST(req) {
     return NextResponse.json({ error: "Enter your email" }, { status: 400 });
   }
 
-  // Same per-IP throttle as login. This endpoint sends an email each time,
-  // so without a limit it's an email-bombing vector as well as a way to
-  // probe which addresses have accounts. The response is identical whether
-  // or not the email exists, and each request counts toward the IP's limit.
-  const gate = await checkLoginAllowed(req);
+  // Per-IP throttle on its OWN counter (scope "reset"), separate from login.
+  // This endpoint sends an email each time, so without a limit it's an
+  // email-bombing vector and a way to probe which addresses have accounts.
+  // Keeping it separate from the login counter means a run of bad logins
+  // can't disable password recovery, and reset-flooding can't lock out
+  // login. The response is identical whether or not the email exists.
+  const gate = await checkLoginAllowed(req, "reset");
   if (gate.blocked) {
     return NextResponse.json(
       { error: "Too many attempts. Try again shortly." },
       { status: 429 }
     );
   }
-  await recordFailedLogin(gate.ip);
+  await recordFailedLogin(gate.key);
 
   const db = supabaseAdmin();
   const { data: member } = await db

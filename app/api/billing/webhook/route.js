@@ -108,7 +108,13 @@ async function syncSubscription(db, businessId, sub) {
 
   const { error } = await db.from("subscriptions").update(patch).eq("business_id", businessId);
   if (error) {
+    // Throw so the POST handler returns 500 and Stripe RETRIES. Swallowing
+    // this used to 200-ack a lost state change: a cancelled subscription
+    // could stay status='active' (unpaid access forever), or a resubscribe
+    // stay 'canceled' (account then deleted by the 30-day cron). The event
+    // is the only signal we get, so a failed write must not be acknowledged.
     console.error("Stripe webhook: subscription update failed", businessId, error);
+    throw new Error(`subscription update failed: ${error.message}`);
   }
 }
 
@@ -198,13 +204,16 @@ export async function POST(req) {
 
         // Status still needs setting even where canceled_at was already
         // stamped by an earlier event.
-        await db
+        const { error: statusErr } = await db
           .from("subscriptions")
           .update({ status: "canceled", updated_at: new Date().toISOString() })
           .eq("stripe_subscription_id", sub.id)
           .not("canceled_at", "is", null);
-        if (delErr) {
-          console.error("Stripe webhook: cancel update failed", sub.id, delErr);
+        if (delErr || statusErr) {
+          // Throw so Stripe retries — a cancelled subscription left marked
+          // 'active' keeps letting an unpaid business in forever.
+          console.error("Stripe webhook: cancel update failed", sub.id, delErr || statusErr);
+          throw new Error(`cancel update failed: ${(delErr || statusErr).message}`);
         }
         break;
       }
@@ -221,10 +230,16 @@ export async function POST(req) {
             : invoice.subscription?.id;
 
         if (subId) {
-          await db
+          const { error: pastDueErr } = await db
             .from("subscriptions")
             .update({ status: "past_due", updated_at: new Date().toISOString() })
             .eq("stripe_subscription_id", subId);
+          if (pastDueErr) {
+            // Throw so Stripe retries — otherwise a failed payment never
+            // marks the account past_due and dunning never starts.
+            console.error("Stripe webhook: past_due update failed", subId, pastDueErr);
+            throw new Error(`past_due update failed: ${pastDueErr.message}`);
+          }
         } else {
           console.log("Stripe webhook: payment_failed with no subscription", invoice.id);
         }

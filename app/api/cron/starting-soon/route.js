@@ -71,6 +71,23 @@ export async function GET(req) {
       for (const o of owners || []) recipients.add(o.id);
     }
 
+    // Claim BEFORE sending. reminder_sent_at is the only dedupe; if the
+    // stamp fails after the push goes out, the job still matches next run
+    // and the member gets the same nudge every 15 min until start. The
+    // .is(null) guard also stops two overlapping cron runs double-sending.
+    // A stamp failure here means we skip the send entirely (a missed nudge
+    // beats four duplicate ones) and retry cleanly next run.
+    const { data: claimed, error: claimErr } = await db
+      .from("jobs")
+      .update({ reminder_sent_at: new Date().toISOString() })
+      .eq("id", job.id)
+      .is("reminder_sent_at", null)
+      .select("id");
+    if (claimErr || !claimed?.length) {
+      if (claimErr) console.error("starting-soon: job stamp failed, skipping", job.id, claimErr.message);
+      continue;
+    }
+
     const payload = {
       title: `Job at ${fmtTime(job.scheduled_start)}`,
       body: `${customer?.name || "Customer"} — ${job.job_type || "Job"}. Starts within the hour.`,
@@ -80,7 +97,6 @@ export async function GET(req) {
       const r = await sendPushToMember(memberId, payload);
       pushed += r.sent;
     }
-    await db.from("jobs").update({ reminder_sent_at: new Date().toISOString() }).eq("id", job.id);
   }
 
   // ---- personal reminders starting soon ----
@@ -97,6 +113,17 @@ export async function GET(req) {
   }
 
   for (const ev of events || []) {
+    // Claim before sending — same reasoning as the jobs loop above.
+    const { data: claimed, error: claimErr } = await db
+      .from("personal_events")
+      .update({ reminder_sent_at: new Date().toISOString() })
+      .eq("id", ev.id)
+      .is("reminder_sent_at", null)
+      .select("id");
+    if (claimErr || !claimed?.length) {
+      if (claimErr) console.error("starting-soon: reminder stamp failed, skipping", ev.id, claimErr.message);
+      continue;
+    }
     if (ev.created_by) {
       const r = await sendPushToMember(ev.created_by, {
         title: `Reminder at ${fmtTime(ev.scheduled_start)}`,
@@ -105,10 +132,6 @@ export async function GET(req) {
       });
       pushed += r.sent;
     }
-    await db
-      .from("personal_events")
-      .update({ reminder_sent_at: new Date().toISOString() })
-      .eq("id", ev.id);
   }
 
   return NextResponse.json({ ok: true, jobs: jobs?.length || 0, events: events?.length || 0, pushed });

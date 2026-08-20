@@ -126,12 +126,19 @@ export async function GET(req) {
         ],
       });
 
-      await db.from("chase_log").insert({
+      // chase_log is the only record this automated dunning email went out.
+      // Day-exact spacing (3/7/14) means no auto re-send, but a silently
+      // lost row makes the invoice read "never chased" and the tradesperson
+      // manually chases again — duplicate demand to the homeowner. Log loud.
+      const { error: logErr } = await db.from("chase_log").insert({
         invoice_id: inv.invoice_id,
         message: bodyText,
         channel: "email",
         business_id: invoiceRow.business_id,
       });
+      if (logErr) {
+        console.error("Auto chase: email sent but chase_log insert FAILED", inv.invoice_id, logErr);
+      }
 
       sent++;
     }

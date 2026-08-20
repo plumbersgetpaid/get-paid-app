@@ -87,7 +87,11 @@ export async function GET(req) {
   for (const q of quotes || []) bucket(q.business_id).quotes.push(q);
 
   const timeOf = (iso) =>
-    new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    // Stored times are London-wall-clock in a UTC frame (see lib/today.js),
+    // so pin the formatter to UTC - matching starting-soon's fmtTime. Without
+    // it, the brief is correct only while the server happens to run in UTC; a
+    // 09:00 job would email as 10:00 the moment TZ is set on the deployment.
+    new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
 
   let sent = 0;
   for (const [businessId, data] of byBusiness) {

@@ -43,17 +43,17 @@ export async function POST(req) {
   const genericError = { error: "Incorrect email or password" };
 
   if (!member || !member.is_active) {
-    await recordFailedLogin(gate.ip);
+    await recordFailedLogin(gate.key);
     return NextResponse.json(genericError, { status: 401 });
   }
 
   const passwordOk = await verifyPassword(password, member.password_hash);
   if (!passwordOk) {
-    await recordFailedLogin(gate.ip);
+    await recordFailedLogin(gate.key);
     return NextResponse.json(genericError, { status: 401 });
   }
 
-  await clearLoginAttempts(gate.ip);
+  await clearLoginAttempts(gate.key);
 
   let token;
   try {

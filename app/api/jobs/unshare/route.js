@@ -30,7 +30,18 @@ export async function POST(req) {
   }
 
   if (job.assigned_to === teamMemberId) {
-    await db.from("jobs").update({ assigned_to: null }).eq("id", jobId);
+    // canAccessJob grants access on assigned_to OR a share row. If we clear
+    // the share below but this assignment-null fails, the "removed" member
+    // keeps full job access via the assignment while the UI says they're
+    // gone. Check it and bail before touching the share.
+    const { error: assignErr } = await db
+      .from("jobs")
+      .update({ assigned_to: null })
+      .eq("id", jobId);
+    if (assignErr) {
+      console.error("Unshare job (clear assignment) error:", assignErr);
+      return NextResponse.json({ error: "Couldn't remove that share" }, { status: 500 });
+    }
   }
 
   const { error } = await db

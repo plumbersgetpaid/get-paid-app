@@ -66,11 +66,23 @@ export async function POST(req) {
   const toRemove = [...currentSet].filter((id) => !desiredSet.has(id));
 
   if (toRemove.length > 0) {
-    await db
+    // Access revocation. If this fails silently the removed worker stays in
+    // the share set and createRecurringOccurrence keeps assigning them to
+    // every future occurrence — a reassigned/fired worker keeps getting new
+    // jobs while the owner's screen says they were removed. Surface it, and
+    // do it BEFORE generating any due occurrence below.
+    const { error: removeErr } = await db
       .from("recurring_job_shares")
       .delete()
       .eq("recurring_job_id", recurringId)
       .in("team_member_id", toRemove);
+    if (removeErr) {
+      console.error("Recurring job unassign error:", removeErr);
+      return NextResponse.json(
+        { error: "Couldn't update who this recurring job is assigned to. Try again." },
+        { status: 500 }
+      );
+    }
   }
   if (toAdd.length > 0) {
     const { error: addErr } = await db.from("recurring_job_shares").insert(

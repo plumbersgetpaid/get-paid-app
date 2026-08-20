@@ -58,6 +58,12 @@ export async function POST(req) {
   await db.from("job_shares").delete().eq("team_member_id", memberId);
   await db.from("recurring_job_shares").delete().eq("team_member_id", memberId);
 
+  // push_subscriptions has no foreign key to team_members, so unlike the
+  // rows above it is NOT cleaned up by any cascade or blocked delete - it
+  // would be left orphaned, holding this person's device tokens after their
+  // account is gone. Remove them explicitly.
+  await db.from("push_subscriptions").delete().eq("team_member_id", memberId);
+
   await db.from("job_notes").update({ created_by: null }).eq("created_by", memberId);
   await db.from("jobs").update({ created_by: null }).eq("created_by", memberId);
   await db.from("jobs").update({ assigned_to: null }).eq("assigned_to", memberId);

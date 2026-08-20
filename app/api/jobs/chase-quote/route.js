@@ -70,10 +70,17 @@ export async function POST(req) {
         html,
       });
 
-      await db
+      // quote_chased_at is the UI's "already chased" signal. If this stamp
+      // is lost silently the follow-up looks un-sent, inviting the user to
+      // chase again — a duplicate follow-up email to the homeowner. The
+      // email is already out; make a lost stamp loud.
+      const { error: stampErr } = await db
         .from("jobs")
         .update({ quote_chased_at: new Date().toISOString() })
         .eq("id", job.id);
+      if (stampErr) {
+        console.error("Chase quote: email sent but quote_chased_at stamp FAILED", job.id, stampErr);
+      }
     } catch (e) {
       console.error("Chase quote send error:", e);
     }

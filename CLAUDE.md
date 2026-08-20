@@ -23,15 +23,16 @@ PatchUp.
   Supabase clients)
 - `proxy.js` — session check, Stripe access gate (`hasAccess`), and
   per-permission route gating
-- `supabase/schema.sql` — **stale**, covers only 4 early tables; the live schema
-  has many more (users, teams, subscriptions, reminders, recurring jobs, notes,
-  photos, settings)
+- `supabase/schema.sql` — **stale**, covers only 4 early tables. The accurate
+  inventory is **`supabase/live-schema-reference.md`** (21 tables + 1 view,
+  read-only probed Aug 2026) — use that, and don't deploy from schema.sql.
 - `README.md` — **stale**, describes an early single-user email-only version and
   lists features as unbuilt that now exist. Don't trust either file as a
   description of current behaviour; read the code.
 
-Three Vercel cron jobs (`vercel.json`): recurring job creation (6am), job
-reminders (7am), overdue invoice chasing (9am).
+Five Vercel cron jobs (`vercel.json`) — see the Notifications section for the
+full list: recurring-jobs (6am), chase (9am), delete-cancelled (3am),
+daily-brief (17:00), starting-soon (every 15 min, needs Vercel Pro).
 
 ## Data protection — read before touching customer data
 
@@ -136,11 +137,12 @@ email-only.** WhatsApp was built, then abandoned in favour of email automation.
 Don't reintroduce Twilio or SMS/WhatsApp sending without checking first — the
 absence is intentional.
 
-Two follow-ups still open:
+One follow-up still open:
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` may still be
   set in Vercel — remove them there.
-- The `notify_whatsapp` column on `recurring_jobs` is no longer written. Drop it
-  once confirmed nothing depends on it.
+
+Done: the `notify_whatsapp` column on `recurring_jobs` has been dropped (confirmed
+gone from the live table, Aug 2026).
 
 ## Brand assets
 
@@ -207,9 +209,50 @@ up in front of this one".
 
 ## Other known issues
 
-- **`supabase/schema.sql` is stale** — 4 tables against the live 16. Fine
-  for day-to-day work (the verified inventory above is the reference), but
-  a fresh deploy from this repo would produce a broken database.
+- **`supabase/schema.sql` is stale** — 4 tables against the live 21+view.
+  Fine for day-to-day work (`supabase/live-schema-reference.md` is the
+  reference), but a fresh deploy from this repo would produce a broken
+  database.
+
+## Second full audit (20 Aug 2026)
+
+A four-agent pass (code delta, GDPR/data inventory, website+terms, debt +
+live schema) run "as if no outside reviewer follows". Code fixes landed:
+
+- **Stripe webhook now fails loud** — all subscription-state writes throw on
+  a DB error so Stripe retries, instead of 200-acking a lost update (a
+  cancelled sub could have stayed `active`, or a failed payment never gone
+  `past_due`). `app/api/billing/webhook`.
+- **Push respects deactivation** — `sendPushToMember` gates on `is_active`,
+  so a deactivated member's phone stops getting job nudges carrying
+  homeowner names/addresses. `team/delete` now also removes their
+  `push_subscriptions` (no FK, so nothing else did).
+- **starting-soon claims its dedupe stamp BEFORE sending** (both loops), so
+  a failed write can't re-fire the same push every 15 min.
+- **Silent access-revocation fixed** — `jobs/unshare`, `reminder/update`,
+  `recurring/update` now surface a failed removal instead of reporting
+  success while the person keeps access.
+- **Chase records checked** — `invoices/chase`, `cron/chase`,
+  `chase-quote` log/stamp writes are checked so a lost record doesn't
+  invite a duplicate customer email.
+- **Login throttle is now atomic** (`record_login_attempt()` RPC —
+  `supabase/login-throttle.sql`), fixing the parallel-burst bypass, with
+  login and password-reset on **separate counters** so one can't lock the
+  other. The RPC self-purges IPs >24h (GDPR).
+- **Double-invoice**: unique constraint on `invoices.job_id`
+  (`supabase/invoice-unique.sql`) + 23505 handling in `jobs/complete`.
+- **push/subscribe** validates the endpoint host (SSRF guard) and caps rows
+  per member. **daily-brief** pins `timeZone:UTC`. **sw.js** warm-field no
+  longer double-fetches. **PhotoUploadForm** stops navigating to the raw API
+  URL on error.
+- **Export completeness** — `/api/export/everything` now includes chase log,
+  reminders, email templates, team roster, settings, and **note images**
+  (previously omitted entirely).
+
+Three SQL files need running in Supabase (see each file's header):
+`supabase/login-throttle.sql`, `supabase/invoice-unique.sql`. Legal/marketing
+items (DPA, terms clauses, privacy additions, marketing-site company identity
+and overclaims) are tracked for the founder + solicitor, not code.
 
 ## Email sending (professional domain)
 

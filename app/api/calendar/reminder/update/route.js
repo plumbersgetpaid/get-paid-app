@@ -70,11 +70,21 @@ export async function POST(req) {
     const toRemove = [...currentSet].filter((id) => !desiredSet.has(id));
 
     if (toRemove.length > 0) {
-      await db
+      // This is access REVOCATION — if it silently fails, the owner is told
+      // the person was removed from the reminder while they keep seeing it.
+      // Surface the failure (the sibling insert below is already checked).
+      const { error: removeErr } = await db
         .from("reminder_shares")
         .delete()
         .eq("reminder_id", reminderId)
         .in("team_member_id", toRemove);
+      if (removeErr) {
+        console.error("Reminder share removal error:", removeErr);
+        return NextResponse.json(
+          { error: "Couldn't update who this reminder is shared with. Try again." },
+          { status: 500 }
+        );
+      }
     }
     if (toAdd.length > 0) {
       const { error: addErr } = await db.from("reminder_shares").insert(
