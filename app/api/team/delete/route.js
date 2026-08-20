@@ -2,6 +2,7 @@ import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
+import { syncStripeSeats } from "../../../lib/syncStripeSeats";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -69,6 +70,9 @@ export async function POST(req) {
     console.error("Delete team member error:", error);
     return NextResponse.json({ error: "Couldn't delete that account" }, { status: 500 });
   }
+
+  // Seat count changed - keep the Stripe bill honest (never blocks).
+  await syncStripeSeats(currentMember.business_id);
 
   return NextResponse.json({ ok: true });
 }

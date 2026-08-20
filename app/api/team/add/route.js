@@ -3,6 +3,7 @@ import { hashPassword } from "../../../lib/password";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canSeeEverything } from "../../../lib/permissions";
 import { NextResponse } from "next/server";
+import { syncStripeSeats } from "../../../lib/syncStripeSeats";
 
 const ALLOWED_ROLES = ["manager", "subcontractor"];
 
@@ -55,6 +56,9 @@ export async function POST(req) {
     }
     return NextResponse.json({ error: "Couldn't create the account" }, { status: 500 });
   }
+
+  // Seat count changed - keep the Stripe bill honest (never blocks).
+  await syncStripeSeats(currentMember.business_id);
 
   return NextResponse.json({ ok: true });
 }
