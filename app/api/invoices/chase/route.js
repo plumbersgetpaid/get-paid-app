@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
-import { formatInvoiceNumber } from "../../../lib/formatCurrency";
+import { formatInvoiceNumber, formatAmountForTemplate, formatDateForEmail } from "../../../lib/formatCurrency";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
@@ -90,8 +90,10 @@ export async function POST(req) {
       const template = await getTemplate("chase_manual");
       const vars = {
         customer_name: inv.customer_name,
-        amount: inv.amount,
-        due_date: inv.due_date,
+        // Bare formatted number ("1,880.40") - the template writes the £ -
+        // and a readable date ("25 August 2026"), not the raw "2026-08-25".
+        amount: formatAmountForTemplate(inv.amount, settings.currency),
+        due_date: formatDateForEmail(inv.due_date),
         business_name: settings.business_name,
       };
 

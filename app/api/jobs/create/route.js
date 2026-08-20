@@ -1,7 +1,7 @@
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { vatBreakdown, toStoredAmount } from "../../../lib/vat";
-import { formatCurrency } from "../../../lib/formatCurrency";
+import { formatCurrency, formatAmountForTemplate } from "../../../lib/formatCurrency";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { findExistingCustomer } from "../../../lib/findCustomer";
 import { textToEmailHtml } from "../../../lib/emailHtml";
@@ -133,7 +133,9 @@ export async function POST(req) {
       const vars = {
         customer_name: name,
         job_type: jobType || "Plumbing work",
-        amount,
+        // Bare formatted number ("1,880.40") - the template writes the £.
+        // Raw numbers rendered "1880.4" in real customer emails.
+        amount: formatAmountForTemplate(amount, settings.currency),
         business_name: settings.business_name,
       };
       const subject =

@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseClient";
 import { generateInvoicePdfBytes } from "../../../lib/generateInvoicePdf";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
-import { formatCurrency, formatInvoiceNumber } from "../../../lib/formatCurrency";
+import { formatCurrency, formatInvoiceNumber, formatAmountForTemplate, formatDateForEmail } from "../../../lib/formatCurrency";
 import { vatBreakdown, toStoredAmount } from "../../../lib/vat";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
@@ -116,8 +116,11 @@ async function finishInvoice({
     const invoiceVars = {
       customer_name: customer.name,
       job_type: job.job_type || "Plumbing work",
-      amount: formatCurrency(finalAmount, settings.currency).replace(/^[^\d-]*/, ""),
-      due_date: dueDate.toDateString(),
+      // Bare formatted number ("1,880.40") - the template writes the £ -
+      // and a readable UK date ("25 August 2026"), not toDateString()'s
+      // American-style "Mon Aug 25 2026".
+      amount: formatAmountForTemplate(finalAmount, settings.currency),
+      due_date: formatDateForEmail(dueDate),
       business_name: settings.business_name,
     };
 
