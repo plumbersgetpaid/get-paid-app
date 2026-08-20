@@ -161,7 +161,9 @@ screen is for adding one manually.
   weekends"** tick. If you set a date here, accepting the quote later books the
   job in automatically.
 - **Assign to** — tick which team members it's for.
-**To do it:** fill it in → **Send quote.**
+**To do it:** fill it in → **Send quote** → a **confirmation card** shows the
+customer, job, quote total and where it will be emailed → **Confirm & send
+quote.**
 **What happens:** the customer is emailed a professional quote (as set in your
 templates), the job appears under **Work → Quotes** with an amber marker, and you
 return to **Today.**

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../../lib/auth";
@@ -7,6 +6,7 @@ import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import MultiAssignField from "../../components/MultiAssignField";
 import VoiceQuoteAssist from "./VoiceQuoteAssist";
+import ConfirmSendQuote from "./ConfirmSendQuote";
 import RequestIdField from "../../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
@@ -122,14 +122,13 @@ export default async function NewQuote() {
           </div>
         </label>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <Link href="/" style={cancelButtonStyle}>
-            Cancel
-          </Link>
-          <button type="submit" style={submitButtonStyle}>
-            Send quote
-          </button>
-        </div>
+        <ConfirmSendQuote
+          exclusiveVatRate={
+            settings.vat_registered && settings.vat_price_entry === "exclusive"
+              ? settings.vat_rate ?? 20
+              : null
+          }
+        />
       </form>
     </main>
   );

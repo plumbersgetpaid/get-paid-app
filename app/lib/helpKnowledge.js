@@ -42,8 +42,9 @@ CREATE A QUOTE (the + button > New quote, or needs the quote permission)
 - Enter customer name (phone/email optional), job type, quoted amount, and
   optionally a location and a proposed date. You can speak the details with the
   microphone instead of typing, and use the wand button to tidy the wording.
-- Tap "Send quote" - the customer is emailed the quote and it appears under
-  Work > Quotes.
+- Tap "Send quote" - a confirmation first shows the customer, job, quote total
+  and where it will be emailed; tap "Confirm & send quote" and the customer is
+  emailed the quote and it appears under Work > Quotes.
 
 WHEN A CUSTOMER REPLIES (Work > Quotes)
 - Accept quote: moves it into your jobs. If you set a proposed date it's already
