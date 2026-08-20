@@ -6,7 +6,7 @@ import { getScopedDb } from "../../lib/scopedSupabaseClient";
 import { notFound } from "next/navigation";
 import MultiAssignField from "../../components/MultiAssignField";
 import VoiceQuoteAssist from "./VoiceQuoteAssist";
-import ConfirmSendQuote from "./ConfirmSendQuote";
+import ConfirmSendBar from "../../components/ConfirmSendBar";
 import RequestIdField from "../../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
@@ -122,7 +122,11 @@ export default async function NewQuote() {
           </div>
         </label>
 
-        <ConfirmSendQuote
+        <ConfirmSendBar
+          variant="quote"
+          cancelHref="/"
+          submitLabel="Send quote"
+          confirmLabel="Confirm & send quote"
           exclusiveVatRate={
             settings.vat_registered && settings.vat_price_entry === "exclusive"
               ? settings.vat_rate ?? 20

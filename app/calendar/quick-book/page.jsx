@@ -1,5 +1,5 @@
-import Link from "next/link";
 import BackButton from "../../components/BackButton";
+import ConfirmSendBar from "../../components/ConfirmSendBar";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canCreateJob } from "../../lib/permissions";
@@ -134,14 +134,17 @@ export default async function QuickBook(props) {
           </label>
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          <Link href="/calendar" style={cancelButtonStyle}>
-            Cancel
-          </Link>
-          <button type="submit" style={submitButtonStyle}>
-            {conflictMessage ? "Book anyway" : "Book it in"}
-          </button>
-        </div>
+        <ConfirmSendBar
+          variant="quickbook"
+          cancelHref="/calendar"
+          submitLabel={conflictMessage ? "Book anyway" : "Book it in"}
+          confirmLabel={conflictMessage ? "Confirm & book anyway" : "Confirm & book it in"}
+          exclusiveVatRate={
+            settings.vat_registered && settings.vat_price_entry === "exclusive"
+              ? settings.vat_rate ?? 20
+              : null
+          }
+        />
       </form>
     </main>
   );

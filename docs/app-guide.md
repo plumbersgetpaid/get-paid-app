@@ -197,6 +197,12 @@ the customer gets a confirmation email.
 > Same fields as above plus name/price, and it creates the booked job in one go.
 > You can invoice it properly later.
 
+> **Every send gets a look-first card:** quotes, quick-book and recurring jobs
+> all show a review card before saving — customer, price, date, and **whether
+> the customer will be emailed**. Untick "Email" (or leave email blank) and the
+> card warns in amber that the customer won't be notified, with "Go back" to
+> change it. Nothing customer-facing happens silently.
+
 ### 4.5 Do the job, then mark it done — `/jobs/complete/[job]`  *(needs invoice permission)*
 **What it's for:** finishing a job. This is where the invoice is born.
 **On screen:**

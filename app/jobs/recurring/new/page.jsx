@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import ConfirmSendBar from "../../../components/ConfirmSendBar";
 import BackButton from "../../../components/BackButton";
 import MultiAssignField from "../../../components/MultiAssignField";
 import RequestIdField from "../../../components/RequestIdField";
@@ -21,12 +21,13 @@ export default function NewRecurringJob() {
       .catch((err) => console.error("Load team members error:", err));
   }, []);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  // Called by the ConfirmSendBar after the review card is confirmed (it
+  // also handles a plain Enter-key submit via the form's onSubmit below).
+  async function submitForm(formEl) {
     setSubmitting(true);
     setError(null);
 
-    const formData = new FormData(e.target);
+    const formData = new FormData(formEl);
 
     try {
       const res = await fetch("/api/jobs/recurring/create", {
@@ -67,7 +68,13 @@ export default function NewRecurringJob() {
 
       {error && <div style={errorBoxStyle}>{error}</div>}
 
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, marginTop: 16 }}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submitForm(e.target);
+        }}
+        style={{ display: "grid", gap: 12, marginTop: 16 }}
+      >
         <RequestIdField />
         <input name="name" placeholder="Customer name" required style={inputStyle} />
         <input name="phone" placeholder="Phone (optional)" style={inputStyle} />
@@ -163,14 +170,14 @@ export default function NewRecurringJob() {
           </div>
         </label>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          <Link href="/jobs/recurring" style={cancelButtonStyle}>
-            Cancel
-          </Link>
-          <button type="submit" disabled={submitting} style={submitButtonStyle}>
-            {submitting ? "Saving..." : "Save recurring job"}
-          </button>
-        </div>
+        <ConfirmSendBar
+          variant="recurring"
+          cancelHref="/jobs/recurring"
+          submitLabel="Save recurring job"
+          confirmLabel="Confirm & save"
+          busy={submitting}
+          onConfirm={submitForm}
+        />
       </form>
     </main>
   );

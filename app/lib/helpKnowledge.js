@@ -58,6 +58,11 @@ BOOK A JOB IN (from an accepted quote, needs the reschedule permission)
   anyway". You can also book by voice.
 - Quick book: book a job on the spot with no quote first (the + button > Quick
   book) - handy when you're standing with the customer.
+- Quick book and recurring jobs show the same review card before saving as
+  quotes do - customer, price, date, and importantly whether the customer will
+  be emailed. If you untick "Email" or leave the email blank, the card warns
+  you in amber that the customer won't be notified - tap "Go back" to change
+  it.
 
 COMPLETE A JOB / GET THE INVOICE OUT (Mark done, needs the invoice permission)
 - Open the job and tap "Mark done". You can adjust the final amount, set the
