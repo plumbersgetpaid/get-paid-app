@@ -43,6 +43,26 @@ export async function generateMetadata() {
   return {
     title: "PatchUp",
     description: "Never chase an invoice by hand again",
+    // Link previews (Snapchat, WhatsApp, iMessage, social) - without these a
+    // shared app link renders as a bare grey card with no logo.
+    metadataBase: new URL("https://app.getpatchup.co.uk"),
+    openGraph: {
+      title: "PatchUp",
+      description:
+        "Job management for UK trades - quote, book, invoice and chase payments, all from your phone.",
+      url: "https://app.getpatchup.co.uk",
+      siteName: "PatchUp",
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: "PatchUp" }],
+      locale: "en_GB",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "PatchUp",
+      description:
+        "Job management for UK trades - quote, book, invoice and chase payments, all from your phone.",
+      images: ["/og.png"],
+    },
     // SVG first so it stays crisp on any display, PNG behind it for
     // browsers that don't take an SVG favicon. An uploaded one wins over
     // both.
