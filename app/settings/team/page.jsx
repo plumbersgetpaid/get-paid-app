@@ -30,7 +30,7 @@ export default async function Team() {
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
-        Managers see everything you do. Subcontractors only see jobs
+        Managers see everything you do. Team members only see jobs
         assigned to them, with no money or client list beyond that.
       </p>
 

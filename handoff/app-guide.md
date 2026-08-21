@@ -43,13 +43,13 @@ depending on who's logged in:
   clients, invoices, settings, billing. When you film "the full app," film as an
   owner. (Owner and Manager are almost identical; the only difference is an
   owner can't be demoted or removed.)
-- **Subcontractor** ("your lads") — sees **only the jobs assigned to them**. No
+- **Team member** ("your lads") — sees **only the jobs assigned to them**. No
   money, no client list, no settings. The owner can switch on up to six extra
-  abilities for them one at a time (see Section 12). Film a subcontractor's view
+  abilities for them one at a time (see Section 12). Film a team member's view
   when you want to show the stripped-back "just my jobs" experience.
 
 Throughout this guide, anything marked **(owner/manager only)** is hidden for a
-plain subcontractor.
+plain team member.
 
 ---
 
@@ -105,7 +105,7 @@ Fixed to the bottom of the screen, four tabs left to right:
 2. **Work** — quotes, jobs, invoices, reminders.
 3. **Calendar** — everything by date.
 4. **Clients** — your customer list. **(Only appears if the user can see the
-   client database — hidden for basic subcontractors.)**
+   client database — hidden for basic team members.)**
 
 The active tab has a silver underline.
 
@@ -291,7 +291,7 @@ how long ago it was sent (turns bold "worth chasing" at 3+ days). Buttons:
 Sub-tabs: **Today & overdue**, **Upcoming**, **Unscheduled**, **Completed.** A
 search box and a **"Recurring jobs"** button. Each job card (blue; red if running
 late; green when completed) shows customer, "job type · £amount · booked by
-{name}" (amount hidden from subcontractors), a status line ("Running X late" /
+{name}" (amount hidden from team members), a status line ("Running X late" /
 "time to be confirmed" / "Due {date}"), and a **"View job"** button (turns amber
 with a "!" if there's an important note). **(owner/manager)** an inline
 **Assign / share** control lets you tick which team members a job is for, right
@@ -415,12 +415,12 @@ QuickBooks/accountants**) and **Download.**
 **What it's for:** adding the people who work for you and controlling what they
 see.
 **On screen:** the current team (name, email, role dropdown of **Manager /
-Subcontractor**, a **Deactivate/Reactivate** button, and a **Permissions** link for
-subcontractors), and an **"Add someone new"** form: their name, email, role, and a
+Team member**, a **Deactivate/Reactivate** button, and a **Permissions** link for
+team members), and an **"Add someone new"** form: their name, email, role, and a
 starter password you share with them (they can change it later on their own
 Account page).
 
-**Permissions — `/settings/team/[member]`:** for a subcontractor, six on/off
+**Permissions — `/settings/team/[member]`:** for a team member, six on/off
 switches, all **off by default** (they start able only to view and add notes on
 their own assigned jobs):
 - **Can invoice** — mark done, invoice, chase and mark paid, for jobs assigned to them. (Company-wide invoicing and exports stay owner/manager — someone who runs *all* the invoicing should be a Manager.)
@@ -492,7 +492,7 @@ confirmation**, **Review request**, **Payment link note.** Each saves on its own
 - **Your name** (+ Save), **Your email** (needs your password to change), **Change
   password** (current + new).
 - **Notifications on this device** toggle (see 16.4).
-- **Log out** (for a subcontractor this is the only logout button; logging out
+- **Log out** (for a team member this is the only logout button; logging out
   also clears the offline copy on the phone).
 
 **16.4 Notifications toggle:** "Get a nudge before a job starts…set per device."

@@ -185,6 +185,18 @@ Still open, deliberately:
 - New views MUST set `security_invoker = true` — the default is the trap
   that caused the worst finding of this audit.
 
+## Role label: "subcontractor" is stored, "Team member" is shown
+
+The non-manager role's stored value is still `"subcontractor"` everywhere in
+the DB and code (`role === "subcontractor"`, the team/add allow-list, RLS,
+permission checks) - do NOT change the value; renaming it would break every
+existing row and every check. It is only DISPLAYED to users as **"Team
+member"** ("subcontractor" is a loaded term in construction - it means an
+external CIS trade - but the role covers all non-manager staff). Render it via
+`roleLabel(role)` (app/lib/permissions.js), never the raw value. Renamed for
+display in Aug 2026 (Blaise's call). helpKnowledge.js + the app guide use
+"Team member" too.
+
 ## Invoice access = job access (per-job, not just the flag)
 
 Invoices are job-child resources, so acting on one follows the JOB's rule

@@ -12,10 +12,12 @@ quote -> customer accepts -> book the job in -> complete it (photos + notes)
 TWO USER TYPES
 - Owner / Manager: sees everything - money, all jobs, all clients, settings,
   billing. (Owner is a manager who also can't be demoted or removed.)
-- Subcontractor: sees only jobs assigned to or shared with them. No money, no
+- Team member: sees only jobs assigned to or shared with them. No money, no
   client list, no settings - unless the owner switches on specific permissions.
+  (Stored internally as the "subcontractor" role; shown everywhere as "Team
+  member".)
 
-SUBCONTRACTOR PERMISSIONS (owner sets these under Settings > Team > the
+TEAM MEMBER PERMISSIONS (owner sets these under Settings > Team > the
 person's "Permissions"; all start OFF):
 - Can invoice (mark done, invoice, chase and mark-paid - for jobs assigned to them; company-wide invoicing and exports are owner/manager only)
 - Can see the client database

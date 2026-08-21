@@ -8,6 +8,18 @@ export function canSeeEverything(member) {
   return member?.role === "owner" || member?.role === "manager";
 }
 
+// The human label for a role. The stored value stays "subcontractor" (changing
+// it would break every existing row and all the role checks), but it's shown
+// to users as "Team member" - clearer for construction, where "subcontractor"
+// specifically means an external CIS trade, yet the role covers all non-manager
+// staff. Use this anywhere a role is displayed, never the raw value.
+export function roleLabel(role) {
+  if (role === "subcontractor") return "Team member";
+  if (role === "manager") return "Manager";
+  if (role === "owner") return "Owner";
+  return role || "";
+}
+
 // Below this point: per-capability checks for a subcontractor. Every one
 // of these is owner/manager-first - canSeeEverything() short-circuits to
 // true before the specific column is even looked at, so an owner or

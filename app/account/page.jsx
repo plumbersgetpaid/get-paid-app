@@ -5,6 +5,7 @@ import BackButton from "../components/BackButton";
 import AccountForm from "./AccountForm";
 import NotificationToggle from "../components/NotificationToggle";
 import LogoutButton from "../components/LogoutButton";
+import { roleLabel } from "../lib/permissions";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -25,7 +26,7 @@ export default async function Account() {
 
       <section style={cardStyle}>
         <div style={{ fontSize: 13, color: "#888" }}>Role</div>
-        <div style={{ fontSize: 15, textTransform: "capitalize" }}>{currentMember.role}</div>
+        <div style={{ fontSize: 15 }}>{roleLabel(currentMember.role)}</div>
       </section>
 
       <AccountForm currentName={currentMember.name} currentEmail={currentMember.email} />

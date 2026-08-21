@@ -56,7 +56,7 @@ export default function AddTeamMemberForm() {
       <input name="email" type="email" placeholder="Their email" required style={inputStyle} />
 
       <select name="role" defaultValue="subcontractor" required style={inputStyle}>
-        <option value="subcontractor">Subcontractor - only sees their own assigned jobs</option>
+        <option value="subcontractor">Team member - only sees their own assigned jobs</option>
         <option value="manager">Manager - sees everything, same as you</option>
       </select>
 

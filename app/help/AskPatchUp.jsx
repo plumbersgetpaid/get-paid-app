@@ -6,7 +6,7 @@ const EXAMPLES = [
   "How do I send a quote?",
   "How does chasing an unpaid invoice work?",
   "How do I add someone to my team?",
-  "Can my subcontractor see prices?",
+  "Can my team member see prices?",
 ];
 
 export default function AskPatchUp() {

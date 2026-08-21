@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import DeleteTeamMemberButton from "../../components/DeleteTeamMemberButton";
+import { roleLabel } from "../../lib/permissions";
 
 export default function TeamMemberRow({ member, isSelf }) {
   const [role, setRole] = useState(member.role);
@@ -81,13 +82,13 @@ export default function TeamMemberRow({ member, isSelf }) {
 
       <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
         {locked ? (
-          <span style={{ fontSize: 13, textTransform: "capitalize", color: "#666" }}>
-            {member.role}
+          <span style={{ fontSize: 13, color: "#666" }}>
+            {roleLabel(member.role)}
           </span>
         ) : (
           <select value={role} onChange={handleRoleChange} disabled={busy} style={selectStyle}>
             <option value="manager">Manager</option>
-            <option value="subcontractor">Subcontractor</option>
+            <option value="subcontractor">Team member</option>
           </select>
         )}
 

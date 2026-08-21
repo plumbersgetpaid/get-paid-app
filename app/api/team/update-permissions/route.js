@@ -39,7 +39,7 @@ export async function POST(req) {
 
   if (target.role !== "subcontractor") {
     return NextResponse.json(
-      { error: "Granular permissions only apply to subcontractors" },
+      { error: "Granular permissions only apply to team members" },
       { status: 400 }
     );
   }
