@@ -22,7 +22,9 @@ export default function CompleteJobForm({
   const [amount, setAmount] = useState(amountValue);
   const [dueDate, setDueDate] = useState(dueDateValue);
   const [note, setNote] = useState(noteValue);
-  const [paymentLink, setPaymentLink] = useState("");
+  // Pre-filled from the link pasted at quote time (if any) - the same link
+  // usually serves the balance. Still editable/clearable here.
+  const [paymentLink, setPaymentLink] = useState(job.deposit_payment_link || "");
   const [beforeFiles, setBeforeFiles] = useState([]);
   const [afterFiles, setAfterFiles] = useState([]);
   const [busy, setBusy] = useState(false);

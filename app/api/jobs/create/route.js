@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 import { logEmailSent } from "../../../lib/logEmail";
 import { parseDeposit } from "../../../lib/deposit";
+import { sanitizePaymentLink } from "../../../lib/paymentLink";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -45,6 +46,9 @@ export async function POST(req) {
   // Optional per-job deposit: the literal £ the customer will be asked to
   // send once they accept. Validated against the stored (gross) total.
   const deposit = parseDeposit(form, amount);
+  // Optional way-to-pay for the deposit (and later the invoice) - must be
+  // a real http(s) URL or it's dropped.
+  const depositPaymentLink = deposit !== null ? sanitizePaymentLink(form.get("depositPaymentLink")) : null;
 
   // Retry protection: a resend of this exact action - flaky signal,
   // double-tap, browser resubmit, offline replay - is answered with the
@@ -111,6 +115,7 @@ export async function POST(req) {
       // Spread keeps the insert valid even before the deposits migration
       // has run - the column is only referenced when a deposit was asked.
       ...(deposit !== null ? { deposit_amount: deposit } : {}),
+      ...(depositPaymentLink ? { deposit_payment_link: depositPaymentLink } : {}),
     })
     .select()
     .single();

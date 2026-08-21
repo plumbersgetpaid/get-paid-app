@@ -59,7 +59,7 @@ export async function POST(req) {
       business_name: settings.business_name,
     };
     const subject = renderTemplate(template.subject, vars) || "Deposit reminder";
-    const bodyText = renderTemplate(template.body, vars) + depositHowToPay(settings);
+    const bodyText = renderTemplate(template.body, vars) + depositHowToPay(settings, job.deposit_payment_link);
     const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(bodyText)}</div>`;
 
     const resend = new Resend(process.env.RESEND_API_KEY);

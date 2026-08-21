@@ -201,7 +201,7 @@ export default function SettingsForm({ settings }) {
       </label>
 
       <label style={labelStyle}>
-        Bank details (optional, shown on every invoice)
+        Bank details (optional - shown on every invoice, and how deposits get paid)
         <textarea
           name="bank_details"
           placeholder={"e.g. Sort code: 00-00-00\nAccount number: 12345678"}

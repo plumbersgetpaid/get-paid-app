@@ -3,6 +3,7 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { toStoredAmount } from "../../../lib/vat";
 import { logEmailSent } from "../../../lib/logEmail";
 import { parseDeposit, depositHowToPay } from "../../../lib/deposit";
+import { sanitizePaymentLink } from "../../../lib/paymentLink";
 import { formatCurrency } from "../../../lib/formatCurrency";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { narrowToRealClashes } from "../../../lib/jobConflicts";
@@ -50,6 +51,7 @@ export async function POST(req) {
   // Deposit is the literal £ the customer sends, validated against the
   // gross total (needs a known price - no deposit on a blank amount).
   const deposit = grossAmount > 0 ? parseDeposit(form, grossAmount) : null;
+  const depositPaymentLink = deposit !== null ? sanitizePaymentLink(form.get("depositPaymentLink")) : null;
   const start = new Date(`${startDate}T${startTime}:00`);
   const end = computeScheduleEnd(start, durationValue, durationUnit, includeWeekends);
 
@@ -178,6 +180,7 @@ export async function POST(req) {
       ...(deposit !== null
         ? { deposit_amount: deposit, deposit_requested_at: new Date().toISOString() }
         : {}),
+      ...(depositPaymentLink ? { deposit_payment_link: depositPaymentLink } : {}),
       status: "in_progress",
       accepted_at: new Date().toISOString(),
       scheduled_start: start.toISOString(),
@@ -233,7 +236,7 @@ export async function POST(req) {
       )}. The remaining ${formatCurrency(
         Math.round((grossAmount - deposit) * 100) / 100,
         settings.currency
-      )} is due on completion.${depositHowToPay(settings)}`;
+      )} is due on completion.${depositHowToPay(settings, depositPaymentLink)}`;
     }
     const subject = renderTemplate(template.subject, vars) || "Booking confirmed";
 

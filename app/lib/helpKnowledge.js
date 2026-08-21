@@ -49,6 +49,11 @@ CREATE A QUOTE (the + button > New quote, or needs the quote permission)
 DEPOSITS (per job - no setup needed):
 - On the New quote or Quick book form, tick "Ask for a deposit" and type the
   amount (the exact £ the customer will send - your call per job, no rules).
+  You can also paste an optional payment link (Stripe, GoCardless etc.) right
+  there - the deposit request email then offers "Pay online" plus your bank
+  details from Settings as the ways to pay (add at least one so the customer
+  has a route; with neither, the email asks them to reply to arrange it).
+  The link also pre-fills the final invoice's payment link.
 - The quote email shows all three numbers: total, deposit to secure the
   booking, and the remainder due on completion. Nothing is asked for yet.
 - The moment the customer ACCEPTS the quote, a deposit request email goes

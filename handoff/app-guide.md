@@ -160,8 +160,11 @@ screen is for adding one manually.
   the exact £ for *this* job (your call every time — no settings, no rules). The
   quote email then shows all three numbers: total, deposit to secure the
   booking, remainder on completion. The deposit is *requested* automatically the
-  moment the customer accepts (with your bank details); on Quick book it rides
-  in the booking confirmation instead, since the job's already agreed.
+  moment the customer accepts — offering an optional **payment link** you can
+  paste right there on the form (Stripe, GoCardless…) and/or your **bank
+  details from Settings** as the ways to pay; on Quick book it rides in the
+  booking confirmation instead, since the job's already agreed. The link also
+  pre-fills the final invoice.
 - A collapsible **"Proposed date & duration (optional)"** — date, time, a duration
   number + unit (Minutes / Hours / Days / Weeks / Months), and an **"Include
   weekends"** tick. If you set a date here, accepting the quote later books the

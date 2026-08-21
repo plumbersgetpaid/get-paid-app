@@ -76,9 +76,10 @@ export async function POST(req) {
           business_name: settings.business_name,
         };
         const subject = renderTemplate(template.subject, vars) || "Deposit to secure your booking";
-        // No invoice exists yet, so no payment link - bank details from
-        // settings are the payment route at deposit time.
-        const bodyText = renderTemplate(template.body, vars) + depositHowToPay(settings);
+        // How to pay: the per-job payment link pasted at quote time
+        // and/or bank details from Settings (falls back to "reply to
+        // this email" if neither exists).
+        const bodyText = renderTemplate(template.body, vars) + depositHowToPay(settings, jobForCheck.deposit_payment_link);
         const html = `<div style="font-family:sans-serif; white-space:pre-wrap;">${textToEmailHtml(bodyText)}</div>`;
 
         const resend = new Resend(process.env.RESEND_API_KEY);

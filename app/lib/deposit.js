@@ -30,12 +30,21 @@ export function formatDepositDate(value) {
   });
 }
 
-// The "how to pay" block appended to deposit request/reminder emails -
-// bank details from settings, since there's no invoice (and so no payment
-// link) yet at deposit time.
-export function depositHowToPay(settings) {
-  if (!settings?.bank_details) return "";
-  return `\n\nHow to pay:\n${settings.bank_details}`;
+// The "how to pay" block appended to deposit request/reminder emails.
+// Offers whichever routes the business actually has: a per-job payment
+// link (pasted on the quote form), bank details from Settings, or both.
+// An email asking for money with NO way to pay it is useless - if neither
+// exists, at least point them at replying.
+export function depositHowToPay(settings, paymentLink) {
+  const parts = [];
+  if (paymentLink) parts.push(`Pay online: ${paymentLink}`);
+  if (settings?.bank_details) {
+    parts.push(`${paymentLink ? "Or by bank transfer:" : "Pay by bank transfer:"}\n${settings.bank_details}`);
+  }
+  if (parts.length === 0) {
+    return "\n\nJust reply to this email and we'll sort out the easiest way to pay.";
+  }
+  return `\n\nHow to pay:\n${parts.join("\n\n")}`;
 }
 
 export function formatDepositLine(amount, currency) {

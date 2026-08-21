@@ -45,6 +45,24 @@ export default function DepositField() {
             requested when they accept - the quote just states it - and the
             final invoice deducts it automatically.
           </span>
+          <input
+            name="depositPaymentLink"
+            type="url"
+            placeholder="Payment link (optional) - e.g. a Stripe or GoCardless link"
+            style={{
+              padding: 12,
+              borderRadius: 2,
+              border: "1px solid #e2e2e2",
+              fontSize: 15,
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          />
+          <span style={{ fontSize: 12, color: "#888" }}>
+            The deposit request email includes this link and/or your bank
+            details from Settings - add at least one so the customer has a
+            way to pay. The link also pre-fills the final invoice.
+          </span>
         </>
       )}
     </div>
