@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 export default function DeleteTeamMemberButton({ memberId, memberName }) {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -38,7 +39,12 @@ export default function DeleteTeamMemberButton({ memberId, memberName }) {
         Delete permanently
       </button>
 
-      {showConfirm && (
+      {/* Rendered through a portal into <body>, NOT inline here: a deactivated
+          team member's row is drawn at opacity 0.7, and CSS opacity on an
+          ancestor fades every descendant - including a position:fixed modal -
+          so an inline modal came out almost see-through. The portal lifts it
+          out of the faded row so it paints fully opaque. */}
+      {showConfirm && typeof document !== "undefined" && createPortal(
         <div style={backdropStyle} onClick={() => !busy && setShowConfirm(false)}>
           <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontWeight: 500, fontSize: 16, marginBottom: 8 }}>
@@ -72,7 +78,8 @@ export default function DeleteTeamMemberButton({ memberId, memberName }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
