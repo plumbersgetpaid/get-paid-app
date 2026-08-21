@@ -423,7 +423,7 @@ Account page).
 **Permissions — `/settings/team/[member]`:** for a subcontractor, six on/off
 switches, all **off by default** (they start able only to view and add notes on
 their own assigned jobs):
-- **Can invoice** — mark jobs done, send invoices, use the Invoices section
+- **Can invoice** — mark done, invoice, chase and mark paid, for jobs assigned to them. (Company-wide invoicing and exports stay owner/manager — someone who runs *all* the invoicing should be a Manager.)
 - **Can see the client database**
 - **Can create new quotes**
 - **Can quick-book new jobs**

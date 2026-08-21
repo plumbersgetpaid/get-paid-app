@@ -185,6 +185,23 @@ Still open, deliberately:
 - New views MUST set `security_invoker = true` — the default is the trap
   that caused the worst finding of this audit.
 
+## Invoice access = job access (per-job, not just the flag)
+
+Invoices are job-child resources, so acting on one follows the JOB's rule
+(like notes/photos/schedule/complete), NOT the bare `can_invoice` flag. A
+subcontractor with `can_invoice` may only touch invoices for jobs assigned to
+(or shared with) them. Enforced by `canAccessInvoice()` (app/lib/jobAccess.js)
+on every single-invoice route: `[invoiceId]/pdf`, `mark-paid`,
+`set-payment-link`, `invoices/chase`. Whole-business invoice EXPORTS
+(`bulk-pdf`, `export-csv`, `export`) and the aggregate list VIEWS are
+owner/manager only (`canSeeEverything`); the Work→Invoices tab and `/invoices`
+page filter to the member's own jobs for a subcontractor (via
+`getAccessibleJobIds`). Added in the 4th audit (Aug 2026) - before it,
+`can_invoice` leaked every invoice in the business to a subcontractor and let
+them mark any invoice paid / redirect any payment link. If you add a new
+invoice route, gate it with `canAccessInvoice` (single) or `canSeeEverything`
+(aggregate/export).
+
 ## Service-role queries and business scoping
 
 ~28 API routes use `supabaseAdmin()`, which bypasses row-level security. The
