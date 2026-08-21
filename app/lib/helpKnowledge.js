@@ -17,7 +17,7 @@ TWO USER TYPES
 
 SUBCONTRACTOR PERMISSIONS (owner sets these under Settings > Team > the
 person's "Permissions"; all start OFF):
-- Can invoice (mark jobs done, send invoices, use the Invoices section)
+- Can invoice (mark done, invoice, chase and mark-paid - for jobs assigned to them; company-wide invoicing and exports are owner/manager only)
 - Can see the client database
 - Can create new quotes
 - Can quick-book new jobs

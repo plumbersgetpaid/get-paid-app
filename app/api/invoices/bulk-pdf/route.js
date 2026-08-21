@@ -5,13 +5,13 @@ import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { getJobPhotosForPdf } from "../../../lib/getJobPhotosForPdf";
 import { getCurrentTeamMember } from "../../../lib/auth";
-import { canInvoice } from "../../../lib/permissions";
+import { canSeeEverything } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
 export async function GET(req) {
   const currentMember = await getCurrentTeamMember();
-  if (!canInvoice(currentMember)) {
+  if (!canSeeEverything(currentMember)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 

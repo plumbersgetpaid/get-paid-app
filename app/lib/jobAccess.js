@@ -15,6 +15,41 @@ export async function canAccessJob(db, job, currentMember) {
   return !!data;
 }
 
+// Can this member act on THIS invoice? Invoices are job-child resources, so
+// the rule is the job's rule: owner/manager = any; a subcontractor = only if
+// the invoice's job is assigned to (or shared with) them. Managers short-
+// circuit with no query; subs pay one job lookup. Runs on the scoped client,
+// so the invoice/job are already tenant-confined - this adds the per-job layer
+// that the plain can_invoice flag doesn't.
+export async function canAccessInvoice(db, invoiceId, currentMember) {
+  if (canSeeEverything(currentMember)) return true;
+  if (!currentMember || !invoiceId) return false;
+  const { data: inv } = await db
+    .from("invoices")
+    .select("job_id")
+    .eq("id", invoiceId)
+    .maybeSingle();
+  if (!inv?.job_id) return false;
+  const { data: job } = await db
+    .from("jobs")
+    .select("id, assigned_to")
+    .eq("id", inv.job_id)
+    .maybeSingle();
+  return canAccessJob(db, job, currentMember);
+}
+
+// All job ids a member can access: assigned to them OR shared with them.
+// Used to scope the aggregate invoice lists to a subcontractor's own jobs.
+export async function getAccessibleJobIds(db, currentMember) {
+  if (!currentMember) return [];
+  const shared = await getSharedJobIds(db, currentMember.id);
+  const { data: assigned } = await db
+    .from("jobs")
+    .select("id")
+    .eq("assigned_to", currentMember.id);
+  return [...new Set([...(assigned || []).map((j) => j.id), ...shared])];
+}
+
 export async function getSharedJobIds(db, teamMemberId) {
   if (!teamMemberId) return [];
   const { data } = await db

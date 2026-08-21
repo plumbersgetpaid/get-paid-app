@@ -2,7 +2,7 @@ import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { formatInvoiceNumber } from "../../../lib/formatCurrency";
 import { vatBreakdown } from "../../../lib/vat";
 import { getCurrentTeamMember } from "../../../lib/auth";
-import { canInvoice } from "../../../lib/permissions";
+import { canSeeEverything } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { NextResponse } from "next/server";
 
@@ -16,7 +16,7 @@ function csvCell(value) {
 
 export async function GET(req) {
   const currentMember = await getCurrentTeamMember();
-  if (!canInvoice(currentMember)) {
+  if (!canSeeEverything(currentMember)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 

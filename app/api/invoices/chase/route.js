@@ -12,6 +12,7 @@ import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { claimRequest, releaseRequest } from "../../../lib/idempotency";
+import { canAccessInvoice } from "../../../lib/jobAccess";
 
 // Lets the plumber chase a specific invoice on demand, on top of the
 // automatic daily chase cron job.
@@ -38,6 +39,11 @@ export async function POST(req) {
 
 
   const db = await getScopedDb(currentMember);
+  // Per-job gate: a subcontractor may only chase their own jobs' invoices.
+  if (!(await canAccessInvoice(db, invoiceId, currentMember))) {
+    await releaseRequest(claim);
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
   // outstanding_invoices is a database view, not a direct table -
   // Postgres views don't automatically carry RLS through to their
   // underlying tables the same way a normal table does unless

@@ -1,8 +1,9 @@
 import { formatCurrency, formatInvoiceNumber } from "../lib/formatCurrency";
 import { getBusinessSettings } from "../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../lib/auth";
-import { canInvoice } from "../lib/permissions";
+import { canInvoice, canSeeEverything } from "../lib/permissions";
 import { getScopedDb } from "../lib/scopedSupabaseClient";
+import { getAccessibleJobIds } from "../lib/jobAccess";
 import { notFound } from "next/navigation";
 import BackButton from "../components/BackButton";
 import DateFieldWithHint from "../components/DateFieldWithHint";
@@ -26,12 +27,19 @@ export default async function AllInvoices(props) {
   }
 
   const db = await getScopedDb(currentMember);
+  const showEverything = canSeeEverything(currentMember);
+
+  // A subcontractor with can_invoice sees only their OWN jobs' invoices.
+  const accessibleJobIds = showEverything ? null : await getAccessibleJobIds(db, currentMember);
 
   const rangeStart = searchParams?.start || "";
   const rangeEnd = searchParams?.end || "";
   const q = (searchParams?.q || "").trim().toLowerCase();
 
   let query = db.from("invoices").select("*").order("created_at", { ascending: false });
+  if (accessibleJobIds) {
+    query = query.in("job_id", accessibleJobIds.length ? accessibleJobIds : ["__none__"]);
+  }
 
   if (rangeStart) {
     query = query.gte("created_at", rangeStart);
@@ -182,7 +190,7 @@ export default async function AllInvoices(props) {
           </div>
         </form>
 
-        {(rangeStart || rangeEnd) && (
+        {showEverything && (rangeStart || rangeEnd) && (
           <form
             action="/api/invoices/export"
             method="GET"
@@ -246,7 +254,7 @@ export default async function AllInvoices(props) {
         </div>
       )}
 
-      {invoices.length > 0 && (
+      {showEverything && invoices.length > 0 && (
         <form
           action="/api/invoices/export"
           method="GET"

@@ -4,6 +4,7 @@ import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
+import { canAccessInvoice } from "../../../lib/jobAccess";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
@@ -33,6 +34,14 @@ export async function POST(req) {
 
 
   const db = await getScopedDb(currentMember);
+
+  // Per-job gate: a subcontractor with can_invoice may only mark their OWN
+  // jobs' invoices paid (matches how completing a job is gated). Without it,
+  // marking any invoice paid stops its chasing and fires a review email.
+  if (!(await canAccessInvoice(db, invoiceId, currentMember))) {
+    await releaseRequest(claim);
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
 
   const { data: invoice, error: invErr } = await db
     .from("invoices")

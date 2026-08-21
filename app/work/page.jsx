@@ -7,7 +7,7 @@ import { poppins, mono, metallicTitleStyle, silverAccentStyle, c } from "../lib/
 import Icon from "../components/Icon";
 import { getCurrentTeamMember } from "../lib/auth";
 import { canSeeEverything, canInvoice, canCreateRecurringJob } from "../lib/permissions";
-import { filterJobsForMember } from "../lib/jobAccess";
+import { filterJobsForMember, getAccessibleJobIds } from "../lib/jobAccess";
 import AssignAndShareControl from "../components/AssignAndShareControl";
 import ReloadOnBack from "../components/ReloadOnBack";
 import ConfirmSubmitButton from "../components/ConfirmSubmitButton";
@@ -88,6 +88,8 @@ export default async function Work(props) {
           settings={settings}
           sub={searchParams?.sub || "overdue"}
           businessId={currentMember.business_id}
+          currentMember={currentMember}
+          showEverything={showEverything}
         />
       )}
       {tab === "reminders" && (
@@ -537,7 +539,21 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
   );
 }
 
-async function InvoicesTab({ db, adminDb, settings, sub, businessId }) {
+async function InvoicesTab({ db, adminDb, settings, sub, businessId, currentMember, showEverything }) {
+  // A subcontractor with can_invoice sees only their OWN jobs' invoices -
+  // "manage the Invoices section" is scoped to jobs assigned to (or shared
+  // with) them, matching every other job-child resource. Managers see all.
+  // The outstanding view exposes invoice_id (not job_id), so map through the
+  // invoices table to the set of invoice ids on accessible jobs.
+  let accessibleJobIds = null;
+  let accessibleInvoiceIds = null;
+  if (!showEverything) {
+    accessibleJobIds = await getAccessibleJobIds(db, currentMember);
+    const { data: accInv } = accessibleJobIds.length
+      ? await db.from("invoices").select("id").in("job_id", accessibleJobIds)
+      : { data: [] };
+    accessibleInvoiceIds = new Set((accInv || []).map((r) => r.id));
+  }
   const activeSub = ["overdue", "awaiting", "paid"].includes(sub) ? sub : "overdue";
 
   const { data: outstanding } = await adminDb
@@ -546,14 +562,19 @@ async function InvoicesTab({ db, adminDb, settings, sub, businessId }) {
     .eq("business_id", businessId)
     .order("due_date", { ascending: true });
 
-  const overdue = (outstanding || []).filter((i) => i.days_overdue > 0);
-  const notYetDue = (outstanding || []).filter((i) => i.days_overdue <= 0);
+  const scoped = accessibleInvoiceIds
+    ? (outstanding || []).filter((i) => accessibleInvoiceIds.has(i.invoice_id))
+    : outstanding || [];
+  const overdue = scoped.filter((i) => i.days_overdue > 0);
+  const notYetDue = scoped.filter((i) => i.days_overdue <= 0);
 
-  const { data: paidInvoicesRaw } = await db
+  let paidQuery = db
     .from("invoices")
     .select("*")
     .eq("status", "paid")
     .order("paid_at", { ascending: false });
+  if (accessibleJobIds) paidQuery = paidQuery.in("job_id", accessibleJobIds.length ? accessibleJobIds : ["__none__"]);
+  const { data: paidInvoicesRaw } = await paidQuery;
   const paidInvoices = paidInvoicesRaw || [];
   const paidTotal = paidInvoices.reduce((s, i) => s + Number(i.amount), 0);
 

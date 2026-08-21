@@ -2,6 +2,7 @@ import { getCurrentTeamMember } from "../../../lib/auth";
 import { canInvoice } from "../../../lib/permissions";
 import { getScopedDb } from "../../../lib/scopedSupabaseClient";
 import { sanitizePaymentLink } from "../../../lib/paymentLink";
+import { canAccessInvoice } from "../../../lib/jobAccess";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -27,6 +28,12 @@ export async function POST(req) {
   }
 
   const db = await getScopedDb(currentMember);
+  // Per-job gate: this link is emailed to the customer as "Pay now", so a
+  // subcontractor must not set it on a job they can't access (payment
+  // diversion). Owner/manager unaffected.
+  if (!(await canAccessInvoice(db, invoiceId, currentMember))) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
   const { error } = await db
     .from("invoices")
     .update({ payment_link: paymentLink || null })

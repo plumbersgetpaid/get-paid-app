@@ -5,6 +5,7 @@ import { formatInvoiceNumber } from "../../../../lib/formatCurrency";
 import { getJobPhotosForPdf } from "../../../../lib/getJobPhotosForPdf";
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canInvoice } from "../../../../lib/permissions";
+import { canAccessInvoice } from "../../../../lib/jobAccess";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
 
 export async function GET(req, props) {
@@ -20,6 +21,15 @@ export async function GET(req, props) {
   }
 
   const db = await getScopedDb(currentMember);
+
+  // Per-job gate: a subcontractor may only download their own jobs' invoice
+  // PDFs (customer PII + business bank details live on them).
+  if (!(await canAccessInvoice(db, invoiceId, currentMember))) {
+    return new Response(JSON.stringify({ error: "Not allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   const { data: invoice, error } = await db
     .from("invoices")
