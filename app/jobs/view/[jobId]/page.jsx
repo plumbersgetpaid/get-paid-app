@@ -104,7 +104,9 @@ export default async function ViewJob(props) {
   // with it below - a job with real financial history attached is never
   // deletable, only cancellable, so nothing about the invoice trail can
   // ever silently disappear
-  const { data: existingInvoice } = showEverything
+  // Fetched for canInvoice too (not just owner/manager): the deposit card
+  // needs to know whether the invoice exists to lock date corrections.
+  const { data: existingInvoice } = showEverything || canInvoice(currentMember)
     ? await db.from("invoices").select("id").eq("job_id", jobId).maybeSingle()
     : { data: null };
 
@@ -302,6 +304,94 @@ export default async function ViewJob(props) {
           </div>
         )}
       </section>
+
+      {job.deposit_amount && canInvoice(currentMember) ? (
+        <section style={{ ...cardStyle, marginTop: 12, borderLeft: job.deposit_received_on ? "3px solid #16a34a" : "3px solid #b45309" }}>
+          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Deposit</div>
+          {job.deposit_received_on ? (
+            <div style={{ fontSize: 14 }}>
+              {formatCurrency(job.deposit_amount, settings.currency)} —{" "}
+              <span style={{ color: "#16a34a", fontWeight: 500 }}>
+                received{" "}
+                {new Date(job.deposit_received_on).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  timeZone: "UTC",
+                })}
+              </span>
+              {!existingInvoice && (
+                <details style={{ marginTop: 8 }}>
+                  <summary style={{ fontSize: 12, color: "#888", cursor: "pointer" }}>
+                    Wrong date? Correct it
+                  </summary>
+                  <form
+                    action="/api/jobs/deposit/mark-received"
+                    method="POST"
+                    style={{ display: "flex", gap: 8, marginTop: 8 }}
+                  >
+                    <input type="hidden" name="jobId" value={job.id} />
+                    <input
+                      type="date"
+                      name="receivedOn"
+                      defaultValue={job.deposit_received_on}
+                      max={new Date().toISOString().slice(0, 10)}
+                      required
+                      style={{ padding: 8, borderRadius: 2, border: "1px solid #e2e2e2", fontSize: 13, flex: 1 }}
+                    />
+                    <button type="submit" style={{ background: "#000", color: "white", border: "none", borderRadius: 2, padding: "8px 14px", fontSize: 13, fontWeight: 500 }}>
+                      Save date
+                    </button>
+                  </form>
+                  <p style={{ fontSize: 11, color: "#888", margin: "6px 0 0" }}>
+                    The invoice prints this date, so it should be the day the
+                    money actually arrived. Locked once the invoice goes out.
+                  </p>
+                </details>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontSize: 14 }}>
+              <span style={{ color: "#b45309", fontWeight: 500 }}>
+                {formatCurrency(job.deposit_amount, settings.currency)} — awaiting payment
+              </span>
+              {!job.deposit_requested_at && (
+                <span style={{ color: "#888" }}> (requested when the quote is accepted)</span>
+              )}
+              <form
+                action="/api/jobs/deposit/mark-received"
+                method="POST"
+                style={{ display: "flex", gap: 8, marginTop: 10 }}
+              >
+                <input type="hidden" name="jobId" value={job.id} />
+                <input
+                  type="date"
+                  name="receivedOn"
+                  defaultValue={new Date().toISOString().slice(0, 10)}
+                  max={new Date().toISOString().slice(0, 10)}
+                  required
+                  style={{ padding: 8, borderRadius: 2, border: "1px solid #e2e2e2", fontSize: 13, flex: 1 }}
+                />
+                <button type="submit" style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 2, padding: "8px 14px", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" }}>
+                  Mark received
+                </button>
+              </form>
+              <p style={{ fontSize: 11, color: "#888", margin: "6px 0 0" }}>
+                Set the date it actually arrived in your bank — marking it late
+                is fine, just backdate it.
+              </p>
+              {job.deposit_requested_at && customer?.email && (
+                <form action="/api/jobs/deposit/chase" method="POST" style={{ marginTop: 8 }}>
+                  <input type="hidden" name="jobId" value={job.id} />
+                  <button type="submit" style={{ background: "white", color: "#000", border: "1px solid #e2e2e2", borderRadius: 2, padding: "8px 14px", fontSize: 13, fontWeight: 500, width: "100%" }}>
+                    Send a deposit reminder
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+        </section>
+      ) : null}
 
       <section style={{ ...cardStyle, marginTop: 12 }}>
         <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>

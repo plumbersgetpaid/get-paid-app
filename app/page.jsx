@@ -57,7 +57,12 @@ export default async function Today() {
         .select("*")
         .eq("business_id", currentMember.business_id)
     : { data: [] };
-  const totalOwed = (outstanding || []).reduce((sum, i) => sum + Number(i.amount), 0);
+  // Balance still owed, not the full invoice value - a received deposit
+  // has already been paid (deposit columns absent pre-migration -> 0).
+  const totalOwed = (outstanding || []).reduce(
+    (sum, i) => sum + Math.max(0, Number(i.amount) - (Number(i.deposit_amount) || 0)),
+    0
+  );
   // "Needs attention" for invoices due today or already overdue - not just
   // strictly overdue, so a payment due today doesn't get missed
   const dueOrOverdueInvoices = (outstanding || []).filter((i) => i.days_overdue >= 0);
@@ -135,6 +140,12 @@ export default async function Today() {
 
   const quotesCount = (quotes || []).length;
   const needsBookingCount = needsBooking.length;
+  // Deposits asked for but not yet received, on live jobs. Money-adjacent,
+  // so gated on canInvoice like the invoice rows. deposit_amount is simply
+  // undefined pre-migration, which counts nothing.
+  const awaitingDepositCount = canInvoice(currentMember)
+    ? (activeJobs || []).filter((j) => j.deposit_amount && !j.deposit_received_on).length
+    : 0;
   const overdueCount = dueOrOverdueInvoices.length;
   const lateCount = lateJobs.length;
   const needsTimeCount = needsTimeJobs.length;
@@ -150,7 +161,8 @@ export default async function Today() {
     needsBookingCount === 0 &&
     overdueCount === 0 &&
     lateCount === 0 &&
-    needsTimeCount === 0;
+    needsTimeCount === 0 &&
+    awaitingDepositCount === 0;
 
   return (
     <main>
@@ -237,6 +249,14 @@ export default async function Today() {
               <span>
                 {needsBookingCount} job{needsBookingCount === 1 ? "" : "s"} need
                 {needsBookingCount === 1 ? "s" : ""} booking in
+              </span>
+            </Link>
+          )}
+          {awaitingDepositCount > 0 && (
+            <Link href="/work?tab=jobs" style={attentionRowStyle}>
+              <span style={statusBarStyle(c.amber)} />
+              <span>
+                {awaitingDepositCount} deposit{awaitingDepositCount === 1 ? "" : "s"} awaiting payment
               </span>
             </Link>
           )}

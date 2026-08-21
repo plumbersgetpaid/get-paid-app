@@ -161,6 +161,29 @@ export default async function InvoiceDetail(props) {
           );
         })()}
 
+        {invoice.deposit_amount ? (
+          <div style={{ borderTop: "1px solid #eee", paddingTop: 12, marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#666", marginBottom: 6 }}>
+              <span>
+                Deposit received
+                {invoice.deposit_received_on
+                  ? ` ${new Date(invoice.deposit_received_on).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}`
+                  : ""}
+              </span>
+              <span>−{formatCurrency(invoice.deposit_amount, settings.currency)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#000", fontWeight: 500 }}>
+              <span>Balance due</span>
+              <span>
+                {formatCurrency(
+                  Math.max(0, Math.round((Number(invoice.amount) - Number(invoice.deposit_amount)) * 100) / 100),
+                  settings.currency
+                )}
+              </span>
+            </div>
+          </div>
+        ) : null}
+
         <div style={{ borderTop: "1px solid #eee", paddingTop: 12 }}>
           <div
             style={{

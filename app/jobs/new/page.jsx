@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import MultiAssignField from "../../components/MultiAssignField";
 import VoiceQuoteAssist from "./VoiceQuoteAssist";
 import ConfirmSendBar from "../../components/ConfirmSendBar";
+import DepositField from "../../components/DepositField";
 import RequestIdField from "../../components/RequestIdField";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +62,8 @@ export default async function NewQuote() {
           typed.
         </div>
         <VoiceQuoteAssist />
+
+        <DepositField />
 
         <details style={{ marginTop: 4 }}>
           <summary style={{ fontSize: 13, color: "#666", fontWeight: 500, cursor: "pointer" }}>

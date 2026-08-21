@@ -30,6 +30,14 @@ const DEFAULTS = {
     subject: "Booking confirmed - {{job_type}}",
     body: "Hi {{customer_name}},\n\nYou're booked in - here are the details:\n\nJob: {{job_type}}\nStart: {{start_date}} at {{start_time}}\nExpected duration: {{duration}}\n\nWe'll see you then. Let us know if anything changes on your end.\n\nThanks,\n{{business_name}}",
   },
+  deposit_request: {
+    subject: "Deposit for {{job_type}}",
+    body: "Hi {{customer_name}},\n\nThanks for accepting the quote for {{job_type}}. To secure your booking, please send the deposit of £{{deposit_amount}}.\n\nThe remaining £{{balance_amount}} is due on completion.\n\nThanks,\n{{business_name}}",
+  },
+  deposit_chase: {
+    subject: "Reminder: deposit for {{job_type}}",
+    body: "Hi {{customer_name}},\n\nJust a gentle reminder about the deposit of £{{deposit_amount}} to secure your booking for {{job_type}}. Once it's through we're all set.\n\nAny questions, just reply to this email.\n\nThanks,\n{{business_name}}",
+  },
   review_request: {
     subject: "Thanks for your payment",
     body: "Hi {{customer_name}},\n\nThanks for your payment.\n\nIf you were happy with the work, we'd really appreciate a quick Google review - it helps others find us and lets us know we're doing a good job.\n\n{{review_link}}\n\nThanks,\n{{business_name}}",

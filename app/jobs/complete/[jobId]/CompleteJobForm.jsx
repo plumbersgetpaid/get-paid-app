@@ -453,6 +453,15 @@ export default function CompleteJobForm({
           Number.isFinite(invoiceTotal) &&
           Math.abs(invoiceTotal - Number(job.amount)) > 0.011;
         const photoCount = beforeFiles.length + afterFiles.length;
+        // Only a RECEIVED deposit is deducted on the invoice.
+        const depositReceived =
+          job.deposit_amount && job.deposit_received_on ? Number(job.deposit_amount) : 0;
+        const depositUnpaid =
+          job.deposit_amount && !job.deposit_received_on ? Number(job.deposit_amount) : 0;
+        const balanceAfterDeposit =
+          depositReceived > 0 && Number.isFinite(invoiceTotal)
+            ? Math.max(0, Math.round((invoiceTotal - depositReceived) * 100) / 100)
+            : null;
 
         return (
           <div style={overlayStyle} role="dialog" aria-modal="true" aria-label="Confirm completion">
@@ -478,6 +487,24 @@ export default function CompleteJobForm({
                 <div style={{ ...confirmRowStyle, color: "#b45309" }}>
                   <span style={confirmLabelStyle}>Changed from quote</span>
                   <span>was {fmt(job.amount)}</span>
+                </div>
+              )}
+              {showEverything && depositReceived > 0 && (
+                <>
+                  <div style={confirmRowStyle}>
+                    <span style={confirmLabelStyle}>Deposit received</span>
+                    <span>−{fmt(depositReceived)}</span>
+                  </div>
+                  <div style={confirmRowStyle}>
+                    <span style={confirmLabelStyle}>Balance the customer owes</span>
+                    <span style={{ fontWeight: 600 }}>{fmt(balanceAfterDeposit)}</span>
+                  </div>
+                </>
+              )}
+              {showEverything && depositUnpaid > 0 && (
+                <div style={{ ...confirmRowStyle, color: "#b45309" }}>
+                  <span style={confirmLabelStyle}>Deposit never received</span>
+                  <span>invoicing the full amount</span>
                 </div>
               )}
               {showEverything && dueDate && (

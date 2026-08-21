@@ -46,6 +46,28 @@ CREATE A QUOTE (the + button > New quote, or needs the quote permission)
   and where it will be emailed; tap "Confirm & send quote" and the customer is
   emailed the quote and it appears under Work > Quotes.
 
+DEPOSITS (per job - no setup needed):
+- On the New quote or Quick book form, tick "Ask for a deposit" and type the
+  amount (the exact £ the customer will send - your call per job, no rules).
+- The quote email shows all three numbers: total, deposit to secure the
+  booking, and the remainder due on completion. Nothing is asked for yet.
+- The moment the customer ACCEPTS the quote, a deposit request email goes
+  out automatically with your bank details. (On Quick book the job is
+  already agreed, so the request rides in the booking confirmation email.)
+- The job then shows "awaiting deposit" (job page + Today's Action needed).
+  When the money lands in your bank, open the job and tap "Mark received" -
+  set the date it ACTUALLY arrived (backdating is fine and encouraged if
+  you're marking it late; the invoice prints this date). You can correct
+  the date until the final invoice goes out. There's also a "Send a deposit
+  reminder" button for a manual nudge - deposits are never chased
+  automatically.
+- The final invoice does the maths itself: total, "Deposit of £X received
+  [date]", and the balance due. Payment reminders then chase only the
+  balance. A deposit that was never received is NOT deducted - the invoice
+  asks for the full amount.
+- An unpaid deposit never blocks booking the job in - it's a visible
+  warning, not a gate.
+
 WHEN A CUSTOMER REPLIES (Work > Quotes)
 - Accept quote: moves it into your jobs. If you set a proposed date it's already
   booked; otherwise book it in next.

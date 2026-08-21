@@ -1,5 +1,6 @@
 import BackButton from "../../components/BackButton";
 import ConfirmSendBar from "../../components/ConfirmSendBar";
+import DepositField from "../../components/DepositField";
 import { getBusinessSettings } from "../../lib/getBusinessSettings";
 import { getCurrentTeamMember } from "../../lib/auth";
 import { canCreateJob } from "../../lib/permissions";
@@ -86,6 +87,8 @@ export default async function QuickBook(props) {
           initialDuration={initialDuration}
           initialDurationUnit={initialDurationUnit}
         />
+
+        <DepositField />
 
         <input
           name="location"

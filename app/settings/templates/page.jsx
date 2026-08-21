@@ -68,6 +68,18 @@ const TEMPLATE_INFO = [
     ],
   },
   {
+    key: "deposit_request",
+    label: "Deposit request",
+    description: "Sent automatically when a customer accepts a quote that asked for a deposit.",
+    placeholders: ["customer_name", "business_name", "job_type", "deposit_amount", "balance_amount"],
+  },
+  {
+    key: "deposit_chase",
+    label: "Deposit reminder",
+    description: "Sent when you tap 'Chase deposit' on a job still awaiting its deposit.",
+    placeholders: ["customer_name", "business_name", "job_type", "deposit_amount"],
+  },
+  {
     key: "review_request",
     label: "Review request",
     description: "Sent automatically once an invoice is marked as paid.",

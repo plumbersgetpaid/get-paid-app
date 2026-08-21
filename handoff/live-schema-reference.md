@@ -55,6 +55,9 @@ deployed from. Supabase itself is the source of truth — this file is a map.
 - status (text, NOT NULL)
 - completed_at / created_at / quote_sent_at / accepted_at / declined_at / quote_chased_at (timestamptz)
 - scheduled_start / scheduled_end / reminder_sent_at (timestamptz)
+- deposit_amount (numeric) — per-job deposit asked; null = none
+- deposit_requested_at (timestamptz)
+- deposit_received_on (date) — adjustable/backdatable; locked once invoiced
 - location (text)
 - completion_note (text)
 - time_confirmed (boolean)
@@ -73,6 +76,8 @@ deployed from. Supabase itself is the source of truth — this file is a map.
 - payment_link (text)
 - vat_rate (numeric) — snapshot at creation; null = not VAT-registered then
 - vat_number (text) — snapshot at creation
+- deposit_amount (numeric) — snapshot of the RECEIVED deposit; balance = amount − deposit
+- deposit_received_on (date) — snapshot; printed on the invoice
 - business_id (uuid, fk -> businesses.id)
 
 ## chase_log
@@ -225,7 +230,7 @@ deployed from. Supabase itself is the source of truth — this file is a map.
 - created_at (timestamptz, NOT NULL, default now())
 
 ## outstanding_invoices (VIEW, security_invoker)
-Excludes paid invoices AND invoices of cancelled jobs (supabase/cancelled-jobs-stop-chasing.sql).
+Excludes paid invoices AND invoices of cancelled jobs (supabase/cancelled-jobs-stop-chasing.sql). Also exposes deposit_amount + deposit_received_on (supabase/deposits.sql) so chasers/totals use the balance.
 - invoice_id (uuid)
 - invoice_number (int4)
 - customer_name, phone, email, job_type, location (text)

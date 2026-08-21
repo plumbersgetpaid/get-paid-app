@@ -68,7 +68,7 @@ export async function POST(req) {
       const settings = await getBusinessSettings();
       const { data: invoiceRow } = await db
         .from("invoices")
-        .select("job_id, payment_link, vat_rate, vat_number")
+        .select("job_id, payment_link, vat_rate, vat_number, deposit_amount, deposit_received_on")
         .eq("id", invoiceId)
         .single();
       const { beforePhotos, afterPhotos } = await getJobPhotosForPdf(db, invoiceRow?.job_id);
@@ -88,11 +88,17 @@ export async function POST(req) {
       };
 
       const template = await getTemplate("chase_manual");
+      // What's chased is the BALANCE still owed - a received deposit has
+      // already been paid and must never be demanded again.
+      const chaseBalance = Math.max(
+        0,
+        Math.round((Number(inv.amount) - (Number(invoiceRow?.deposit_amount) || 0)) * 100) / 100
+      );
       const vars = {
         customer_name: inv.customer_name,
         // Bare formatted number ("1,880.40") - the template writes the £ -
         // and a readable date ("25 August 2026"), not the raw "2026-08-25".
-        amount: formatAmountForTemplate(inv.amount, settings.currency),
+        amount: formatAmountForTemplate(chaseBalance, settings.currency),
         due_date: formatDateForEmail(inv.due_date),
         business_name: settings.business_name,
       };
@@ -117,6 +123,8 @@ export async function POST(req) {
         paymentNote: paymentNote || undefined,
         vatRate: invoiceRow?.vat_rate,
         vatNumber: invoiceRow?.vat_number,
+        depositAmount: invoiceRow?.deposit_amount,
+        depositReceivedOn: invoiceRow?.deposit_received_on,
         business,
       });
 

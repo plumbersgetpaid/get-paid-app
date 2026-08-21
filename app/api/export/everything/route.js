@@ -123,6 +123,15 @@ export async function GET() {
       { header: "Client", value: (i) => customerForJob(i.job_id)?.name },
       { header: "Job", value: (i) => jobById.get(i.job_id)?.job_type },
       { header: "Amount", value: (i) => i.amount },
+      { header: "Deposit received", value: (i) => i.deposit_amount || "" },
+      { header: "Deposit date", value: (i) => date(i.deposit_received_on) },
+      {
+        header: "Balance due",
+        value: (i) =>
+          i.deposit_amount
+            ? Math.max(0, Math.round((Number(i.amount) - Number(i.deposit_amount)) * 100) / 100)
+            : "",
+      },
       { header: "Status", value: (i) => i.status },
       { header: "Raised", value: (i) => date(i.created_at) },
       { header: "Sent", value: (i) => date(i.sent_at) },

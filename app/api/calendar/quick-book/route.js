@@ -2,6 +2,8 @@ import { getTemplate, renderTemplate } from "../../../lib/getTemplate";
 import { getBusinessSettings } from "../../../lib/getBusinessSettings";
 import { toStoredAmount } from "../../../lib/vat";
 import { logEmailSent } from "../../../lib/logEmail";
+import { parseDeposit, depositHowToPay } from "../../../lib/deposit";
+import { formatCurrency } from "../../../lib/formatCurrency";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { narrowToRealClashes } from "../../../lib/jobConflicts";
 import { findExistingCustomer } from "../../../lib/findCustomer";
@@ -44,6 +46,10 @@ export async function POST(req) {
   }
 
   const settings = await getBusinessSettings();
+  const grossAmount = amountInput ? toStoredAmount(amountInput, settings) : 0;
+  // Deposit is the literal £ the customer sends, validated against the
+  // gross total (needs a known price - no deposit on a blank amount).
+  const deposit = grossAmount > 0 ? parseDeposit(form, grossAmount) : null;
   const start = new Date(`${startDate}T${startTime}:00`);
   const end = computeScheduleEnd(start, durationValue, durationUnit, includeWeekends);
 
@@ -165,7 +171,13 @@ export async function POST(req) {
       // toStoredAmount adds VAT for 'exclusive'-mode businesses; the raw
       // input above stays raw so the clash-warning redirect re-fills the
       // form with exactly what was typed.
-      amount: amountInput ? toStoredAmount(amountInput, settings) : 0,
+      amount: grossAmount,
+      // Quick-book IS acceptance, so a deposit here is requested straight
+      // away (in the booking email below). Spread keeps the insert valid
+      // pre-migration.
+      ...(deposit !== null
+        ? { deposit_amount: deposit, deposit_requested_at: new Date().toISOString() }
+        : {}),
       status: "in_progress",
       accepted_at: new Date().toISOString(),
       scheduled_start: start.toISOString(),
@@ -210,7 +222,19 @@ export async function POST(req) {
       duration: `${durationValue} ${durationUnit}`,
       business_name: settings.business_name,
     };
-    const bodyText = renderTemplate(template.body, vars);
+    let bodyText = renderTemplate(template.body, vars);
+    // Quick-book is already an accepted job, so the deposit is asked for
+    // right here in the booking confirmation (bank details attached -
+    // there's no invoice, and so no payment link, yet).
+    if (deposit !== null) {
+      bodyText += `\n\nTo secure your booking, please send the deposit of ${formatCurrency(
+        deposit,
+        settings.currency
+      )}. The remaining ${formatCurrency(
+        Math.round((grossAmount - deposit) * 100) / 100,
+        settings.currency
+      )} is due on completion.${depositHowToPay(settings)}`;
+    }
     const subject = renderTemplate(template.subject, vars) || "Booking confirmed";
 
     if (notifyEmail && customerEmail && process.env.RESEND_API_KEY) {

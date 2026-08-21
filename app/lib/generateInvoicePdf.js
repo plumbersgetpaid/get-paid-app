@@ -102,6 +102,8 @@ export async function generateInvoicePdfBytes({
   paymentNote,
   vatRate,
   vatNumber,
+  depositAmount,
+  depositReceivedOn,
   business = {},
 }) {
   // Every free-text value that reaches drawText goes through pdfSafe -
@@ -300,6 +302,40 @@ export async function generateInvoicePdfBytes({
     vatRow("Net", formatCurrency(vat.net, currency));
     vatRow(`VAT (${vat.rate}%)`, formatCurrency(vat.vat, currency));
     vatRow("Total", formatCurrency(vat.gross, currency), true);
+    y -= 4;
+  }
+
+  // A received deposit: the total above stands as the invoice value (and
+  // the VAT base); the customer owes the BALANCE, shown bold with the date
+  // the deposit arrived - the invoice doubles as the deposit receipt.
+  const dep = Number(depositAmount) || 0;
+  if (dep > 0) {
+    y -= 2;
+    const depRow = (label, value, useBold) => {
+      const f = useBold ? bold : font;
+      const c = useBold ? rgb(0.07, 0.07, 0.07) : grey;
+      page.drawText(label, { x: left, y, size: 10, font: f, color: c });
+      drawRightAligned(value, y, useBold ? 12 : 10, f, c);
+      y -= useBold ? 18 : 15;
+    };
+    const receivedLabel = depositReceivedOn
+      ? `Deposit received ${new Date(depositReceivedOn).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          timeZone: "UTC",
+        })}`
+      : "Deposit received";
+    const balance = Math.max(0, Math.round((Number(amount) - dep) * 100) / 100);
+    depRow(receivedLabel, `-${formatCurrency(dep, currency)}`);
+    depRow("Balance due", formatCurrency(balance, currency), true);
+    if (dep > Number(amount)) {
+      page.drawText(
+        `Deposit exceeds the final amount - ${formatCurrency(dep - Number(amount), currency)} to be arranged with you.`,
+        { x: left, y, size: 9, font, color: grey }
+      );
+      y -= 14;
+    }
     y -= 4;
   }
 

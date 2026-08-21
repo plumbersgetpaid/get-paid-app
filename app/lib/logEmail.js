@@ -39,4 +39,6 @@ export const EMAIL_KIND_LABELS = {
   booking_confirmation: "Booking confirmation",
   invoice: "Invoice",
   review_request: "Review request",
+  deposit_request: "Deposit request",
+  deposit_chase: "Deposit reminder",
 };

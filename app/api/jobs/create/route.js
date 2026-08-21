@@ -13,6 +13,7 @@ import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 import { logEmailSent } from "../../../lib/logEmail";
+import { parseDeposit } from "../../../lib/deposit";
 
 export async function POST(req) {
   const currentMember = await getCurrentTeamMember();
@@ -40,6 +41,10 @@ export async function POST(req) {
   // the before-VAT figure; the app adds VAT here, once, on the way in.
   // Storage stays VAT-inclusive everywhere.
   const amount = amountRaw ? toStoredAmount(amountRaw, settings) : amountRaw;
+
+  // Optional per-job deposit: the literal £ the customer will be asked to
+  // send once they accept. Validated against the stored (gross) total.
+  const deposit = parseDeposit(form, amount);
 
   // Retry protection: a resend of this exact action - flaky signal,
   // double-tap, browser resubmit, offline replay - is answered with the
@@ -103,6 +108,9 @@ export async function POST(req) {
       created_by: currentMember?.id || null,
       assigned_to: null,
       business_id: currentMember.business_id,
+      // Spread keeps the insert valid even before the deposits migration
+      // has run - the column is only referenced when a deposit was asked.
+      ...(deposit !== null ? { deposit_amount: deposit } : {}),
     })
     .select()
     .single();
@@ -143,6 +151,13 @@ export async function POST(req) {
       let bodyText = renderTemplate(template.body, vars);
       if (location) {
         bodyText += `\n\nJob location: ${location}`;
+      }
+      // The quote STATES the deposit - all three numbers up front, so the
+      // customer knows the shape of the deal before accepting. Nothing is
+      // asked for yet; the request email fires on acceptance.
+      if (deposit !== null) {
+        const remaining = Math.round((Number(amount) - deposit) * 100) / 100;
+        bodyText += `\n\nDeposit to secure your booking: ${formatCurrency(deposit, settings.currency)}\nRemaining on completion: ${formatCurrency(remaining, settings.currency)}`;
       }
       // A VAT-registered business shows the customer that the quoted total
       // already includes VAT (amounts in the app are VAT-inclusive).

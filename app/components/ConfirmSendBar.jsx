@@ -78,6 +78,19 @@ export default function ConfirmSendBar({
       });
     }
 
+    // Deposit (quote + quickbook): stated on the quote, requested on
+    // acceptance (or with the booking) - always the literal £ the
+    // customer sends, so no VAT arithmetic here.
+    if (fd.get("askDeposit") === "1") {
+      const dep = parseFloat(get("depositAmount"));
+      if (Number.isFinite(dep) && dep > 0) {
+        rows.push({ label: "Deposit", value: fmt(dep) });
+        if (Number.isFinite(total) && dep < total) {
+          rows.push({ label: "Remaining on completion", value: fmt(Math.round((total - dep) * 100) / 100) });
+        }
+      }
+    }
+
     if (variant === "quote") {
       const d = get("proposedDate");
       if (d) rows.push({ label: "Proposed date", value: `${fmtDate(d)} at ${get("proposedTime") || "09:00"}` });

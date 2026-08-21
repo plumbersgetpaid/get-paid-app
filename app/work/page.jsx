@@ -502,6 +502,11 @@ async function JobsTab({ db, settings, sub, currentMember, showEverything }) {
                 </div>
               )
             )}
+            {canInvoice(currentMember) && job.deposit_amount && !job.deposit_received_on ? (
+              <div style={{ fontSize: 12, color: "#b45309", fontWeight: 500, marginTop: 3 }}>
+                Awaiting {formatCurrency(job.deposit_amount, settings.currency)} deposit
+              </div>
+            ) : null}
             <a
               href={`/jobs/view/${job.id}`}
               style={hasImportantNoteByJob[job.id] ? importantViewJobButtonStyle : viewJobButtonStyle}
@@ -632,7 +637,7 @@ async function InvoicesTab({ db, adminDb, settings, sub, businessId }) {
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <div style={{ fontWeight: 500, fontSize: 15 }}>{inv.customer_name}</div>
                 <div style={{ fontWeight: 500, fontSize: 15 }}>
-                  {formatCurrency(inv.amount, settings.currency)}
+                  {formatCurrency(Math.max(0, Number(inv.amount) - (Number(inv.deposit_amount) || 0)), settings.currency)}
                 </div>
               </div>
               <div style={{ fontSize: 13, color: "#888" }}>
@@ -645,7 +650,7 @@ async function InvoicesTab({ db, adminDb, settings, sub, businessId }) {
             <div key={inv.invoice_id} style={cardStyle("#dc2626")}>
               <div style={{ fontWeight: 500, fontSize: 15 }}>{inv.customer_name}</div>
               <div style={{ fontSize: 13, color: "#888", marginBottom: 6 }}>
-                {formatCurrency(inv.amount, settings.currency)} · due {inv.due_date} ·{" "}
+                {formatCurrency(Math.max(0, Number(inv.amount) - (Number(inv.deposit_amount) || 0)), settings.currency)} · due {inv.due_date} ·{" "}
                 {inv.days_overdue > 0 ? `${inv.days_overdue} days overdue` : "not yet due"}
               </div>
               <Link

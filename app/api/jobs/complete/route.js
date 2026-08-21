@@ -16,6 +16,7 @@ import { NextResponse } from "next/server";
 import { claimRequest, releaseRequest } from "../../../lib/idempotency";
 import { logEmailSent } from "../../../lib/logEmail";
 import { sanitizePaymentLink } from "../../../lib/paymentLink";
+import { formatDepositDate } from "../../../lib/deposit";
 
 async function uploadJobPhotos(db, adminDb, jobId, files, label, businessId) {
   const validFiles = files.filter((f) => f && typeof f !== "string" && f.size > 0);
@@ -113,6 +114,15 @@ async function finishInvoice({
       afterPhotos,
     };
 
+    // With a received deposit, what the customer OWES is the balance - the
+    // template's "Amount due" line says that, and the breakdown below
+    // spells out total / deposit / balance.
+    const depositOnInvoice = Number(invoice.deposit_amount) || 0;
+    const balanceDue = Math.max(0, Math.round((Number(finalAmount) - depositOnInvoice) * 100) / 100);
+    const overpaid = depositOnInvoice > Number(finalAmount)
+      ? Math.round((depositOnInvoice - Number(finalAmount)) * 100) / 100
+      : 0;
+
     const invoiceTemplate = await getTemplate("invoice");
     const invoiceVars = {
       customer_name: customer.name,
@@ -120,7 +130,7 @@ async function finishInvoice({
       // Bare formatted number ("1,880.40") - the template writes the £ -
       // and a readable UK date ("25 August 2026"), not toDateString()'s
       // American-style "Mon Aug 25 2026".
-      amount: formatAmountForTemplate(finalAmount, settings.currency),
+      amount: formatAmountForTemplate(balanceDue, settings.currency),
       due_date: formatDateForEmail(dueDate),
       business_name: settings.business_name,
     };
@@ -148,6 +158,8 @@ async function finishInvoice({
       paymentNote: paymentNote || undefined,
       vatRate: invoice.vat_rate,
       vatNumber: invoice.vat_number,
+      depositAmount: invoice.deposit_amount,
+      depositReceivedOn: invoice.deposit_received_on,
       business,
     });
 
@@ -158,6 +170,21 @@ async function finishInvoice({
     let bodyText = renderTemplate(invoiceTemplate.body, invoiceVars);
     if (job.location) {
       bodyText += `\n\nJob location: ${job.location}`;
+    }
+    if (depositOnInvoice > 0) {
+      bodyText += `\n\nTotal for the work: ${formatCurrency(finalAmount, settings.currency)}\nDeposit of ${formatCurrency(
+        depositOnInvoice,
+        settings.currency
+      )} received ${formatDepositDate(invoice.deposit_received_on)} - thank you.\nBalance due: ${formatCurrency(
+        balanceDue,
+        settings.currency
+      )}`;
+      if (overpaid > 0) {
+        bodyText += `\nYour deposit covers this invoice in full - we'll arrange the ${formatCurrency(
+          overpaid,
+          settings.currency
+        )} difference with you.`;
+      }
     }
     // Mirror the PDF's VAT breakdown in the email body, using the snapshot
     // stamped on the invoice at creation.
@@ -323,6 +350,16 @@ export async function POST(req) {
     ? { vat_rate: vatSettings.vat_rate ?? 20, vat_number: vatSettings.vat_number || null }
     : { vat_rate: null, vat_number: null };
 
+  // Only a RECEIVED deposit is deducted - a requested-but-never-paid one
+  // is dead weight and the customer owes the full amount. Snapshotted onto
+  // the invoice (amount stays the FULL total: it's the financial record and
+  // the VAT base; the balance is computed for display everywhere).
+  const depositReceived =
+    job.deposit_amount && job.deposit_received_on ? Number(job.deposit_amount) : null;
+  const depositFields = depositReceived
+    ? { deposit_amount: depositReceived, deposit_received_on: job.deposit_received_on }
+    : {};
+
   const { data: invoice, error: invErr } = await db
     .from("invoices")
     .insert({
@@ -333,6 +370,7 @@ export async function POST(req) {
       payment_link: paymentLinkInput || null,
       business_id: currentMember.business_id,
       ...vatFields,
+      ...depositFields,
     })
     .select()
     .single();

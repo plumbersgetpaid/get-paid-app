@@ -368,6 +368,27 @@ features that don't exist — update it in the same change as any UX change.**
 Needs `supabase/help-questions.sql` run once (the box still answers without it;
 it just won't log).
 
+## Deposits (v1: request + track)
+
+Per-job tick box + amount on the quote and quick-book forms (deliberately NO
+settings/thresholds - the tradesperson decides per job). Flow: quote STATES
+total/deposit/remainder -> acceptance SENDS the deposit_request email (bank
+details; quick-book asks within the booking confirmation, since booking is
+acceptance) -> job shows "awaiting deposit" (job page card, Today action row,
+work card - all canInvoice-gated) -> "Mark received" records an ADJUSTABLE
+backdatable deposit_received_on date (locked once the invoice exists) ->
+completion snapshots deposit_amount/deposit_received_on onto the invoice.
+
+Rules: invoices.amount stays the FULL total (financial record + VAT base);
+the BALANCE (amount - deposit, floored at 0) is what every customer-facing
+surface says is owed - invoice email/PDF, chase emails, overdue lists,
+outstanding totals. Only a RECEIVED deposit deducts; requested-but-unpaid
+invoices the full amount. Deposits are never auto-chased (manual
+jobs/deposit/chase route) and never block booking. Templates:
+deposit_request, deposit_chase. email_log kinds: deposit_request,
+deposit_chase. SQL: supabase/deposits.sql (jobs + invoices columns + view
+gains deposit columns). PatchUp still never touches the money.
+
 ## Email log ("did that email actually send?")
 
 Tradespeople have no Sent folder - mail goes out from the platform address.

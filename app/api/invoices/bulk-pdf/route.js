@@ -120,6 +120,8 @@ export async function GET(req) {
       paymentNote: paymentNote || undefined,
       vatRate: inv.vat_rate,
       vatNumber: inv.vat_number,
+      depositAmount: inv.deposit_amount,
+      depositReceivedOn: inv.deposit_received_on,
       business: { ...business, beforePhotos, afterPhotos },
     });
 

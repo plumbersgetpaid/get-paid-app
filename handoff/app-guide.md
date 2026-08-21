@@ -156,6 +156,12 @@ screen is for adding one manually.
   tidies up your wording with AI.
 - **Quoted amount (£)** (required).
 - **Job location / address** (optional).
+- **"Ask for a deposit"** — a tick box; when ticked, an amount box appears. Type
+  the exact £ for *this* job (your call every time — no settings, no rules). The
+  quote email then shows all three numbers: total, deposit to secure the
+  booking, remainder on completion. The deposit is *requested* automatically the
+  moment the customer accepts (with your bank details); on Quick book it rides
+  in the booking confirmation instead, since the job's already agreed.
 - A collapsible **"Proposed date & duration (optional)"** — date, time, a duration
   number + unit (Minutes / Hours / Days / Weeks / Months), and an **"Include
   weekends"** tick. If you set a date here, accepting the quote later books the
@@ -322,6 +328,16 @@ or **delete** it.
 ---
 
 ## 8. The job sub-pages (notes and photos)
+
+> **Deposits on the job page:** a job that asked for a deposit shows a
+> **Deposit card** — amber while awaiting, green once received. When the money
+> lands, tap **"Mark received"** and set the date it *actually* arrived
+> (backdating is fine — mark it late, date it right; the invoice prints this
+> date). Correctable until the final invoice goes out. A **"Send a deposit
+> reminder"** button gives a manual nudge — deposits are never auto-chased. The
+> final invoice deducts the deposit, prints the received date, and payment
+> reminders chase only the balance. An unpaid deposit never blocks booking —
+> it's a warning, not a gate.
 
 Reached from **View job**:
 - **Job details — `/jobs/view/[job]`:** contact info (tap to call/email), status,

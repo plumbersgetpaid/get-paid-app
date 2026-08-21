@@ -86,6 +86,8 @@ export async function GET(req, props) {
     paymentNote: paymentNote || undefined,
     vatRate: invoice.vat_rate,
     vatNumber: invoice.vat_number,
+    depositAmount: invoice.deposit_amount,
+    depositReceivedOn: invoice.deposit_received_on,
     business,
   });
 
