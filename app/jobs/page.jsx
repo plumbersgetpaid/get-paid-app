@@ -82,6 +82,12 @@ export default async function AllJobs(props) {
     );
   } else if (status === "needs-time") {
     jobs = jobs.filter((j) => j.status === "in_progress" && j.time_confirmed === false);
+  } else if (status === "awaiting-deposit") {
+    // Deposits asked for but not yet received, on live jobs - the dedicated
+    // "deposits due" view, reached from Today's action row.
+    jobs = jobs.filter(
+      (j) => j.status === "in_progress" && j.deposit_amount && !j.deposit_received_on
+    );
   } else if (status === "done") {
     jobs = jobs.filter((j) => ["complete", "invoiced", "paid"].includes(j.status));
   } else if (status) {
@@ -107,6 +113,8 @@ export default async function AllJobs(props) {
             ? "Jobs running late"
             : status === "needs-time"
             ? "Jobs needing a time set"
+            : status === "awaiting-deposit"
+            ? "Jobs awaiting a deposit"
             : status === "done"
             ? "Completed jobs"
             : status

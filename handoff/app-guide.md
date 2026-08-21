@@ -337,7 +337,10 @@ or **delete** it.
 > lands, tap **"Mark received"** and set the date it *actually* arrived
 > (backdating is fine — mark it late, date it right; the invoice prints this
 > date). Correctable until the final invoice goes out. A **"Send a deposit
-> reminder"** button gives a manual nudge — deposits are never auto-chased. The
+> reminder"** button gives a manual nudge (with a confirm step, and a line
+> underneath showing when it was requested and when the last reminder went) —
+> deposits are never auto-chased. Today's "deposits awaiting" row opens a
+> dedicated **Jobs awaiting a deposit** list. The
 > final invoice deducts the deposit, prints the received date, and payment
 > reminders chase only the balance. An unpaid deposit never blocks booking —
 > it's a warning, not a gate.

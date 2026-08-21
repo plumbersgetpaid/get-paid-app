@@ -380,14 +380,53 @@ export default async function ViewJob(props) {
                 Set the date it actually arrived in your bank — marking it late
                 is fine, just backdate it.
               </p>
-              {job.deposit_requested_at && customer?.email && (
-                <form action="/api/jobs/deposit/chase" method="POST" style={{ marginTop: 8 }}>
-                  <input type="hidden" name="jobId" value={job.id} />
-                  <button type="submit" style={{ background: "white", color: "#000", border: "1px solid #e2e2e2", borderRadius: 2, padding: "8px 14px", fontSize: 13, fontWeight: 500, width: "100%" }}>
-                    Send a deposit reminder
-                  </button>
-                </form>
-              )}
+              {job.deposit_requested_at && customer?.email && (() => {
+                // The email log is the record: every deposit_request /
+                // deposit_chase for this job is in emailRows, so "you've
+                // already chased this" needs no extra bookkeeping.
+                const reminders = (emailRows || []).filter((e) => e.kind === "deposit_chase");
+                const lastReminder = reminders[0]; // emailRows is newest-first
+                return (
+                  <div style={{ marginTop: 8 }}>
+                    <form action="/api/jobs/deposit/chase" method="POST">
+                      <input type="hidden" name="jobId" value={job.id} />
+                      <ConfirmSubmitButton
+                        tone="neutral"
+                        confirmText={`Email ${customer?.name || "the customer"} a reminder about the ${formatCurrency(job.deposit_amount, settings.currency)} deposit?${lastReminder ? " You've already reminded them once." : ""}`}
+                        confirmLabel="Yes, send the reminder"
+                        cancelLabel="Not now"
+                        style={{ background: "white", color: "#000", border: "1px solid #e2e2e2", borderRadius: 2, padding: "8px 14px", fontSize: 13, fontWeight: 500, width: "100%" }}
+                      >
+                        Send a deposit reminder
+                      </ConfirmSubmitButton>
+                    </form>
+                    <p style={{ fontSize: 11, color: "#888", margin: "6px 0 0" }}>
+                      Requested{" "}
+                      {new Date(job.deposit_requested_at).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        timeZone: "Europe/London",
+                      })}
+                      {lastReminder && (
+                        <>
+                          {" "}· reminder sent{" "}
+                          {new Date(lastReminder.sent_at).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            timeZone: "Europe/London",
+                          })}{" "}
+                          {new Date(lastReminder.sent_at).toLocaleTimeString("en-GB", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: "Europe/London",
+                          })}
+                          {reminders.length > 1 ? ` (${reminders.length} reminders)` : ""}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </section>

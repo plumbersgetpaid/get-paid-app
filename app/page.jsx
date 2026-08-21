@@ -253,7 +253,7 @@ export default async function Today() {
             </Link>
           )}
           {awaitingDepositCount > 0 && (
-            <Link href="/work?tab=jobs" style={attentionRowStyle}>
+            <Link href="/jobs?status=awaiting-deposit" style={attentionRowStyle}>
               <span style={statusBarStyle(c.amber)} />
               <span>
                 {awaitingDepositCount} deposit{awaitingDepositCount === 1 ? "" : "s"} awaiting payment

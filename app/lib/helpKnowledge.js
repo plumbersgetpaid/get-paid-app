@@ -59,13 +59,17 @@ DEPOSITS (per job - no setup needed):
 - The moment the customer ACCEPTS the quote, a deposit request email goes
   out automatically with your bank details. (On Quick book the job is
   already agreed, so the request rides in the booking confirmation email.)
-- The job then shows "awaiting deposit" (job page + Today's Action needed).
+- The job then shows "awaiting deposit" (job page + Today's Action needed -
+  tapping the Today row opens a dedicated "Jobs awaiting a deposit" list).
   When the money lands in your bank, open the job and tap "Mark received" -
   set the date it ACTUALLY arrived (backdating is fine and encouraged if
   you're marking it late; the invoice prints this date). You can correct
   the date until the final invoice goes out. There's also a "Send a deposit
-  reminder" button for a manual nudge - deposits are never chased
-  automatically.
+  reminder" button for a manual nudge (it asks you to confirm first, and
+  shows underneath when the deposit was requested and when the last
+  reminder went, so you can't accidentally double-chase) - deposits are
+  never chased automatically. The reminder wording is editable under
+  Settings > Message templates ("Deposit reminder").
 - The final invoice does the maths itself: total, "Deposit of £X received
   [date]", and the balance due. Payment reminders then chase only the
   balance. A deposit that was never received is NOT deducted - the invoice
