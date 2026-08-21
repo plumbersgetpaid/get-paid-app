@@ -88,7 +88,7 @@ export default async function QuickBook(props) {
           initialDurationUnit={initialDurationUnit}
         />
 
-        <DepositField />
+        <DepositField hasBankDetails={!!settings.bank_details} />
 
         <input
           name="location"

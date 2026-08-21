@@ -39,12 +39,20 @@ export function depositHowToPay(settings, paymentLink) {
   const parts = [];
   if (paymentLink) parts.push(`Pay online: ${paymentLink}`);
   if (settings?.bank_details) {
-    parts.push(`${paymentLink ? "Or by bank transfer:" : "Pay by bank transfer:"}\n${settings.bank_details}`);
+    // Collapse any blank lines the user typed inside their bank details -
+    // "Sort code / [gap] / Account number" reads as a mistake to customers.
+    const details = String(settings.bank_details)
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .join("\n");
+    parts.push(`${paymentLink ? "Or by bank transfer:" : "Pay by bank transfer:"}\n${details}`);
   }
   if (parts.length === 0) {
     return "\n\nJust reply to this email and we'll sort out the easiest way to pay.";
   }
-  return `\n\nHow to pay:\n${parts.join("\n\n")}`;
+  // Single-spaced block: How to pay / link / transfer heading / details.
+  return `\n\nHow to pay:\n${parts.join("\n")}`;
 }
 
 export function formatDepositLine(amount, currency) {

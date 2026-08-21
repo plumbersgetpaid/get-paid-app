@@ -51,8 +51,9 @@ DEPOSITS (per job - no setup needed):
   amount (the exact £ the customer will send - your call per job, no rules).
   You can also paste an optional payment link (Stripe, GoCardless etc.) right
   there - the deposit request email then offers "Pay online" plus your bank
-  details from Settings as the ways to pay (add at least one so the customer
-  has a route; with neither, the email asks them to reply to arrange it).
+  details from Settings as the ways to pay. If you have no bank details saved
+  in Settings, the payment link is REQUIRED - the form won't send a deposit
+  request the customer can't pay.
   The link also pre-fills the final invoice's payment link.
 - The quote email shows all three numbers: total, deposit to secure the
   booking, and the remainder due on completion. Nothing is asked for yet.
@@ -158,9 +159,13 @@ MESSAGE TEMPLATES (Settings > Message templates, owner/manager): edit the wordin
 of every automatic email - quote, invoice, chasers, booking confirmation, review
 request.
 
-BUSINESS SETTINGS (Settings, owner/manager): business name, tagline, contact
-email/phone, accent colour, currency, Google review link, payment terms, bank
-details, invoice footer, and your logo.
+BUSINESS SETTINGS (Settings, owner/manager), in order: business name,
+tagline, contact email/phone, currency, VAT, payment terms, bank details,
+accent colour, invoice footer note, Google review link, and your logo.
+
+MESSAGE TEMPLATES are listed in the order a job actually flows: quote,
+deposit request, deposit reminder, booking confirmation, invoice, payment
+link note, manual chase, the 3/7/14-day auto chasers, review request.
 
 VAT (Settings, owner/manager): if your business is VAT registered, turn on
 "VAT registered" in Settings and enter your VAT number and rate (standard UK

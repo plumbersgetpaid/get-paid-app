@@ -63,7 +63,7 @@ export default async function NewQuote() {
         </div>
         <VoiceQuoteAssist />
 
-        <DepositField />
+        <DepositField hasBankDetails={!!settings.bank_details} />
 
         <details style={{ marginTop: 4 }}>
           <summary style={{ fontSize: 13, color: "#666", fontWeight: 500, cursor: "pointer" }}>

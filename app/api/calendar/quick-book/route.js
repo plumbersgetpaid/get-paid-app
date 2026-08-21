@@ -52,6 +52,12 @@ export async function POST(req) {
   // gross total (needs a known price - no deposit on a blank amount).
   const deposit = grossAmount > 0 ? parseDeposit(form, grossAmount) : null;
   const depositPaymentLink = deposit !== null ? sanitizePaymentLink(form.get("depositPaymentLink")) : null;
+  if (deposit !== null && !depositPaymentLink && !settings.bank_details) {
+    return NextResponse.json(
+      { error: "Add a payment link for the deposit, or save your bank details in Settings first - the customer needs a way to pay." },
+      { status: 400 }
+    );
+  }
   const start = new Date(`${startDate}T${startTime}:00`);
   const end = computeScheduleEnd(start, durationValue, durationUnit, includeWeekends);
 

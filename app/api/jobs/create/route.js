@@ -49,6 +49,14 @@ export async function POST(req) {
   // Optional way-to-pay for the deposit (and later the invoice) - must be
   // a real http(s) URL or it's dropped.
   const depositPaymentLink = deposit !== null ? sanitizePaymentLink(form.get("depositPaymentLink")) : null;
+  // Backstop for the form's own validation: a deposit request must never go
+  // out with no way to pay it.
+  if (deposit !== null && !depositPaymentLink && !settings.bank_details) {
+    return NextResponse.json(
+      { error: "Add a payment link for the deposit, or save your bank details in Settings first - the customer needs a way to pay." },
+      { status: 400 }
+    );
+  }
 
   // Retry protection: a resend of this exact action - flaky signal,
   // double-tap, browser resubmit, offline replay - is answered with the

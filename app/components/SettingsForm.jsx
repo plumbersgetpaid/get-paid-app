@@ -83,41 +83,12 @@ export default function SettingsForm({ settings }) {
       </label>
 
       <label style={labelStyle}>
-        Accent colour (used on PDF invoices)
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <input
-            name="accent_color"
-            type="color"
-            defaultValue={settings.accent_color}
-            style={{ width: 48, height: 40, padding: 0, border: "1px solid #e2e2e2", borderRadius: 8 }}
-          />
-          <span style={{ fontSize: 13, color: "#888" }}>{settings.accent_color}</span>
-        </div>
-      </label>
-
-      <label style={labelStyle}>
         Currency
         <select name="currency" defaultValue={settings.currency} style={inputStyle}>
           <option value="GBP">£ GBP - British Pound</option>
           <option value="USD">$ USD - US Dollar</option>
           <option value="EUR">€ EUR - Euro</option>
         </select>
-      </label>
-
-      <label style={labelStyle}>
-        Google review link (optional)
-        <input
-          name="google_review_link"
-          type="url"
-          placeholder="https://g.page/r/your-business/review"
-          defaultValue={settings.google_review_link || ""}
-          style={inputStyle}
-        />
-        <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}>
-          Find this in your Google Business Profile - once set, paid
-          customers automatically get a thank-you with this link. Leave
-          blank to turn this off.
-        </span>
       </label>
 
       <div style={{ border: "1px solid #e2e2e2", borderRadius: 4, padding: 14, display: "grid", gap: 12 }}>
@@ -212,6 +183,19 @@ export default function SettingsForm({ settings }) {
       </label>
 
       <label style={labelStyle}>
+        Accent colour (used on PDF invoices)
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <input
+            name="accent_color"
+            type="color"
+            defaultValue={settings.accent_color}
+            style={{ width: 48, height: 40, padding: 0, border: "1px solid #e2e2e2", borderRadius: 8 }}
+          />
+          <span style={{ fontSize: 13, color: "#888" }}>{settings.accent_color}</span>
+        </div>
+      </label>
+
+      <label style={labelStyle}>
         Invoice footer note (optional)
         <textarea
           name="invoice_note"
@@ -220,6 +204,22 @@ export default function SettingsForm({ settings }) {
           rows={3}
           style={{ ...inputStyle, resize: "vertical" }}
         />
+      </label>
+
+      <label style={labelStyle}>
+        Google review link (optional)
+        <input
+          name="google_review_link"
+          type="url"
+          placeholder="https://g.page/r/your-business/review"
+          defaultValue={settings.google_review_link || ""}
+          style={inputStyle}
+        />
+        <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}>
+          Find this in your Google Business Profile - once set, paid
+          customers automatically get a thank-you with this link. Leave
+          blank to turn this off.
+        </span>
       </label>
 
       <button type="submit" disabled={busy} style={submitButtonStyle}>

@@ -19,6 +19,31 @@ const TEMPLATE_INFO = [
     placeholders: ["customer_name", "job_type", "amount", "business_name"],
   },
   {
+    key: "deposit_request",
+    label: "Deposit request",
+    description: "Sent automatically when a customer accepts a quote that asked for a deposit.",
+    placeholders: ["customer_name", "business_name", "job_type", "deposit_amount", "balance_amount"],
+  },
+  {
+    key: "deposit_chase",
+    label: "Deposit reminder",
+    description: "Sent when you tap 'Chase deposit' on a job still awaiting its deposit.",
+    placeholders: ["customer_name", "business_name", "job_type", "deposit_amount"],
+  },
+  {
+    key: "booking_confirmation",
+    label: "Booking confirmation",
+    description: "Sent when you book a job in, by email.",
+    placeholders: [
+      "customer_name",
+      "job_type",
+      "start_date",
+      "start_time",
+      "duration",
+      "business_name",
+    ],
+  },
+  {
     key: "invoice",
     label: "Invoice (job complete)",
     description: "Sent when you mark a job done.",
@@ -29,6 +54,14 @@ const TEMPLATE_INFO = [
       "due_date",
       "business_name",
     ],
+  },
+  {
+    key: "payment_note",
+    label: "Payment link note",
+    description:
+      "Small print shown alongside \"Pay now\" on the invoice PDF and in emails, whenever an invoice has a payment link attached.",
+    placeholders: [],
+    noSubject: true,
   },
   {
     key: "chase_manual",
@@ -55,43 +88,10 @@ const TEMPLATE_INFO = [
     placeholders: ["customer_name", "amount", "business_name"],
   },
   {
-    key: "booking_confirmation",
-    label: "Booking confirmation",
-    description: "Sent when you book a job in, by email.",
-    placeholders: [
-      "customer_name",
-      "job_type",
-      "start_date",
-      "start_time",
-      "duration",
-      "business_name",
-    ],
-  },
-  {
-    key: "deposit_request",
-    label: "Deposit request",
-    description: "Sent automatically when a customer accepts a quote that asked for a deposit.",
-    placeholders: ["customer_name", "business_name", "job_type", "deposit_amount", "balance_amount"],
-  },
-  {
-    key: "deposit_chase",
-    label: "Deposit reminder",
-    description: "Sent when you tap 'Chase deposit' on a job still awaiting its deposit.",
-    placeholders: ["customer_name", "business_name", "job_type", "deposit_amount"],
-  },
-  {
     key: "review_request",
     label: "Review request",
     description: "Sent automatically once an invoice is marked as paid.",
     placeholders: ["customer_name", "business_name", "review_link"],
-  },
-  {
-    key: "payment_note",
-    label: "Payment link note",
-    description:
-      "Small print shown alongside \"Pay now\" on the invoice PDF and in emails, whenever an invoice has a payment link attached.",
-    placeholders: [],
-    noSubject: true,
   },
 ];
 
