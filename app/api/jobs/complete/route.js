@@ -309,6 +309,11 @@ export async function POST(req) {
   }
 
 
+  // Guard on status: only an in_progress job can be completed. Without this,
+  // a completion queued offline and replayed AFTER the office cancelled the
+  // job would resurrect it - flip it back to complete, invoice it, and email
+  // the customer. The .eq("status","in_progress") makes that a no-op the
+  // outbox surfaces as "needs attention" instead of a wrongful invoice.
   const { data: job, error: jobErr } = await db
     .from("jobs")
     .update({
@@ -317,12 +322,27 @@ export async function POST(req) {
       completion_note: noteInput || null,
     })
     .eq("id", jobId)
+    .eq("status", "in_progress")
     .select("*")
-    .single();
+    .maybeSingle();
 
   if (jobErr || !job) {
-    console.error("Job update error:", jobErr);
     await releaseRequest(claim);
+    // Distinguish a genuinely-gone job from one whose state moved on (most
+    // often: cancelled, or already completed by another device).
+    const { data: current } = await db
+      .from("jobs")
+      .select("status")
+      .eq("id", jobId)
+      .maybeSingle();
+    if (current && current.status !== "in_progress") {
+      const msg =
+        current.status === "cancelled"
+          ? "This job was cancelled, so it can't be completed."
+          : "This job has already been completed.";
+      return NextResponse.json({ error: msg }, { status: 409 });
+    }
+    console.error("Job update error:", jobErr);
     return NextResponse.json({ error: "Job not found" }, { status: 400 });
   }
 

@@ -54,7 +54,7 @@ export async function GET(req) {
       .lte("scheduled_start", `${tomorrow}T23:59:59`),
     db
       .from("invoices")
-      .select("business_id, amount, job_id")
+      .select("business_id, amount, job_id, deposit_amount, deposit_received_on")
       .eq("status", "unpaid")
       .eq("due_date", tomorrow),
     db.from("jobs").select("business_id, customer_id, job_type").eq("status", "quote_sent"),
@@ -110,10 +110,14 @@ export async function GET(req) {
     }
 
     if (data.invoices.length) {
-      const total = data.invoices.reduce((s, i) => s + Number(i.amount || 0), 0);
+      // Show the BALANCE still owed (net of any received deposit), matching
+      // every other money surface - not the full face value.
+      const balanceOf = (i) =>
+        Math.max(0, Math.round((Number(i.amount || 0) - (Number(i.deposit_amount) || 0)) * 100) / 100);
+      const total = data.invoices.reduce((s, i) => s + balanceOf(i), 0);
       const lines = data.invoices.map((i) => {
         const name = nameById[jobCustomer[i.job_id]] || "Customer";
-        return `${formatCurrency(i.amount, settings.currency)} — ${name}`;
+        return `${formatCurrency(balanceOf(i), settings.currency)} — ${name}`;
       });
       sections.push(
         `INVOICES DUE TOMORROW (${formatCurrency(total, settings.currency)})\n${lines.join("\n")}`

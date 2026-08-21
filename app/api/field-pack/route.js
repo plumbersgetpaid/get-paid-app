@@ -44,7 +44,7 @@ export async function GET() {
 
   let jobsQuery = db
     .from("jobs")
-    .select("id, job_type, status, amount, scheduled_start, scheduled_end, time_confirmed, location, customer_id")
+    .select("id, job_type, status, amount, scheduled_start, scheduled_end, time_confirmed, location, customer_id, deposit_amount, deposit_received_on")
     .eq("status", "in_progress")
     .gte("scheduled_start", `${from}T00:00:00`)
     .lte("scheduled_start", `${to}T23:59:59`)
@@ -103,6 +103,10 @@ export async function GET() {
         jobType: j.job_type,
         // Money is owner/manager information, same rule as the Work screen.
         amount: canSeeEverything(currentMember) ? j.amount : null,
+        // Deposit state (owner/manager only, like amount) so /field can flag
+        // an outstanding deposit and show a deposit-aware completion confirm.
+        depositAmount: canSeeEverything(currentMember) ? j.deposit_amount : null,
+        depositReceivedOn: canSeeEverything(currentMember) ? j.deposit_received_on : null,
         start: j.scheduled_start,
         end: j.scheduled_end,
         timeConfirmed: j.time_confirmed !== false,

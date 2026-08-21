@@ -43,7 +43,12 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
 
   // complete
   const completeRef = useRef(null);
-  const [amount, setAmount] = useState(job.amount ?? "");
+  // Starts EMPTY, not prefilled with job.amount: an untouched field must send
+  // NO amount so the server falls back to the stored quote. Prefilling the
+  // gross here defeated that - for an owner/manager (whose pack carries the
+  // amount) the untouched gross was re-sent and grossed up again (+VAT) in
+  // exclusive-entry mode. The stored figure is shown as reference below.
+  const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [beforeFiles, setBeforeFiles] = useState([]);
   const [afterFiles, setAfterFiles] = useState([]);
@@ -86,14 +91,31 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
     // Untouched -> the stored (VAT-inclusive) total; typed -> their figure,
     // labelled as entered because this device doesn't know the business's
     // VAT entry mode (the server applies it).
-    const amountLine =
-      amount === ""
-        ? job.amount !== undefined && job.amount !== null
-          ? `Invoice total: ${fmtMoney(job.amount)}\n`
-          : ""
-        : `Amount entered: ${fmtMoney(amount)}\n`;
+    // The invoice total (untouched -> stored quote; typed -> their figure,
+    // which the server applies VAT to; so only label it as "entered").
+    const total = amount === "" ? job.amount : null; // typed amount: server-side, unknown here
+    const deposit =
+      job.depositAmount && job.depositReceivedOn ? Number(job.depositAmount) : 0;
+    let amountLine = "";
+    if (amount !== "") {
+      amountLine = `Amount entered: ${fmtMoney(amount)}\n`;
+    } else if (total !== undefined && total !== null) {
+      if (deposit > 0) {
+        const balance = Math.max(0, Math.round((Number(total) - deposit) * 100) / 100);
+        amountLine =
+          `Invoice total: ${fmtMoney(total)}\n` +
+          `Deposit received: -${fmtMoney(deposit)}\n` +
+          `Balance the customer owes: ${fmtMoney(balance)}\n`;
+      } else {
+        amountLine = `Invoice total: ${fmtMoney(total)}\n`;
+      }
+    }
+    const depositWarn =
+      job.depositAmount && !job.depositReceivedOn
+        ? `NOTE: a ${fmtMoney(job.depositAmount)} deposit was never marked received - the customer will be invoiced the full amount.\n`
+        : "";
     const ok = window.confirm(
-      `Finish this job for ${job.customer?.name || "the customer"}?\n${amountLine}` +
+      `Finish this job for ${job.customer?.name || "the customer"}?\n${amountLine}${depositWarn}` +
         `The invoice goes to the customer and can't be unsent.`
     );
     if (!ok) return;
@@ -150,6 +172,13 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
 
   return (
     <div style={{ marginTop: 10, borderTop: "1px solid #eee", paddingTop: 10 }}>
+      {job.depositAmount && !job.depositReceivedOn && (
+        <div style={{ fontSize: 12, color: "#b45309", fontWeight: 600, marginBottom: 8 }}>
+          Awaiting £
+          {Number(job.depositAmount).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+          deposit
+        </div>
+      )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {canComplete && (
           <button onClick={() => setOpenForm(openForm === "complete" ? null : "complete")} style={btn(openForm === "complete")}>
@@ -172,7 +201,18 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
         <form onSubmit={submitComplete} style={formStyle}>
           <label style={lbl}>
             Final amount (£)
-            <input type="number" step="0.01" value={amount ?? ""} onChange={(e) => setAmount(e.target.value)} style={inp} />
+            <input
+              type="number"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder={
+                job.amount !== undefined && job.amount !== null
+                  ? `Quoted £${Number(job.amount).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} — leave blank to keep`
+                  : "Leave blank to keep the quoted amount"
+              }
+              style={inp}
+            />
           </label>
           <label style={lbl}>
             Completion note (goes on the invoice)

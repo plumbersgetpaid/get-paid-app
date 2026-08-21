@@ -86,11 +86,22 @@ export default async function AllInvoices(props) {
     });
   }
 
+  // Total invoiced = face value of every invoice (correct as-is: the invoice's
+  // value is the full amount; a deposit is a payment against it).
   const totalInvoiced = invoices.reduce((sum, i) => sum + Number(i.amount), 0);
   const totalPaid = invoices
     .filter((i) => i.status === "paid")
     .reduce((sum, i) => sum + Number(i.amount), 0);
-  const totalOutstanding = totalInvoiced - totalPaid;
+  // Outstanding = what's actually still owed: on each UNPAID invoice, the
+  // balance after any received deposit (not the full face value - the deposit
+  // is money already in). Matches the deposit-aware Work tab.
+  const totalOutstanding = invoices
+    .filter((i) => i.status !== "paid")
+    .reduce(
+      (sum, i) =>
+        sum + Math.max(0, Number(i.amount) - (Number(i.deposit_amount) || 0)),
+      0
+    );
 
   // Build a list of months that actually have invoices, for the bulk
   // download filter - based on the FULL history, not the current filter,
