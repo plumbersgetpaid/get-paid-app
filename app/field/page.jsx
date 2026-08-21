@@ -32,6 +32,7 @@ function dayLabel(dateStr, todayStr) {
 export default function FieldView() {
   const [pack, setPack] = useState(undefined); // undefined = loading
   const [online, setOnline] = useState(true);
+  const [authNeeded, setAuthNeeded] = useState(false);
   const [outbox, setOutbox] = useState([]);
 
   const refreshOutbox = () => listOutbox().then(setOutbox).catch(() => {});
@@ -77,7 +78,13 @@ export default function FieldView() {
     setOnline(navigator.onLine);
     const up = () => {
       setOnline(true);
-      syncOutbox().then(refreshOutbox);
+      // If the session expired, the queue is HELD (never posts another
+      // user's work) - surface that instead of leaving entries silently
+      // stuck on "sending…".
+      syncOutbox().then((result) => {
+        if (result?.authNeeded) setAuthNeeded(true);
+        refreshOutbox();
+      });
     };
     const down = () => setOnline(false);
     window.addEventListener("online", up);
@@ -115,6 +122,11 @@ export default function FieldView() {
 
   return (
     <main style={pageStyle}>
+      {authNeeded && (
+        <div style={{ background: "#fef3c7", color: "#92400e", borderRadius: 6, padding: "9px 12px", fontSize: 12.5, marginBottom: 8 }}>
+          Your login expired — <a href="/login" style={{ color: "#92400e", fontWeight: 600 }}>log in again</a> to send your saved work.
+        </div>
+      )}
       <div style={online ? onlineBannerStyle : offlineBannerStyle}>
         {online
           ? "You're online — this is your saved copy."

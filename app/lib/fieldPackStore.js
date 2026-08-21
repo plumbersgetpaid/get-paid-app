@@ -58,6 +58,13 @@ export async function clearFieldData() {
     await outboxClear();
   } catch {}
   try {
-    if (typeof caches !== "undefined") await caches.delete("patchup-field-v1");
+    // Clear every version of the field cache, not a hardcoded name (which
+    // silently goes stale on a cache bump), so logout always wipes the shell.
+    if (typeof caches !== "undefined") {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((k) => k.startsWith("patchup-field-")).map((k) => caches.delete(k)));
+      } catch {}
+    }
   } catch {}
 }

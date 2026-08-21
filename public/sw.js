@@ -5,7 +5,11 @@
 // jobs/invoices app must never show stale data as if it were current.
 // The one navigation fallback is /field, which is explicit about being a
 // saved copy.
-const CACHE = "patchup-field-v1";
+// Bumped to v2 (Aug 2026) to force installed phones to purge the cached
+// /field shell + old JS chunks and re-precache the current build - this is
+// how the field double-VAT completion fix reaches devices that have been
+// offline since it shipped, rather than waiting for a chance re-warm.
+const CACHE = "patchup-field-v2";
 const PRECACHE = ["/field", "/icon-192.png", "/patchup-emblem.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -27,6 +31,15 @@ self.addEventListener("activate", (event) => {
       if (self.registration.navigationPreload) {
         try { await self.registration.navigationPreload.enable(); } catch {}
       }
+      // Purge superseded caches so a version bump actually frees the old
+      // shell/chunks (they otherwise accumulate forever) and the new CACHE
+      // re-precaches on install.
+      try {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys.filter((k) => k.startsWith("patchup-field-") && k !== CACHE).map((k) => caches.delete(k))
+        );
+      } catch {}
       await self.clients.claim();
     })()
   );
