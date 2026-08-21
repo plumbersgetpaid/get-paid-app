@@ -221,6 +221,7 @@ export default function FieldView() {
                 <FieldJobActions
                   job={j}
                   canComplete={!!pack.can?.complete}
+                  vat={pack.vat}
                   online={online}
                   onChanged={refreshAll}
                 />

@@ -95,6 +95,14 @@ export async function GET() {
       // only, which the pack's own scoping already guarantees.
       can: { complete: canInvoice(currentMember) },
       businessName: settings.business_name,
+      // VAT entry mode, so the offline "Final amount" box can remind whoever
+      // completes a job that a "+VAT" business adds VAT on top of the figure
+      // they type (the server does the sum; this is only an on-screen hint).
+      // Not sensitive - it's how prices are entered, not any customer's money.
+      vat: {
+        addOnTop: !!settings.vat_registered && settings.vat_price_entry === "exclusive",
+        rate: Number(settings.vat_rate) || 20,
+      },
       memberName: currentMember.name,
       from,
       to,

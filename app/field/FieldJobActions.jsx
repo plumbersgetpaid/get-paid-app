@@ -36,7 +36,7 @@ async function sendOrQueue({ endpoint, label, formData, requestIdRef }) {
   }
 }
 
-export default function FieldJobActions({ job, canComplete, online, onChanged }) {
+export default function FieldJobActions({ job, canComplete, vat, online, onChanged }) {
   const [openForm, setOpenForm] = useState(null); // "complete" | "note" | "photo"
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -213,6 +213,11 @@ export default function FieldJobActions({ job, canComplete, online, onChanged })
               }
               style={inp}
             />
+            {vat?.addOnTop && (
+              <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#a15c00" }}>
+                Enter the amount before VAT — {vat.rate}% VAT is added on top.
+              </span>
+            )}
           </label>
           <label style={lbl}>
             Completion note (goes on the invoice)

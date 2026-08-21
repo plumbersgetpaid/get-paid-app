@@ -4,6 +4,7 @@ import { vatBreakdown, toStoredAmount } from "../../../lib/vat";
 import { formatCurrency, formatAmountForTemplate } from "../../../lib/formatCurrency";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { findExistingCustomer } from "../../../lib/findCustomer";
+import { validAssigneeIds } from "../../../lib/jobAccess";
 import { textToEmailHtml } from "../../../lib/emailHtml";
 import { getEmailFrom } from "../../../lib/emailFrom";
 import { getCurrentTeamMember } from "../../../lib/auth";
@@ -135,15 +136,18 @@ export async function POST(req) {
   }
 
   if (assignedToIds.length > 0 && job) {
-    const { error: sharesErr } = await db.from("job_shares").insert(
-      assignedToIds.map((teamMemberId) => ({
-        job_id: job.id,
-        team_member_id: teamMemberId,
-        business_id: currentMember.business_id,
-      }))
-    );
-    if (sharesErr) {
-      console.error("New quote assign error:", sharesErr);
+    const validIds = await validAssigneeIds(db, assignedToIds);
+    if (validIds.length > 0) {
+      const { error: sharesErr } = await db.from("job_shares").insert(
+        validIds.map((teamMemberId) => ({
+          job_id: job.id,
+          team_member_id: teamMemberId,
+          business_id: currentMember.business_id,
+        }))
+      );
+      if (sharesErr) {
+        console.error("New quote assign error:", sharesErr);
+      }
     }
   }
 

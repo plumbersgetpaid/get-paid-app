@@ -4,6 +4,7 @@ import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurr
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canCreateRecurringJob } from "../../../../lib/permissions";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
+import { validAssigneeIds } from "../../../../lib/jobAccess";
 import { NextResponse } from "next/server";
 import { redirectAfterMutation } from "../../../../lib/redirectAfterMutation";
 
@@ -66,8 +67,13 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  // Drop any tampered / stale assignee IDs before diffing, so we never add a
+  // share row for someone who isn't an active member of this business. Invalid
+  // IDs can't be in currentShareIds (those are real rows), so this can't cause
+  // a spurious removal - only prevents a bogus addition.
+  const validDesiredIds = await validAssigneeIds(db, desiredAssigneeIds);
   const currentSet = new Set(currentShareIds);
-  const desiredSet = new Set(desiredAssigneeIds);
+  const desiredSet = new Set(validDesiredIds);
   const toAdd = [...desiredSet].filter((id) => !currentSet.has(id));
   const toRemove = [...currentSet].filter((id) => !desiredSet.has(id));
 

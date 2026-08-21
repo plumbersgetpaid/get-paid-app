@@ -50,6 +50,24 @@ export async function getAccessibleJobIds(db, currentMember) {
   return [...new Set([...(assigned || []).map((j) => j.id), ...shared])];
 }
 
+// Narrow caller-supplied assignee IDs down to the ones that are real, active
+// members of the caller's own business. `db` is already business-scoped (RLS),
+// so an ID from another business - or a since-deleted/deactivated member -
+// simply isn't returned and is dropped before we write any share row. Keeps a
+// tampered or stale request from planting a job_shares/recurring_job_shares row
+// that points at someone who could never see it. Order/duplicates don't matter
+// for share rows, so we return the validated set as-is.
+export async function validAssigneeIds(db, ids) {
+  const unique = [...new Set((ids || []).filter(Boolean))];
+  if (unique.length === 0) return [];
+  const { data } = await db
+    .from("team_members")
+    .select("id")
+    .in("id", unique)
+    .eq("is_active", true);
+  return (data || []).map((m) => m.id);
+}
+
 export async function getSharedJobIds(db, teamMemberId) {
   if (!teamMemberId) return [];
   const { data } = await db

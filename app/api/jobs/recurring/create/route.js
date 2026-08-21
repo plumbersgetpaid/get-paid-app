@@ -5,6 +5,7 @@ import { createRecurringOccurrence } from "../../../../lib/createRecurringOccurr
 import { getCurrentTeamMember } from "../../../../lib/auth";
 import { canCreateRecurringJob } from "../../../../lib/permissions";
 import { getScopedDb } from "../../../../lib/scopedSupabaseClient";
+import { validAssigneeIds } from "../../../../lib/jobAccess";
 import { NextResponse } from "next/server";
 import { redirectAfterMutation } from "../../../../lib/redirectAfterMutation";
 import { claimRequest, releaseRequest } from "../../../../lib/idempotency";
@@ -102,15 +103,18 @@ export async function POST(req) {
   }
 
   if (assignedToIds.length > 0 && newRecurring) {
-    const { error: sharesErr } = await db.from("recurring_job_shares").insert(
-      assignedToIds.map((teamMemberId) => ({
-        recurring_job_id: newRecurring.id,
-        team_member_id: teamMemberId,
-        business_id: currentMember.business_id,
-      }))
-    );
-    if (sharesErr) {
-      console.error("Recurring job assign error:", sharesErr);
+    const validIds = await validAssigneeIds(db, assignedToIds);
+    if (validIds.length > 0) {
+      const { error: sharesErr } = await db.from("recurring_job_shares").insert(
+        validIds.map((teamMemberId) => ({
+          recurring_job_id: newRecurring.id,
+          team_member_id: teamMemberId,
+          business_id: currentMember.business_id,
+        }))
+      );
+      if (sharesErr) {
+        console.error("Recurring job assign error:", sharesErr);
+      }
     }
   }
 

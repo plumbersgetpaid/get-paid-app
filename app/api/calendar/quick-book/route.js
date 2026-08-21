@@ -4,6 +4,7 @@ import { toStoredAmount } from "../../../lib/vat";
 import { logEmailSent } from "../../../lib/logEmail";
 import { parseDeposit, depositHowToPay } from "../../../lib/deposit";
 import { sanitizePaymentLink } from "../../../lib/paymentLink";
+import { validAssigneeIds } from "../../../lib/jobAccess";
 import { formatCurrency } from "../../../lib/formatCurrency";
 import { computeScheduleEnd } from "../../../lib/duration";
 import { narrowToRealClashes } from "../../../lib/jobConflicts";
@@ -205,15 +206,18 @@ export async function POST(req) {
   }
 
   if (assignedToIds.length > 0 && newJob) {
-    const { error: sharesErr } = await db.from("job_shares").insert(
-      assignedToIds.map((teamMemberId) => ({
-        job_id: newJob.id,
-        team_member_id: teamMemberId,
-        business_id: currentMember.business_id,
-      }))
-    );
-    if (sharesErr) {
-      console.error("Quick-book assign error:", sharesErr);
+    const validIds = await validAssigneeIds(db, assignedToIds);
+    if (validIds.length > 0) {
+      const { error: sharesErr } = await db.from("job_shares").insert(
+        validIds.map((teamMemberId) => ({
+          job_id: newJob.id,
+          team_member_id: teamMemberId,
+          business_id: currentMember.business_id,
+        }))
+      );
+      if (sharesErr) {
+        console.error("Quick-book assign error:", sharesErr);
+      }
     }
   }
 

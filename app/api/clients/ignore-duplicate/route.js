@@ -16,8 +16,26 @@ export async function POST(req) {
   if (!customerId || !dupeId) {
     return NextResponse.json({ error: "Missing customer IDs" }, { status: 400 });
   }
+  if (customerId === dupeId) {
+    return NextResponse.json({ error: "Can't ignore a customer against itself" }, { status: 400 });
+  }
 
   const db = await getScopedDb(currentMember);
+
+  // Both IDs must be real customers of THIS business before we record them as a
+  // "not a duplicate" pair. `db` is business-scoped, so a customer from another
+  // business (or a since-deleted one) won't come back here - which stops a
+  // tampered request from writing an ignored_duplicates row that points at
+  // customers outside this business. Two IDs found = both belong here.
+  const { data: found } = await db
+    .from("customers")
+    .select("id")
+    .in("id", [customerId, dupeId]);
+  const foundIds = new Set((found || []).map((c) => c.id));
+  if (!foundIds.has(customerId) || !foundIds.has(dupeId)) {
+    return NextResponse.json({ error: "Customer not found" }, { status: 400 });
+  }
+
   const { error } = await db.from("ignored_duplicates").insert({
     customer_id_a: customerId,
     customer_id_b: dupeId,

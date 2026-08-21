@@ -44,31 +44,55 @@ export async function POST(req) {
     );
   }
 
-  const { data: ownReminders } = await db
+  // Every cleanup step below is checked and aborts on failure BEFORE we delete
+  // the team_members row. If a step half-fails we stop with the member still in
+  // place (they're already deactivated), so the owner can simply retry - we
+  // never end up with the account gone but its leftovers stranded. This matters
+  // most for push_subscriptions, which has no foreign key, so a silent failure
+  // there would otherwise orphan this person's device tokens with nothing to
+  // catch it (the FK-backed tables would at least block the final delete).
+  const cleanupFailed = (label, error) => {
+    if (!error) return false;
+    console.error(`Delete team member cleanup failed (${label}):`, error);
+    return true;
+  };
+  const abort = () =>
+    NextResponse.json(
+      { error: "Couldn't fully remove that account. Nothing was deleted - please try again." },
+      { status: 500 }
+    );
+
+  const { data: ownReminders, error: ownRemErr } = await db
     .from("personal_events")
     .select("id")
     .eq("created_by", memberId);
+  if (cleanupFailed("read personal_events", ownRemErr)) return abort();
   const ownReminderIds = (ownReminders || []).map((r) => r.id);
   if (ownReminderIds.length > 0) {
-    await db.from("reminder_shares").delete().in("reminder_id", ownReminderIds);
+    const { error } = await db.from("reminder_shares").delete().in("reminder_id", ownReminderIds);
+    if (cleanupFailed("reminder_shares by reminder", error)) return abort();
   }
-  await db.from("personal_events").delete().eq("created_by", memberId);
 
-  await db.from("reminder_shares").delete().eq("team_member_id", memberId);
-  await db.from("job_shares").delete().eq("team_member_id", memberId);
-  await db.from("recurring_job_shares").delete().eq("team_member_id", memberId);
-
-  // push_subscriptions has no foreign key to team_members, so unlike the
-  // rows above it is NOT cleaned up by any cascade or blocked delete - it
-  // would be left orphaned, holding this person's device tokens after their
-  // account is gone. Remove them explicitly.
-  await db.from("push_subscriptions").delete().eq("team_member_id", memberId);
-
-  await db.from("job_notes").update({ created_by: null }).eq("created_by", memberId);
-  await db.from("jobs").update({ created_by: null }).eq("created_by", memberId);
-  await db.from("jobs").update({ assigned_to: null }).eq("assigned_to", memberId);
-  await db.from("recurring_jobs").update({ created_by: null }).eq("created_by", memberId);
-  await db.from("recurring_jobs").update({ assigned_to: null }).eq("assigned_to", memberId);
+  const steps = [
+    () => db.from("personal_events").delete().eq("created_by", memberId),
+    () => db.from("reminder_shares").delete().eq("team_member_id", memberId),
+    () => db.from("job_shares").delete().eq("team_member_id", memberId),
+    () => db.from("recurring_job_shares").delete().eq("team_member_id", memberId),
+    // push_subscriptions has no foreign key to team_members, so unlike the
+    // rows above it is NOT cleaned up by any cascade or blocked delete - it
+    // would be left orphaned, holding this person's device tokens after their
+    // account is gone. Remove them explicitly, and stop if it fails.
+    () => db.from("push_subscriptions").delete().eq("team_member_id", memberId),
+    () => db.from("job_notes").update({ created_by: null }).eq("created_by", memberId),
+    () => db.from("jobs").update({ created_by: null }).eq("created_by", memberId),
+    () => db.from("jobs").update({ assigned_to: null }).eq("assigned_to", memberId),
+    () => db.from("recurring_jobs").update({ created_by: null }).eq("created_by", memberId),
+    () => db.from("recurring_jobs").update({ assigned_to: null }).eq("assigned_to", memberId),
+  ];
+  for (const step of steps) {
+    const { error } = await step();
+    if (cleanupFailed("cleanup step", error)) return abort();
+  }
 
   const { error } = await db.from("team_members").delete().eq("id", memberId);
 
